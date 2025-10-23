@@ -1,0 +1,13 @@
+<div class="card shadow p-3 mb-2 bg-body rounded" style="width: 18rem;">
+    <div class="card-body">
+        <h5 class="card-title">{{ practice.name }}</h5>
+        {% with practice=practice %}
+            {% include "components/practice_details.html" %}
+        {% endwith %}
+    {% if add_working_hours %}
+    <p></p>
+        <a href="/doctors/add_working_hours_practice/{{ practice.id }}" class="btn btn-primary" type="submit">Add
+            working hours</a>
+    {% endif %}
+    </div>
+</div>

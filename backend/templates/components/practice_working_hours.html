@@ -1,0 +1,28 @@
+<div class="container mt-4 mb-4">
+    <div class="row">
+        <div class="col-lg-2 col-md-4 col-sm-5 col-xs-5">
+            <h5>{{ practice.name }}</h5>
+            {% with practice=practice, dont_show_details_button=True %}
+                {% include "components/practice_details.html" %}
+            {% endwith %}
+        </div>
+        <div class="col-2 col-md-4 col-sm-5 col-xs-5">
+        <h5>Working hours</h5>
+            {% for working_hour in working_hours %}
+                {% with working_hours=working_hour %}
+                    {% include "components/working_hours.html" %}
+                {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-2 col-md-4 col-sm-5 col-xs-5">
+            <a href="/practices/details/{{ practice.id }}" class="btn btn-secondary">More details</a>
+        </div>
+        {% if edit_working_hours %}
+        <div class="col-lg-2 col-md-4 col-sm-5 col-xs-5">
+            <a href="/doctors/add_working_hours_practice/{{ practice.id }}" class="btn btn-secondary">Edit working hours</a>
+        </div>
+        {% endif %}
+    </div>
+</div>

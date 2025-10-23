@@ -1,0 +1,25 @@
+{% extends "shared/base.html" %}
+{% block title %}
+    <title> {{ practice.name }}</title>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h1 class="mt-4 p-2 display-3">{{ practice.name }} </h1>
+        <h3 class="mt-1 p-2 display-7">{{ practice.address }} </h3>
+        <div class="container">
+            <div class="row">
+                {% if doctors_working_hours %}
+                        {% for doctor, working_hours in doctors_working_hours.items() %}
+                                    {% with doctor=doctor %}
+                                        {% include "components/doctor_working_hours.html" %}
+                                    {% endwith %}
+                        {% endfor %}
+                {% else %}
+                    <h3 class="mt-4 p-5 display-8">No doctors added yet </h3>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
