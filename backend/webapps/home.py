@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from backend.db.models.doctors import DoctorSpeciality
+from backend.db.models.users import DoctorSpeciality
 from backend.db.repository.doctors import list_doctors_as_show_doctor
 from backend.db.session import get_db
 

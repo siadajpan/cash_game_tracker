@@ -3,7 +3,7 @@ from typing import List, Type, Dict
 
 from sqlalchemy.orm import Session
 
-from backend.db.models.working_hours import WorkingHours
+from backend.db.models.buy_in import BuyIn
 from backend.schemas.working_hours import WorkingHoursCreate
 from webapps.utils.types import DAYS
 
@@ -15,7 +15,7 @@ def create_new_working_hours(
     # WorkingHoursCreate.validate_start_less_than_end(
     #     working_hours.start_time, working_hours.end_time
     # )
-    new_working_hours = WorkingHours(
+    new_working_hours = BuyIn(
         doctor_id=doctor_id,
         **working_hours.dict(),
     )
@@ -27,14 +27,14 @@ def create_new_working_hours(
 
 
 def get_working_hours_by_id(working_hours_id: int, db: Session):
-    hours = db.get(WorkingHours, working_hours_id)
+    hours = db.get(BuyIn, working_hours_id)
     return hours or None
 
 
 def update_working_hours_by_id(
         working_hours_id: int, working_hours: WorkingHoursCreate, db: Session
 ):
-    existing_hours = db.get(WorkingHours, working_hours_id)
+    existing_hours = db.get(BuyIn, working_hours_id)
     if not existing_hours:
         return 0
     update_data = working_hours.dict(exclude_unset=True)
@@ -48,7 +48,7 @@ def update_working_hours_by_id(
 
 
 def delete_working_hours_by_id(_id: int, db: Session):
-    working_hours = db.get(WorkingHours, _id)
+    working_hours = db.get(BuyIn, _id)
     if not working_hours:
         return 0
 
@@ -59,30 +59,30 @@ def delete_working_hours_by_id(_id: int, db: Session):
 
 def get_working_hours_by_doctor_id(doctor_id: int, db: Session):
     doctors_working_hours = (
-        db.query(WorkingHours).filter(WorkingHours.doctor_id == doctor_id).all()
+        db.query(BuyIn).filter(BuyIn.doctor_id == doctor_id).all()
     )
     return doctors_working_hours
 
 
 def get_working_hours_by_practice_id(practice_id: int, db: Session):
     practice_working_hours = (
-        db.query(WorkingHours).filter(WorkingHours.practice_id == practice_id).all()
+        db.query(BuyIn).filter(BuyIn.practice_id == practice_id).all()
     )
     return practice_working_hours
 
 
 def get_working_hours_by_doctor_and_practice(doctor_id: int, practice_id: int, db: Session) \
-        -> List[Type[WorkingHours]]:
+        -> List[Type[BuyIn]]:
     working_hours = (
-        db.query(WorkingHours)
-        .filter(WorkingHours.doctor_id == doctor_id)
-        .filter(WorkingHours.practice_id == practice_id)
+        db.query(BuyIn)
+        .filter(BuyIn.doctor_id == doctor_id)
+        .filter(BuyIn.practice_id == practice_id)
         .all()
     )
     return working_hours
 
 
-def working_hours_to_dict(working_hours: List[Type[WorkingHours]]) -> Dict[str, List[WorkingHours]]:
+def working_hours_to_dict(working_hours: List[Type[BuyIn]]) -> Dict[str, List[BuyIn]]:
     working_hours_by_day = defaultdict(list)
     for day in DAYS:
         working_hours_from_this_day = [wh for wh in working_hours if wh.day_of_week == day]

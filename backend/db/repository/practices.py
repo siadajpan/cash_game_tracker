@@ -2,24 +2,24 @@ from typing import List, Type
 
 from sqlalchemy.orm import Session
 
-from backend.db.models.practices import Practice
+from backend.db.models.game import Game
 from backend.db.repository.users import create_new_user
-from backend.schemas.practices import PracticeCreate
+from backend.schemas.games import GameCreate
 from backend.schemas.users import UserCreate
 
 
-def create_new_practice(practice: PracticeCreate, db: Session):
+def create_new_game(practice: GameCreate, db: Session):
     new_user = create_new_user(
-        UserCreate(email=practice.email, password=practice.password), db
+        UserCreate(date=practice.date, password=practice.password), db
     )
 
-    del practice.email
+    del practice.date
     del practice.password
 
-    new_practice = Practice(
+    new_practice = Game(
         user_id=new_user.id,
         **practice.dict(),
-        descriptor=f"{practice.name}.{practice.city}.{practice.address}",
+        descriptor=f"{practice.default_buy_in}.{practice.city}.{practice.address}",
     )
     db.add(new_practice)
     db.commit()
@@ -28,13 +28,13 @@ def create_new_practice(practice: PracticeCreate, db: Session):
     return new_practice
 
 
-def retrieve_practice(practice_id: int, db: Session) -> Type[Practice]:
-    item = db.get(Practice, practice_id)
+def retrieve_practice(practice_id: int, db: Session) -> Type[Game]:
+    item = db.get(Game, practice_id)
 
     return item
 
 
-def list_practices(db: Session) -> List[Type[Practice]]:
-    practices = db.query(Practice).all()
+def list_practices(db: Session) -> List[Type[Game]]:
+    practices = db.query(Game).all()
 
     return practices

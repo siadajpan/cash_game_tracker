@@ -6,9 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette import status
 
-from backend.db.repository.practices import create_new_practice, retrieve_practice, list_practices
+from backend.db.repository.practices import create_new_game, retrieve_practice, list_practices
 from backend.db.session import get_db
-from backend.schemas.practices import PracticeCreate, PracticeShow
+from backend.schemas.games import GameCreate, PracticeShow
 from backend.webapps.practices.forms import PracticeCreateForm
 from db.repository.doctors import retrieve_practice_doctors_and_working_hours
 
@@ -17,8 +17,8 @@ router = APIRouter(include_in_schema=False)
 
 
 @router.post("/create", response_model=PracticeShow)
-def create_practice(practice: PracticeCreate, db: Session = Depends(get_db)):
-    new_practice = create_new_practice(practice, db)
+def create_practice(practice: GameCreate, db: Session = Depends(get_db)):
+    new_practice = create_new_game(practice, db)
     return new_practice
 
 
@@ -68,16 +68,16 @@ async def register(request: Request, db: Session = Depends(get_db)):
     form = PracticeCreateForm(request)
     await form.load_data()
     if await form.is_valid():
-        new_practice = PracticeCreate(
-            name=form.name,
-            email=form.email,
+        new_practice = GameCreate(
+            default_buy_in=form.name,
+            date=form.email,
             password=form.password,
             address=form.address,
             postcode=form.postcode,
             city=form.city,
         )
         try:
-            create_new_practice(practice=new_practice, db=db)
+            create_new_game(practice=new_practice, db=db)
             return responses.RedirectResponse(
                 "/?msg=Successfully registered", status_code=status.HTTP_302_FOUND
             )  # default is post request, to use get request added status code 302

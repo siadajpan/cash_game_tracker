@@ -5,50 +5,49 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
-from apis.v1.route_login import get_current_user
-from backend.db.models.doctors import Doctor
-from backend.db.models.practices import Practice
+from backend.apis.v1.route_login import get_current_user
 from backend.db.models.users import User
-from backend.db.models.working_hours import WorkingHours
+from backend.db.models.game import Game
+from backend.db.models.buy_in import BuyIn
 from backend.db.repository.users import create_new_user
-from backend.schemas.doctors import DoctorCreate
+from backend.schemas.players import PlayerCreate
 from backend.schemas.users import UserCreate
 
 
-def create_new_doctor(doctor: DoctorCreate, db: Session):
+def create_new_player(user: PlayerCreate, db: Session):
     new_user = create_new_user(
-        UserCreate(email=doctor.email, password=doctor.password), db
+        UserCreate(email=user.email, password=user.password), db
     )
 
-    del doctor.email
-    del doctor.password
+    del user.email
+    del user.password
 
-    new_doctor = Doctor(user_id=new_user.id, **doctor.dict())
-    db.add(new_doctor)
+    new_user = User(user_id=new_user.id, **user.dict())
+    db.add(new_user)
     db.commit()
-    db.refresh(new_doctor)
+    db.refresh(new_user)
 
-    return new_doctor
-
-
-def get_doctor(doctor_id, db):
-    return db.get(Doctor, doctor_id)
+    return new_user
 
 
-def list_all_doctors(db):
-    doctors = db.query(Doctor).all()
+def get_user(doctor_id, db):
+    return db.get(User, doctor_id)
 
-    return doctors
+
+def list_all_users(db):
+    users = db.query(User).all()
+
+    return users
 
 
 def list_doctors_as_show_doctor(db):
-    doctors_and_users = db.query(Doctor, User).join(User).all()
+    doctors_and_users = db.query(User, User).join(User).all()
     if not len(doctors_and_users):
         return []
 
     # Show doctor expects an email
     for doctor, user in doctors_and_users:
-        doctor.email = user.email
+        doctor.date = user.date
     return list(zip(*doctors_and_users))[0]
 
 
@@ -59,11 +58,11 @@ def list_doctors_as_show_doctor(db):
 
 
 def get_doctors_working_hours_and_practices(doctor_id: int, db) \
-        -> Dict[Practice, List[WorkingHours]]:
+        -> Dict[Game, List[BuyIn]]:
     practices_working_hours = (
-        db.query(Practice, WorkingHours)
-        .join(WorkingHours)
-        .filter(WorkingHours.doctor_id == doctor_id)
+        db.query(Game, BuyIn)
+        .join(BuyIn)
+        .filter(BuyIn.doctor_id == doctor_id)
         .all()
     )
     practice_groups = defaultdict(list)
@@ -77,11 +76,11 @@ def get_doctors_working_hours_and_practices(doctor_id: int, db) \
 
 
 def retrieve_practice_doctors_and_working_hours(practice_id: int, db: Session) \
-        -> Dict[Doctor, List[WorkingHours]]:
+        -> Dict[User, List[BuyIn]]:
     doctors_working_hours = (
-        db.query(Doctor, WorkingHours)
-        .join(WorkingHours)
-        .filter(WorkingHours.practice_id == practice_id)
+        db.query(User, BuyIn)
+        .join(BuyIn)
+        .filter(BuyIn.practice_id == practice_id)
         .all()
     )
     doctors_groups = defaultdict(list)
@@ -91,10 +90,10 @@ def retrieve_practice_doctors_and_working_hours(practice_id: int, db: Session) \
     return doctors_groups
 
 
-def get_doctor_by_user_id(user_id: int, db: Session) -> Type[Doctor]:
+def get_doctor_by_user_id(user_id: int, db: Session) -> Type[User]:
     doctor = (
-        db.query(Doctor)
-        .where(Doctor.user_id == user_id)
+        db.query(User)
+        .where(User.user_id == user_id)
         .one()
     )
     return doctor

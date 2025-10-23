@@ -10,14 +10,14 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from apis.v1.route_login import get_current_user_from_token, oauth2_scheme, get_current_user
-from backend.db.models.doctors import DoctorSpeciality
+from backend.db.models.users import DoctorSpeciality
 from backend.db.repository.doctors import (
-    create_new_doctor,
-    get_doctor,
+    create_new_user,
+    get_user,
     get_doctors_working_hours_and_practices, list_doctors_as_show_doctor, get_doctor_by_user_id, get_current_doctor,
 )
 from backend.db.session import get_db
-from backend.schemas.doctors import DoctorCreate, ShowDoctor
+from backend.schemas.players import PlayerCreate, PlayerShow
 from backend.webapps.doctors.forms import DoctorCreateForm, WorkingHoursCreateForm
 from backend.db.models.users import User
 from db.repository.practices import retrieve_practice
@@ -29,17 +29,17 @@ templates = Jinja2Templates(directory="templates")
 router = APIRouter(include_in_schema=False)
 
 
-@router.post("/create", response_model=ShowDoctor)
-def create_doctor(doctor: DoctorCreate, db: Session = Depends(get_db)):
+@router.post("/create", response_model=PlayerShow)
+def create_doctor(doctor: PlayerCreate, db: Session = Depends(get_db)):
     email = doctor.email
-    new_doctor = create_new_doctor(doctor=doctor, db=db)
+    new_doctor = create_new_user(user=doctor, db=db)
     # Needed for ShowDoctor class
-    new_doctor.email = email
+    new_doctor.date = email
 
     return new_doctor
 
 
-@router.get("/list", response_model=List[ShowDoctor])
+@router.get("/list", response_model=List[PlayerShow])
 def list_doctors(db: Session = Depends(get_db)):
     doctors = list_doctors_as_show_doctor(db)
     # for doctor in doctors:
@@ -54,7 +54,7 @@ async def doctor_details(
     doctors_working_hours_practices = get_doctors_working_hours_and_practices(
         doctor_id=doctor_id, db=db
     )
-    doctor = get_doctor(doctor_id, db)
+    doctor = get_user(doctor_id, db)
     if token:
         current_user = get_current_user_from_token(token, db)
         add_working_hours_visible: bool = current_user.id == doctor.user_id
@@ -86,9 +86,9 @@ async def register(request: Request, db: Session = Depends(get_db)):
     await form.load_data()
     if await form.is_valid():
         try:
-            new_doctor = DoctorCreate(
+            new_doctor = PlayerCreate(
                 first_name=form.first_name,
-                last_name=form.last_name,
+                nick=form.last_name,
                 email=form.email,
                 password=form.password,
                 speciality=DoctorSpeciality.DENTIST,  # TODO fix this to pass real type
@@ -99,7 +99,7 @@ async def register(request: Request, db: Session = Depends(get_db)):
                 form.errors.append(error)
             return templates.TemplateResponse("doctors/register.html", form.__dict__)
         try:
-            create_new_doctor(doctor=new_doctor, db=db)
+            create_new_user(user=new_doctor, db=db)
             return responses.RedirectResponse(
                 "/?msg=Successfully registered", status_code=status.HTTP_302_FOUND
             )  # default is post request, to use get request added status code 302

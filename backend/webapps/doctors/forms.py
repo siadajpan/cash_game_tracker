@@ -4,7 +4,7 @@ from typing import List, Optional, Type
 from fastapi import Request
 from starlette.datastructures import FormData
 
-from backend.db.models.doctors import DoctorSpeciality
+from backend.db.models.users import DoctorSpeciality
 from schemas.working_hours import WorkingHoursCreate
 from webapps.utils import types
 

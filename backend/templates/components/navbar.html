@@ -13,7 +13,7 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="/">All doctors</a>
+                    <a class="nav-link active" aria-current="page" href="/">Cash game manager</a>
                 </li>
             </ul>
 {#            <form class="d-flex">#}
@@ -24,17 +24,8 @@
 {#            </form>#}
             <ul class="navbar-nav ml-auto mb-2 mb-lg-0">
                 {% if not request.cookies.access_token %}
-                    <li class="nav-item dropdown ml-auto">
-                        <a class="nav-link dropdown-toggle" href="#"
-                           id="navbarDropdown" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            Register
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-{#                            <li><a class="dropdown-item" href="/patients/register">As a patient</a></li>#}
-                            <li><a class="dropdown-item" href="/doctors/register">As a doctor</a></li>
-                            <li><a class="dropdown-item" href="/practices/register">As a practice</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/register">Register</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="/login">Login</a>
