@@ -1,18 +1,26 @@
 from fastapi import APIRouter
 
+from backend.apis.v1 import route_login
 from backend.webapps import home
-from backend.webapps.user import route_users
-from backend.webapps.practices import route_practices
-from webapps.auth import route_login
+from backend.webapps.auth import route_user_login
+from backend.webapps.game import route_game
+from backend.webapps.team import route_team
+from backend.webapps.user import route_user
 
 api_router = APIRouter()
 api_router.include_router(
-    route_doctors.router, prefix="/user", tags=["user-webapp"]
+    route_user.router, prefix="/user", tags=["user-webapp"]
 )
 api_router.include_router(home.router, prefix="", tags=["user-webapp"])
 api_router.include_router(
-    route_practices.router, prefix="/practices", tags=["practices-webapp"]
+    route_team.router, prefix="/team", tags=["practices-webapp"]
+)
+api_router.include_router(
+    route_game.router, prefix="/game", tags=["practices-webapp"]
 )
 api_router.include_router(
     route_login.router, prefix="", tags=["auth-webapp"]
+)
+api_router.include_router(
+    route_user_login.router, prefix="", tags=["auth-webapp"]
 )

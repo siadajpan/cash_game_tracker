@@ -2,13 +2,14 @@ from typing import List
 from typing import Optional
 
 from fastapi import Request
+from pydantic import EmailStr
 
 
 class LoginForm:
     def __init__(self, request: Request):
         self.request: Request = request
         self.errors: List = []
-        self.username: Optional[str] = None
+        self.username: Optional[EmailStr] = None
         self.password: Optional[str] = None
 
     async def load_data(self):

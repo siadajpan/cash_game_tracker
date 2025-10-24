@@ -9,14 +9,14 @@
 
 <div class="container mt-4">
     <h1 class="mt-4 p-5 display-5">Find your doctor</h1>
-    <div class="row row-cols-auto">
-        {% for doctor in doctors %}
-            <div class="col-auto p-2">
-            {% with doctor=doctor, working_hours=working_hours%}
-                {% include "components/doctor_list_card.html" %}
-            {% endwith %}
-            </div>
-        {% endfor %}
-    </div>
+<!--    <div class="row row-cols-auto">-->
+<!--        {% for doctor in user %}-->
+<!--            <div class="col-auto p-2">-->
+<!--            {% with doctor=doctor, working_hours=working_hours%}-->
+<!--                {% include "components/doctor_list_card.html" %}-->
+<!--            {% endwith %}-->
+<!--            </div>-->
+<!--        {% endfor %}-->
+<!--    </div>-->
 </div>
 {% endblock %}

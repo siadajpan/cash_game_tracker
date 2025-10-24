@@ -8,7 +8,7 @@
 {% block content %}
 <div class="container">
     <div class="row">
-        <h5 class="mt-4 p-5 display-5">Register as a doctor</h5>
+        <h5 class="mt-4 p-5 display-5">Register</h5>
         <div class="text-danger font-weight-bold">
             {% for error in errors %}
             <li>{{error}}</li>
@@ -20,30 +20,10 @@
         <form method="POST">
             <div class="row mb-3">
                 <div class="col">
-                    <label for="first_name">First name</label>
-                    <input type="text" required class="form-control"
-                           id="first_name" name="first_name" value="{{first_name}}"
-                           placeholder="First name">
-                </div>
-                <div class="col">
-                    <label for="last_name">Last name</label>
-                    <input type="text" required class="form-control"
-                           name="last_name" id="last_name" value="{{last_name}}"
-                           placeholder="Last name">
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col">
-                    <label>Speciality</label>
-                    <select class="form-select" id="speciality_dropdown"
-                            aria-label="Default select example">
-                        <option selected>Select</option>
-                        {% for speciality in doctor_speciality %}
-                        <option value="{{ speciality.name }}">
-                            {{ speciality.value }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                <label for="nick">Nick</label>
+                <input type="text" required class="form-control"
+                       id="nick" name="nick" value="{{nick}}"
+                       placeholder="Nick">
                 </div>
             </div>
             <div class="row mb-3">

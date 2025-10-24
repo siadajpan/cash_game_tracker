@@ -9,6 +9,7 @@ def create_users(client, amount=1):
     for i in range(amount):
         data = {
             "email": f"testemail{i}@email.com",
+            "nick": f"player{i}",
             "password": "testing",
         }
         users.append(data)
@@ -19,6 +20,7 @@ def create_users(client, amount=1):
 def test_create_user(client):
     data = {
         "email": "testemail@email.com",
+         "nick": f"player0",
         "password": "testing",
     }
     response = client.post(url="/users/create", content=json.dumps(data))
@@ -29,7 +31,8 @@ def test_create_user(client):
 def test_adding_same_user_twice(client):
     user = {
         "email": "testemail@email.com",
-        "password": "testing",
+        "nick": "player1",
+        "password": "testing1",
     }
     response = client.post(url="/users/create", content=json.dumps(user))
     assert response.status_code == 200

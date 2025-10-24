@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from backend.db.repository.team import (
     create_new_user,
     get_user,
-    get_doctors_working_hours_and_practices, list_user_view, get_doctor_by_user_id, get_current_doctor,
 )
 from backend.db.session import get_db
 from backend.schemas.user import UserCreate, UserShow
@@ -59,11 +58,7 @@ def list_users(db: Session = Depends(get_db)):
 #     )
 #
 #
-# @router.get("/register/")
-# def register_form(request: Request):
-#     return templates.TemplateResponse(
-#         "user/register.html", {"request": request, "doctor_speciality": DoctorSpeciality}
-#     )
+
 #
 #
 # @router.post("/register/")
