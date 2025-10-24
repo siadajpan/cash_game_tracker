@@ -6,22 +6,57 @@
 {% endblock %}
 
 {% block content %}
-
 <div class="container mt-4">
-    <h1 class="mt-4 p-5 display-5">Cash game manager</h1>
+
     {% if request.cookies.access_token %}
-<!--        <h2 class="mt-4 p-5 display-5">Previous games</h2>-->
 
         {% set team_count = user.teams | length %}
 
+        {% if team_count > 0 %}
+            <!-- GAMES SECTION -->
+            {% set game_count = user.games_played | length if user.games_played is defined else 0 %}
+
+            <div class="py-4 border-bottom mb-4 mt-5">
+                {% if game_count == 1 %}
+                <h2 class="display-6 fw-bold">My Game (1)</h2>
+                {% else %}
+                <h2 class="display-6 fw-bold">My Games ({{ game_count }})</h2>
+                {% endif %}
+                <small class="text-muted">A list of all games you are participating in.</small>
+            </div>
+
+            {% if game_count > 0 %}
+            <ul class="list-group mb-5">
+                {% for game in user.games_played %}
+                <div class="col">
+                    {% with game=game %}
+                    {% include "components/game_list_view.html" %}
+                    {% endwith %}
+                </div>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="alert alert-warning border-0 rounded-3 shadow-sm py-4 mb-5" role="alert">
+                <p class="mb-0 lead"> There are no games in your teams. Click the button below to start one! </p>
+            </div>
+        {% endif %}
+
+        <div class="d-flex flex-wrap gap-3 my-4">
+            <a href="/team/create" class="btn btn-primary btn-lg shadow-sm">
+                <i class="bi bi-dice-5 me-2"></i> Create a Game
+            </a>
+        </div>
+
+        {% endif %}
         <div class="py-4 border-bottom mb-4">
             {% if team_count == 1 %}
-                <h2 class="display-6 fw-bold">My Team (1)</h2>
+            <h2 class="display-6 fw-bold">My Team (1)</h2>
             {% else %}
-                <h2 class="display-6 fw-bold">My Teams ({{ team_count }})</h2>
+            <h2 class="display-6 fw-bold">My Teams ({{ team_count }})</h2>
             {% endif %}
         </div>
 
+        <!-- TEAMS SECTION -->
         {% if team_count > 0 %}
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
             {% for team in user.teams %}
@@ -33,20 +68,18 @@
             {% endfor %}
         </div>
         {% else %}
-            <div class="alert alert-info border-0 rounded-3 shadow-sm py-4 mb-5" role="alert">
-                <p class="mb-0 lead"> You are not currently part of any team. Get started by creating or joining one! </p>
-            </div>
+        <div class="alert alert-info border-0 rounded-3 shadow-sm py-4 mb-5" role="alert">
+            <p class="mb-0 lead"> You are not currently part of any team. Get started by creating or joining one! </p>
+        </div>
         {% endif %}
-
 
         <div class="d-flex flex-wrap gap-3 my-4">
             <a href="/team/create" class="btn btn-primary btn-lg shadow-sm">
-                <i class="bi bi-plus-lg me-2"></i> Create a Team </a> <!-- Note: Assuming a route /team/join exists for joining -->
+                <i class="bi bi-dice-5 me-2"></i> Create a Team </a>
             <a href="/team/join" class="btn btn-outline-secondary btn-lg shadow-sm">
                 <i class="bi bi-person-plus-fill me-2"></i> Join an Existing Team </a>
         </div>
 
     {%endif%}
-
 </div>
 {% endblock %}

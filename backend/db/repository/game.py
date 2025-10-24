@@ -11,12 +11,16 @@ from backend.schemas.games import GameCreate
 from datetime import date
 
 
-def create_new_game_db(game: GameCreate, current_user: User = Depends(get_current_user_from_token), db: Session = Depends(get_db)):
+def create_new_game_db(game: GameCreate,
+                       current_user: User = Depends(get_current_user_from_token),
+                       db: Session = Depends(get_db)):
     new_game = Game(
         owner_id=current_user.id,
-        date=date.today(),
         **game.dict(),
     )
+    # 2. Add the creator as a player (Many-to-Many)
+    new_game.players.append(current_user)
+
     db.add(new_game)
     db.commit()
     db.refresh(new_game)

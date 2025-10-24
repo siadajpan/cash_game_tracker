@@ -10,16 +10,18 @@ from starlette import status
 
 from backend.apis.v1.route_login import get_current_user, get_current_user_from_token
 from backend.core.config import TEMPLATES_DIR
+from backend.db.models.team import Team
 from backend.db.models.user import User
 from backend.db.repository.team import (
     create_new_user,
-    get_user, create_new_team,
+    get_user, create_new_team, join_team,
 )
 from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
 from backend.schemas.user import UserCreate, UserShow
-from backend.webapps.team.forms import TeamCreateForm
+from backend.webapps.team.forms import TeamCreateForm, TeamJoinForm
 import os
+from sqlalchemy import select
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter()
@@ -78,6 +80,68 @@ async def create_team(
         }
     )
 
+
+@router.get("/join")
+async def join_form(request: Request):
+    # Provide empty defaults for form fields and errors
+    context = {
+        "request": request,
+        "errors": [],
+        "name": "",
+    }
+    return templates.TemplateResponse("team/join.html", context)
+
+
+@router.post("/join", name="join_team")
+async def join_team_post( # Renamed function to avoid conflict with service function
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user_from_token),
+):
+    # Load form data using your custom loader
+    form = TeamJoinForm(request)
+    await form.load_data()
+
+    team_name = form.name
+    template_name = "team/join.html"
+    errors = []
+
+    # 1. Validation for name submission
+    if not team_name:
+        errors.append("Team name is required.")
+
+    if not errors:
+        # 2. Find the team in the database
+        stmt = select(Team).where(Team.name == team_name)
+        team_model = db.scalar(stmt)
+
+        if not team_model:
+            errors.append(f"Team '{team_name}' not found.")
+        elif current_user in team_model.users:
+            errors.append(f"You are already a member of team '{team_name}'.")
+        else:
+            # 3. Use the imported service function to join the team
+            try:
+                join_team(team_model=team_model, user=current_user, db=db)
+
+                return responses.RedirectResponse(
+                    "/?msg=Successfully joined team",
+                    status_code=status.HTTP_302_FOUND
+                )
+            except Exception as e:
+                # Handle unexpected DB errors during the join process
+                errors.append(f"An unexpected error occurred while joining the team: {e}")
+
+
+    # Re-render with errors
+    return templates.TemplateResponse(
+        template_name,
+        {
+            "request": request,
+            "errors": errors,
+            "name": team_name,
+        }
+    )
 
 
 @router.get("/list", response_model=List[UserShow])

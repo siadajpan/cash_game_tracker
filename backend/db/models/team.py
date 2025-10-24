@@ -20,3 +20,5 @@ class Team(Base):
         secondary=user_team_association,
         back_populates="teams"
     )
+
+    games = relationship("Game", back_populates="team")

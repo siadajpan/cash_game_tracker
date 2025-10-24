@@ -1,0 +1,41 @@
+<li class="list-group-item d-flex justify-content-between align-items-center py-3 my-2 shadow-sm rounded-3 border-secondary">
+
+    <!-- Game Details container: Use w-100 to occupy full width and apply flex distribution -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
+
+        <!-- Date: Uses flex-fill for equal spacing -->
+        <div class="flex-fill mb-2 mb-md-0">
+            <h6 class="mb-0 fw-bold text-primary">{{ game.date }}</h6>
+        </div>
+
+        <!-- Team Name: Uses flex-fill for equal spacing -->
+        <div class="flex-fill mb-2 mb-md-0">
+            <h6 class="mb-0">{{ game.team.name }}</h6>
+        </div>
+
+        <!-- Status: Uses flex-fill for equal spacing -->
+        <div class="flex-fill">
+            {% if game.running %}
+            <span class="badge text-bg-success">Running</span>
+            {% else %}
+            <span class="badge text-bg-danger">Finished</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Button -->
+    <div>
+        {% if is_user_in_game or not game.running %}
+            <!-- Condition 1: If user is a player (is_user_in_game) OR the game is finished (not running) -->
+            <a href="/game/{{ game.id }}" class="btn btn-primary btn-sm shadow-sm">
+                Open
+            </a>
+        {% elif game.running %}
+            <!-- Condition 2: If game is running AND user is NOT a player -->
+            <a href="/game/{{ game.id }}/join" class="btn btn-success btn-sm shadow-sm">
+                Join
+            </a>
+        {% endif %}
+    </div>
+
+</li>

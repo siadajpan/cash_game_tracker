@@ -1,0 +1,32 @@
+{% extends "shared/base.html" %}
+{% block title %}
+    <title>Create team</title>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h5 class="mt-4 p-5 display-5">Find a team to join</h5>
+        <div class="text-danger font-weight-bold">
+            <div class="text-danger font-weight-bold">
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <form method="POST" action="/team/join">
+                <div class="row mb-3">
+                    <div class="col">
+                        <label>Name</label>
+                        <input type="text" required class="form-control"
+                               name="name" value="{{ name }}"
+                               placeholder="Team name">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

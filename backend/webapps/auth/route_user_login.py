@@ -16,7 +16,7 @@ from backend.db.repository.user import create_new_user
 from backend.db.session import get_db
 from backend.schemas.user import UserCreate
 from backend.webapps.auth.forms import LoginForm
-from backend.webapps.game.forms import UserCreateForm
+from backend.webapps.user.forms import UserCreateForm
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)

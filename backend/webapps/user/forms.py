@@ -3,7 +3,6 @@ from typing import List, Optional, Type
 
 from fastapi import Request
 from pydantic import EmailStr
-from starlette.datastructures import FormData
 
 
 class UserCreateForm:

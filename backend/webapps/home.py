@@ -19,7 +19,6 @@ async def home(request: Request, db: Session = Depends(get_db), msg: str = None)
         "general_pages/homepage.html",
         {
             "request": request,
-            #"games": games,
             "msg": msg,
             "user": get_current_user(request, db)
         },

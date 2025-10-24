@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Dict, List, Type
+from select import select
+from typing import Dict, List, Type, Optional
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -42,6 +43,33 @@ def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
     return new_team
 
 
+def join_team(team_model: Team, user, db: Session) -> Team:
+    """
+    Adds an existing User to an existing Team's list of members
+    by leveraging the many-to-many relationship defined in the models.
+
+    Args:
+        team_model: The SQLAlchemy Team model instance to join.
+        user: The SQLAlchemy User model instance to be added to the team.
+        db: SQLAlchemy session.
+
+    Returns:
+        The updated Team model instance.
+    """
+    # 1. Add the user to the team's 'users' relationship.
+    # SQLAlchemy handles the creation of the record in the 'user_team_association' table.
+    team_model.users.append(user)
+
+    # 2. Persist the changes.
+    # Since we modified an object already tracked by the session,
+    # we just need to commit the transaction.
+    db.commit()
+
+    # 3. Refresh the team object to reflect the change, if necessary.
+    db.refresh(team_model)
+
+    return team_model
+
 def get_team_users(team: Team, db: Session) -> List[User]:
     """
     Retrieve all users (players) in a given team.
@@ -58,6 +86,16 @@ def get_team_users(team: Team, db: Session) -> List[User]:
 
     # Option 2: Query explicitly from the User table
     # return db.query(User).join(User.teams).filter(Team.id == team.id).all()
+
+def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
+    """
+    Fetches a Team model instance by its ID.
+
+    NOTE: In a real application, this function should be moved to services/team.py.
+    """
+    # Use select statement to query the database
+    # The Team model must be imported/available for this to work
+    return db.query(Team).filter(Team.id == team_id).one_or_none()
 
 def get_user(doctor_id, db):
     return db.get(User, doctor_id)
