@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "no-pain"
+name = "cash-game-manager"
 version = "0.1.0"
-description = "Doctor working hours"
-authors = ["karol <karol.misiarz@robovision.eu>"]
+description = "Manage cash games"
+authors = ["karol <forkarolm@gmail.com>"]
 readme = "README.md"
 packages = [{include = "backend"}]
 

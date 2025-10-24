@@ -3,8 +3,7 @@ import json
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from backend.db.models.speciality import DoctorSpeciality
-from core.config import settings
+from backend.core.config import settings
 
 
 def create_test_doctors(client, amount=1):
@@ -17,7 +16,7 @@ def create_test_doctors(client, amount=1):
             "first_name": "Test name",
             "last_name": "Test last name",
         }
-        response = client.post(url="/doctors/create", content=json.dumps(data))
+        response = client.post(url="/user/create", content=json.dumps(data))
         doctor_created = response.json()
         doctor_created.update({"password": "testing"})
         doctors.append(doctor_created)
@@ -32,7 +31,7 @@ def test_create_doctor(client):
         "first_name": "Test name",
         "last_name": "Test last name",
     }
-    response = client.post(url="/doctors/create", content=json.dumps(data))
+    response = client.post(url="/user/create", content=json.dumps(data))
     print(response.json())
     assert response.status_code == 200
     assert response.json()["first_name"] == "Test name"
@@ -49,16 +48,16 @@ def test_adding_same_doctor_twice(client):
         "first_name": "Test name",
         "last_name": "Test last name",
     }
-    response = client.post(url="/doctors/create", content=json.dumps(user))
+    response = client.post(url="/user/create", content=json.dumps(user))
     assert response.status_code == 200
     assert response.json()["first_name"] == "Test name"
     user2 = user.copy()
     with pytest.raises(IntegrityError):
-        client.post(url="/doctors/create", content=json.dumps(user2))
+        client.post(url="/user/create", content=json.dumps(user2))
 
 
 def test_list_doctors(client):
     create_test_doctors(client, 3)
-    response = client.get(url="/doctors/list")
+    response = client.get(url="/user/list")
     assert response.status_code == 200
     assert len(response.json()) == 3

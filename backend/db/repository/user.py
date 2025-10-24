@@ -1,14 +1,15 @@
 from sqlalchemy.orm import Session
 
 from backend.core.hashing import Hasher
-from backend.db.models.users import User
-from backend.schemas.users import UserCreate
+from backend.db.models.user import User
+from backend.schemas.user import UserCreate
 
 
 def create_new_user(user: UserCreate, db: Session):
     new_user = User(
         email=user.email,
         hashed_password=Hasher.get_password_hash(user.password),
+        nick=user.nick
     )
     db.add(new_user)
     db.commit()

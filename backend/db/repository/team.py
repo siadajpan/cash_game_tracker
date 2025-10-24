@@ -6,28 +6,41 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 
 from backend.apis.v1.route_login import get_current_user
-from backend.db.models.users import User
+from backend.db.models.team import Team
+from backend.db.models.user import User
 from backend.db.models.game import Game
 from backend.db.models.buy_in import BuyIn
-from backend.db.repository.users import create_new_user
-from backend.schemas.players import PlayerCreate
-from backend.schemas.users import UserCreate
+from backend.db.repository.user import create_new_user
+from backend.schemas.team import TeamCreate
 
 
-def create_new_player(user: PlayerCreate, db: Session):
-    new_user = create_new_user(
-        UserCreate(email=user.email, password=user.password), db
+def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
+    """
+    Creates a new team with the given creator as both owner and player.
+
+    Args:
+        team: TeamCreate schema object with team info.
+        creator: User instance who creates the team.
+        db: SQLAlchemy session.
+
+    Returns:
+        The newly created Team instance.
+    """
+    # 1. Create the team, set the creator as owner
+    new_team = Team(
+        **team.dict(),
+        owner=creator  # Many-to-One owner relationship
     )
 
-    del user.email
-    del user.password
+    # 2. Add the creator as a player (Many-to-Many)
+    new_team.users.append(creator)
 
-    new_user = User(user_id=new_user.id, **user.dict())
-    db.add(new_user)
+    # 3. Persist
+    db.add(new_team)
     db.commit()
-    db.refresh(new_user)
+    db.refresh(new_team)
 
-    return new_user
+    return new_team
 
 
 def get_user(doctor_id, db):
@@ -40,7 +53,7 @@ def list_all_users(db):
     return users
 
 
-def list_doctors_as_show_doctor(db):
+def list_user_view(db):
     doctors_and_users = db.query(User, User).join(User).all()
     if not len(doctors_and_users):
         return []

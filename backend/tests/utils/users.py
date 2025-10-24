@@ -4,8 +4,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from backend.core.config import settings
-from backend.db.repository.users import create_new_user, get_user_by_email
-from backend.schemas.users import UserCreate
 
 
 def login_test_user(client: TestClient, email: str):

@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette import status
 
-from backend.db.repository.practices import create_new_game, retrieve_practice, list_practices
+from backend.db.repository.practices import create_new_game, retrieve_game, list_games
 from backend.db.session import get_db
 from backend.schemas.games import GameCreate, PracticeShow
 from backend.webapps.practices.forms import PracticeCreateForm
@@ -24,7 +24,7 @@ def create_practice(practice: GameCreate, db: Session = Depends(get_db)):
 
 @router.get("/get/{practice_id}")
 def read_practice(practice_id: int, db: Session = Depends(get_db)):
-    practice = retrieve_practice(practice_id=practice_id, db=db)
+    practice = retrieve_game(practice_id=practice_id, db=db)
     if not practice:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -35,7 +35,7 @@ def read_practice(practice_id: int, db: Session = Depends(get_db)):
 
 @router.get("/all", response_model=List[PracticeShow])
 def read_practices(db: Session = Depends(get_db)):
-    practices = list_practices(db=db)
+    practices = list_games(db=db)
 
     return practices
 
@@ -44,10 +44,10 @@ def read_practices(db: Session = Depends(get_db)):
 async def practice_details(
         practice_id, request: Request, db: Session = Depends(get_db)
 ):
-    # retrieve all doctors working here
+    # retrieve all user working here
     practice_doctors = retrieve_practice_doctors_and_working_hours(practice_id=practice_id, db=db)
     print("practice_doctors", practice_doctors)
-    practice = retrieve_practice(practice_id, db)
+    practice = retrieve_game(practice_id, db)
     return templates.TemplateResponse(
         "practices/details.html",
         {

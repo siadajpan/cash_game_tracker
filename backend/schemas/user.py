@@ -1,15 +1,13 @@
 from pydantic import BaseModel, EmailStr
 
-from backend.db.models.users import DoctorSpeciality
 
-
-class PlayerCreate(BaseModel):
+class UserCreate(BaseModel):
     email: EmailStr
     password: str
     nick: str
 
 
-class PlayerShow(BaseModel):
+class UserShow(BaseModel):
     id: str
     email: str
     nick: str

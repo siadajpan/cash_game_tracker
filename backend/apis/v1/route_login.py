@@ -13,7 +13,7 @@ from backend.core.hashing import Hasher
 from backend.core.security import create_access_token
 from backend.db.session import get_db
 from backend.schemas.tokens import Token
-from db.repository.users import get_user_by_email
+from backend.db.repository.user import get_user_by_email
 
 router = APIRouter()
 
