@@ -1,0 +1,10 @@
+<div class="card shadow p-3 mb-2 bg-body rounded" style="width: 18rem;">
+    <div class="card-body">
+        <h5 class="card-title">{{ team.name }}</h5>
+           {% for user in team.users %}
+              {% with user=user %}
+                  {% include "components/user_list_view.html" %}
+              {% endwith %}
+           {% endfor %}
+    </div>
+</div>

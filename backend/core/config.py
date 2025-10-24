@@ -3,8 +3,13 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-env_path = Path(__file__).parent.parent.parent / ".env"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+env_path = BASE_DIR / ".env"
 load_dotenv(dotenv_path=env_path)
+BACKEND_DIR = BASE_DIR / "backend"
+# Base directory of the project
+TEMPLATES_DIR = BACKEND_DIR / "templates"
+STATIC_DIR = BACKEND_DIR / "static"
 
 
 class Settings:

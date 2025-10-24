@@ -3,13 +3,13 @@ import json
 import pytest
 
 from backend.tests.test_routes.test_doctors import create_test_doctors
-from backend.tests.test_routes.test_practices import create_practices
+from backend.tests.test_routes.test_teams import create_teams
 from tests.utils.users import login_test_user
 
 
 def add_working_hours(client, amount_users=1, amount_practices=1, amount_wh=1):
     users = create_test_doctors(client, amount_users)
-    create_practices(client, amount_practices)
+    create_teams(client, amount_practices)
     for i in range(amount_wh):
         user = users[i % amount_users]
         login_test_user(client, user["email"])

@@ -75,6 +75,8 @@ def get_current_user_from_token(
 
 def get_current_user(request, db):
     token = request.cookies.get("access_token")
+    if token is None:
+        return None
     scheme, param = get_authorization_scheme_param(
         token
     )  # scheme will hold "Bearer" and param will hold actual token value

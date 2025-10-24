@@ -20,7 +20,7 @@ def create_users(client, amount=1):
 def test_create_user(client):
     data = {
         "email": "testemail@email.com",
-         "nick": f"player0",
+        "nick": f"player0",
         "password": "testing",
     }
     response = client.post(url="/users/create", content=json.dumps(data))

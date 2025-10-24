@@ -13,10 +13,10 @@ api_router.include_router(
 )
 api_router.include_router(home.router, prefix="", tags=["user-webapp"])
 api_router.include_router(
-    route_team.router, prefix="/team", tags=["practices-webapp"]
+    route_team.router, prefix="/team", tags=["team-webapp"]
 )
 api_router.include_router(
-    route_game.router, prefix="/game", tags=["practices-webapp"]
+    route_game.router, prefix="/game", tags=["team-webapp"]
 )
 api_router.include_router(
     route_login.router, prefix="", tags=["auth-webapp"]

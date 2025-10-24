@@ -1,27 +1,83 @@
 import json
+from sqlite3 import IntegrityError
 from typing import List
 
-from fastapi import APIRouter, Depends, Request, responses, HTTPException
+from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
 from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
+from starlette import status
 
+from backend.apis.v1.route_login import get_current_user, get_current_user_from_token
+from backend.core.config import TEMPLATES_DIR
+from backend.db.models.user import User
 from backend.db.repository.team import (
     create_new_user,
-    get_user,
+    get_user, create_new_team,
 )
 from backend.db.session import get_db
+from backend.schemas.team import TeamCreate
 from backend.schemas.user import UserCreate, UserShow
+from backend.webapps.team.forms import TeamCreateForm
+import os
 
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
+router = APIRouter()
 
-templates = Jinja2Templates(directory="templates")
-router = APIRouter(include_in_schema=False)
+@router.get("/create")
+async def create_form(request: Request):
+    # Provide empty defaults for form fields and errors
+    context = {
+        "request": request,
+        "errors": [],
+        "name": "",
+    }
+    return templates.TemplateResponse("team/create.html", context)
 
+@router.post("/create", name="create_team")
+async def create_team(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    # ... rest of your original custom form loading code ...
+    form = TeamCreateForm(request)
+    await form.load_data()
 
-@router.post("/create", response_model=UserShow)
-def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
-    new_user = create_new_user(user=user, db=db)
+    name = form.name
+    template_name = "team/create.html"
+    errors = []
 
-    return new_user
+    # 1. Validation for name
+    if not name:
+        errors.append("Team name is required.")
+
+    # 2. Add validation for new fields if necessary
+    # if len(description) < 10:
+    #     errors.append("Description is too short.")
+
+    if not errors:
+        try:
+            # Use all extracted variables
+            new_team_data = TeamCreate(name=name) # Update your Pydantic model
+            create_new_team(team=new_team_data, creator=current_user, db=db)
+            return responses.RedirectResponse(
+                "/?msg=Team created successfully",
+                status_code=status.HTTP_302_FOUND
+            )
+        except IntegrityError:
+            errors.append("Team with that name already exists.")
+
+    # Re-render with all submitted data
+    return templates.TemplateResponse(
+        template_name,
+        {
+            "request": request,
+            "errors": errors,
+            "name": name,
+        }
+    )
+
 
 
 @router.get("/list", response_model=List[UserShow])
@@ -61,7 +117,7 @@ def list_users(db: Session = Depends(get_db)):
 # @router.get("/register/")
 # def register_form(request: Request):
 #     return templates.TemplateResponse(
-#         "user/register.html", {"request": request, "doctor_speciality": DoctorSpeciality}
+#         "user/create.html", {"request": request, "doctor_speciality": DoctorSpeciality}
 #     )
 #
 #
@@ -80,7 +136,7 @@ def list_users(db: Session = Depends(get_db)):
 #             for error in json.loads(e.json()):
 #                 error = f"There is are some problems with {error['loc'][0]}"
 #                 form.errors.append(error)
-#             return templates.TemplateResponse("user/register.html", form.__dict__)
+#             return templates.TemplateResponse("user/create.html", form.__dict__)
 #         try:
 #             create_new_user(user=new_user, db=db)
 #             return responses.RedirectResponse(
@@ -88,15 +144,15 @@ def list_users(db: Session = Depends(get_db)):
 #             )  # default is post request, to use get request added status code 302
 #         except IntegrityError:
 #             form.errors.append("User with that e-mail already exists.")
-#             return templates.TemplateResponse("user/register.html", form.__dict__)
-#     return templates.TemplateResponse("user/register.html", form.__dict__)
+#             return templates.TemplateResponse("user/create.html", form.__dict__)
+#     return templates.TemplateResponse("user/create.html", form.__dict__)
 #
 #
 # @router.get("/create_team/")
 # def add_working_hours_form(request: Request, db: Session = Depends(get_db)):
-#     practices = read_practices(db)
+#     team = read_practices(db)
 #     return templates.TemplateResponse(
-#         "user/add_working_hours.html", {"request": request, "practices": practices, "add_working_hours": True}
+#         "user/add_working_hours.html", {"request": request, "team": team, "add_working_hours": True}
 #     )
 #
 #

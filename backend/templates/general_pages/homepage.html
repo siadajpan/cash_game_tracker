@@ -2,21 +2,51 @@
 
 
 {% block title %}
-<title>Doctors</title>
+<title>Cash game manager</title>
 {% endblock %}
 
 {% block content %}
 
 <div class="container mt-4">
-    <h1 class="mt-4 p-5 display-5">Find your doctor</h1>
-<!--    <div class="row row-cols-auto">-->
-<!--        {% for doctor in user %}-->
-<!--            <div class="col-auto p-2">-->
-<!--            {% with doctor=doctor, working_hours=working_hours%}-->
-<!--                {% include "components/doctor_list_card.html" %}-->
-<!--            {% endwith %}-->
-<!--            </div>-->
-<!--        {% endfor %}-->
-<!--    </div>-->
+    <h1 class="mt-4 p-5 display-5">Cash game manager</h1>
+    {% if request.cookies.access_token %}
+<!--        <h2 class="mt-4 p-5 display-5">Previous games</h2>-->
+
+        {% set team_count = user.teams | length %}
+
+        <div class="py-4 border-bottom mb-4">
+            {% if team_count == 1 %}
+                <h2 class="display-6 fw-bold">My Team (1)</h2>
+            {% else %}
+                <h2 class="display-6 fw-bold">My Teams ({{ team_count }})</h2>
+            {% endif %}
+        </div>
+
+        {% if team_count > 0 %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+            {% for team in user.teams %}
+            <div class="col">
+                {% with team=team %}
+                {% include "components/team_view.html" %}
+                {% endwith %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+            <div class="alert alert-info border-0 rounded-3 shadow-sm py-4 mb-5" role="alert">
+                <p class="mb-0 lead"> You are not currently part of any team. Get started by creating or joining one! </p>
+            </div>
+        {% endif %}
+
+
+        <div class="d-flex flex-wrap gap-3 my-4">
+            <a href="/team/create" class="btn btn-primary btn-lg shadow-sm">
+                <i class="bi bi-plus-lg me-2"></i> Create a Team </a> <!-- Note: Assuming a route /team/join exists for joining -->
+            <a href="/team/join" class="btn btn-outline-secondary btn-lg shadow-sm">
+                <i class="bi bi-person-plus-fill me-2"></i> Join an Existing Team </a>
+        </div>
+
+    {%endif%}
+
 </div>
 {% endblock %}

@@ -42,6 +42,23 @@ def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
     return new_team
 
 
+def get_team_users(team: Team, db: Session) -> List[User]:
+    """
+    Retrieve all users (players) in a given team.
+
+    Args:
+        team: Team instance
+        db: SQLAlchemy session
+
+    Returns:
+        List of User instances who are members of the team
+    """
+    # Option 1: Access the relationship directly (lazy-loaded)
+    return team.users
+
+    # Option 2: Query explicitly from the User table
+    # return db.query(User).join(User.teams).filter(Team.id == team.id).all()
+
 def get_user(doctor_id, db):
     return db.get(User, doctor_id)
 

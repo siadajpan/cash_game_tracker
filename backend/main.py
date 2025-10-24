@@ -1,19 +1,23 @@
-from apis.base import api_router
-from core.config import settings
-from db.base import Base
-from db.session import engine
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from webapps.base import api_router as web_app_router
+
+from backend.apis.base import api_router
+from backend.core.config import settings
+from backend.db.base import Base
+from backend.db.session import engine
+from backend.webapps.base import api_router as web_app_router
 
 
 def include_router(app):
     app.include_router(api_router)
     app.include_router(web_app_router)
 
-
 def configure_static(app):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    BASE_DIR = Path(__file__).resolve().parent
+    STATIC_DIR = BASE_DIR / "static"
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 def create_tables():

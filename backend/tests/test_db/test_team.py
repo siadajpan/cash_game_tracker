@@ -1,6 +1,9 @@
+from unittest.mock import patch
+
 import pytest
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from starlette.testclient import TestClient
 
 from backend.db.models.user import User
 from backend.db.models.team import Team
@@ -12,7 +15,6 @@ def mock_team_create_data():
     return {
         "name": "Test Team"
     }
-
 
 def test_create_team_with_owner_and_users(
     db_session: Session, mock_user_create_data, mock_team_create_data

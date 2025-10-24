@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Request, responses, HTTPException
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.core.config import TEMPLATES_DIR
 from backend.db.repository.team import (
     create_new_user,
     get_user,
@@ -13,7 +14,7 @@ from backend.db.session import get_db
 from backend.schemas.user import UserCreate, UserShow
 
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
 
 
@@ -76,7 +77,7 @@ def list_users(db: Session = Depends(get_db)):
 #             for error in json.loads(e.json()):
 #                 error = f"There is are some problems with {error['loc'][0]}"
 #                 form.errors.append(error)
-#             return templates.TemplateResponse("user/register.html", form.__dict__)
+#             return templates.TemplateResponse("user/create.html", form.__dict__)
 #         try:
 #             create_new_user(user=new_user, db=db)
 #             return responses.RedirectResponse(
@@ -84,15 +85,15 @@ def list_users(db: Session = Depends(get_db)):
 #             )  # default is post request, to use get request added status code 302
 #         except IntegrityError:
 #             form.errors.append("User with that e-mail already exists.")
-#             return templates.TemplateResponse("user/register.html", form.__dict__)
-#     return templates.TemplateResponse("user/register.html", form.__dict__)
+#             return templates.TemplateResponse("user/create.html", form.__dict__)
+#     return templates.TemplateResponse("user/create.html", form.__dict__)
 #
 #
 # @router.get("/create_team/")
 # def add_working_hours_form(request: Request, db: Session = Depends(get_db)):
-#     practices = read_practices(db)
+#     team = read_practices(db)
 #     return templates.TemplateResponse(
-#         "user/add_working_hours.html", {"request": request, "practices": practices, "add_working_hours": True}
+#         "user/add_working_hours.html", {"request": request, "team": team, "add_working_hours": True}
 #     )
 #
 #

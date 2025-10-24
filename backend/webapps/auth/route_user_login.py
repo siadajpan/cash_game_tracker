@@ -11,13 +11,14 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from backend.apis.v1.route_login import login_for_access_token
+from backend.core.config import TEMPLATES_DIR
 from backend.db.repository.user import create_new_user
 from backend.db.session import get_db
 from backend.schemas.user import UserCreate
 from backend.webapps.auth.forms import LoginForm
 from backend.webapps.game.forms import UserCreateForm
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
 
 
