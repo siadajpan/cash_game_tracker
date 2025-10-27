@@ -77,3 +77,25 @@ class GameJoinForm:
             self.errors.append("Buy-in must be a 0 or more.")
 
         return len(self.errors) == 0
+
+class AddOnRequest:
+    def __init__(self, request: Request):
+        self.request: Request = request
+        self.errors: List = []
+        self.amount: float = 0.0
+
+    async def load_data(self):
+        form = await self.request.form()
+
+        add_in_str = form.get("add_on")
+        try:
+            self.amount = float(add_in_str)
+        except ValueError:
+            self.errors.append("Add-on be a valid number.")
+
+    async def is_valid(self):
+        # Validation for Default Buy-In
+        if self.amount is None or self.amount <= 0:
+            self.errors.append("Add-on needs to be a positive number.")
+
+        return len(self.errors) == 0

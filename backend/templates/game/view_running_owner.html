@@ -1,0 +1,60 @@
+<!-- Header -->
+<ul class="list-group list-group-flush">
+    <li class="list-group-item">
+        <div class="row fw-bold text-center">
+            <div class="col-4 text-start">Player</div>
+            <div class="col-4">Money In</div>
+            {% if is_add_on_requests %}
+                <div class="col-2">Requests</div>
+                <div class="col-2">Actions</div>
+            {% endif %}
+        </div>
+    </li>
+
+    <!-- Players -->
+    {% for info in players_info %}
+        <li class="list-group-item">
+            <div class="row text-center align-items-center">
+                <div class="col-4 text-start">{{ info.player.nick }}</div>
+
+                <div class="col-4">
+                    {% if info.money_in % 1 %}
+                        {{ "%.2f"|format(info.money_in) }}
+                    {% else %}
+                        {{ info.money_in|int }}
+                    {% endif %}
+                </div>
+
+                {% if is_add_on_requests %}
+                    <!-- Requests Column -->
+                    <div class="col-2">
+                        {% if info.add_on_request %}
+                            {{ info.add_on_request.amount }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+
+                    <!-- Actions Column -->
+                    <div class="col-2 d-flex justify-content-center align-items-center gap-2">
+                        {% if info.add_on_request %}
+                            <!-- Decline -->
+                            <form method="POST" action="/game/{{ game.id }}/add_on/{{ info.add_on_request.id }}/decline" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm px-3 py-1">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </form>
+                            <!-- Approve -->
+                            <form method="POST" action="/game/{{ game.id }}/add_on/{{ info.add_on_request.id }}/approve" class="d-inline">
+                                <button type="submit" class="btn btn-success btn-sm px-3 py-1">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </li>
+
+    {% endfor %}
+</ul>

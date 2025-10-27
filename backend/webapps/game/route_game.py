@@ -11,9 +11,11 @@ from starlette.responses import RedirectResponse
 
 from backend.apis.v1.route_login import get_current_user_from_token
 from backend.core.config import TEMPLATES_DIR
+from backend.db.models.add_on import AddOnStatus
 from backend.db.models.user import User
-from backend.db.repository.addon import get_player_game_addons
-from backend.db.repository.buyin import get_player_game_buy_in
+from backend.db.repository.add_on import get_player_game_addons, create_add_on_request, update_add_on_status, \
+    get_add_on_by_id
+from backend.db.repository.buy_in import get_player_game_buy_in, add_user_buy_in
 from backend.db.repository.game import (
     create_new_game_db,
     get_game_by_id,
@@ -28,7 +30,7 @@ from backend.db.repository.team import (
 from backend.db.session import get_db
 from backend.schemas.games import GameCreate
 from backend.schemas.user import UserCreate, UserShow
-from backend.webapps.game.forms import GameCreateForm, GameJoinForm
+from backend.webapps.game.game_forms import GameCreateForm, GameJoinForm, AddOnRequest
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
@@ -106,7 +108,7 @@ async def create_game(
             )
 
             return responses.RedirectResponse(
-                f"/{game.id}/open?msg=Game created successfully",
+                f"/game/{game.id}/open?msg=Game created successfully",
                 status_code=status.HTTP_302_FOUND,
             )
         except IntegrityError:
@@ -177,6 +179,7 @@ async def join_game(
     if not errors:
         try:
             add_user_to_game(user, game, db)
+            add_user_buy_in(user, game, buy_in, db)
             # Redirect to the game page
             return RedirectResponse(url=f"/game/{game.id}/open", status_code=303)
         except IntegrityError:
@@ -205,17 +208,111 @@ async def open_game(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
-    print("openning game")
     game = get_game_by_id(game_id, db)
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
     players_info = []
+    is_add_on_request = False
     for player in game.players:
-        buy_in = get_player_game_buy_in(user, game, db)
-        add_ons = get_player_game_addons(user, game, db)
-        players_info.append({"player": player, "Money-in": buy_in + add_ons})
+        buy_in = get_player_game_buy_in(player, game, db)
+        add_ons = get_player_game_addons(player, game, db)
+        add_on_requested = [add_on for add_on in add_ons if add_on.status == AddOnStatus.REQUESTED]
+        if len(add_on_requested):
+            add_on_requested = add_on_requested[0]
+            is_add_on_request = True
+        else:
+            add_on_requested = None
+        add_ons_approved = sum([add_on.amount for add_on in add_ons if add_on.status == AddOnStatus.APPROVED])
+        players_info.append({"player": player, "money_in": buy_in + add_ons_approved, "add_on_request": add_on_requested})
+
     return templates.TemplateResponse(
-        "game/view.html",
-        {"request": request, "game": game, "players_info": players_info},
+        "game/view_running.html",
+        {"request": request, "game": game, "user": user, "players_info": players_info, "is_add_on_requests": is_add_on_request},
     )
+
+@router.get("/{game_id}/add_on", name="add_on")
+async def add_on(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+
+    return templates.TemplateResponse(
+        "game/add_on.html",
+        {"request": request, "game": game},
+    )
+
+@router.post("/{game_id}/add_on", name="add_on")
+async def add_on(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+
+    # Load form data
+    form = AddOnRequest(request)
+    await form.load_data()
+    amount = form.amount
+
+    errors = []
+    # Fetch game
+    game = get_game_by_id(game_id, db)
+    if game is None:
+        errors.append("Game doesn't exist anymore. Maybe it was deleted.")
+
+    # Validate form
+    if not await form.is_valid():
+        errors.extend(form.errors)
+
+    if not errors:
+        try:
+            create_add_on_request(game, amount, db, user)
+            # Redirect to the game page
+            return RedirectResponse(url=f"/game/{game.id}/open", status_code=303)
+        except IntegrityError:
+            errors.append(
+                "A database error occurred (e.g., integrity constraint violation)."
+            )
+        except Exception as e:
+            errors.append(f"An unexpected error occurred: {e}")
+
+    # Re-render template with submitted data and errors
+    return templates.TemplateResponse(
+        "game/add_on.html",
+        {
+            "request": request,
+            "errors": errors,
+            "game": game,
+            "form": {"amount": amount},
+        },
+    )
+
+
+@router.post("/{game_id}/add_on/{add_on_id}/{action}", name="add_on_approve")
+async def add_on_approve(
+    request: Request,
+    game_id: int,
+    add_on_id: int,
+    action: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+
+    # TODO check if current user is game owner
+    action = AddOnStatus.APPROVED if action=="approve" else AddOnStatus.DECLINED
+    add_on = get_add_on_by_id(add_on_id, db)
+    update_add_on_status(add_on, action, db, user)
+
+    return RedirectResponse(url=f"/game/{game.id}/open", status_code=303)

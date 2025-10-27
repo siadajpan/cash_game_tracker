@@ -1,11 +1,11 @@
 {% extends "shared/base.html" %}
 {% block title %}
-    <title>Join a game</title>
+    <title>Request chips</title>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <h5 class="mt-4 p-5 display-5">Join a game</h5>
+    <h5 class="mt-4 p-5 display-5">Request chips</h5>
     <div class="text-danger font-weight-bold">
         <div class="text-danger font-weight-bold">
             {% for error in errors %}
@@ -13,26 +13,22 @@
             {% endfor %}
         </div>
     </div>
-    <form method="POST" action="/game/{{ game.id }}/join">
-        <!-- Hidden input for game_id -->
-        <input type="hidden" name="game_id" value="{{ game.id }}">
+    <form method="POST" action="/game/{{ game.id }}/add_on">
 
         <div class="row mb-3">
             <div class="col-12 col-md-6">
-                <label for="buy_in" class="form-label">Buy-in</label>
+                <label for="add_on" class="form-label">Add-on</label>
                 <input type="number" step="0.01" required class="form-control"
-                       name="buy_in" id="buy_in"
+                       name="add_on" id="add_on"
                        value="{{ game.default_buy_in or 0 }}"
-                       placeholder="Default buy-in">
+                       placeholder="Amount">
             </div>
         </div>
 
         <div class="d-flex justify-content-between align-items-center">
             <a href="/" class="btn btn-outline-secondary">Back</a>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="btn btn-primary">Request</button>
         </div>
     </form>
-
-
 </div>
 {% endblock %}

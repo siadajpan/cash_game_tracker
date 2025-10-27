@@ -1,27 +1,24 @@
 {% extends "shared/base.html" %}
 {% block title %}
-    <title>Game view</title>
+    <title>Game on {{ game.date }}</title>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <h5 class="mt-4 p-3 display-5">Game on {{ game.date }}</h5>
+    {% if user.id == game.owner_id %}
 
-    <!-- Display game info -->
-    <ul class="list-group list-group-flush">
-        {% for player in game.players %}
-            <li class="list-group-item">{{ player.nick }}</li>
-        {% endfor %}
-    </ul>
+       {% include "game/view_running_owner.html" %}
+    {% else %}
+        {% include "game/view_running_non_owner.html" %}
+    {% endif %}
 
-    <!-- Action buttons -->
+    <!-- Footer Buttons -->
     <div class="d-flex justify-content-between mt-3">
-        <!-- Back button -->
         <a href="/" class="btn btn-outline-secondary">Back</a>
 
-        <!-- Request chips button (only if game is running) -->
         {% if game.running %}
-            <form method="POST" action="/game/{{ game.id }}/request-chips">
+            <form method="GET" action="/game/{{ game.id }}/add_on">
                 <button type="submit" class="btn btn-primary">Request Chips</button>
             </form>
         {% endif %}
