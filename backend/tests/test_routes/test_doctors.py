@@ -32,7 +32,6 @@ def test_create_doctor(client):
         "last_name": "Test last name",
     }
     response = client.post(url="/user/create", content=json.dumps(data))
-    print(response.json())
     assert response.status_code == 200
     assert response.json()["first_name"] == "Test name"
     assert response.json()["speciality"] == DoctorSpeciality.DENTIST.value

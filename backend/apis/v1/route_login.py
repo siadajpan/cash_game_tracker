@@ -39,7 +39,6 @@ def login_for_access_token(
         )
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    print(f"access token, {user.email}, {access_token_expires}")
 
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
@@ -54,6 +53,10 @@ oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/login/token", auto_err
 def get_current_user_from_token(
         token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
+    if not token:
+        # No token provided (unauthenticated user)
+        return None
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

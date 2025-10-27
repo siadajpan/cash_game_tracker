@@ -64,7 +64,6 @@ async def create_game(
 
     default_buy_in = form.default_buy_in
     team_id = form.team_id # <-- Get the submitted team ID
-    print(f"submitted team_id {team_id}")
     template_name = "game/create.html"
     errors = []
 
@@ -104,7 +103,6 @@ async def create_game(
             errors.append("A database error occurred (e.g., integrity constraint violation).")
         except Exception as e:
             errors.append(f"An unexpected error occurred: {e}")
-            print(f"Error during game creation: {e}")
 
     # Re-render with all submitted data
     return templates.TemplateResponse(

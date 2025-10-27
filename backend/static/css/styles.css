@@ -1,0 +1,26 @@
+form button[type="submit"] {
+    display: block;
+    margin-left: auto;
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, 0.075); /* matches shadow-sm */
+    padding: 0.6rem 1.2rem; /
+    font-size: 1rem;
+    margin-top: 2rem;       /* adds space above the button */
+
+}
+
+/* Apply shadow, size, and spacing to all primary buttons */
+.btn-primary {
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, 0.075); /* matches shadow-sm */
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    margin-left: auto;
+    margin-top: 2rem;       /* adds space above the button */
+}
+
+/* Apply similar styles to secondary buttons */
+.btn-outline-secondary {
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, 0.05);
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    margin-top: 2rem;       /* adds space above the button */
+}

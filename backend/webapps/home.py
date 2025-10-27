@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import current_user
+from starlette.responses import RedirectResponse
 
-from backend.apis.v1.route_login import get_current_user
+from backend.apis.v1.route_login import get_current_user, get_current_user_from_token
 from backend.core.config import TEMPLATES_DIR
 from backend.db.session import get_db
 
@@ -12,8 +13,12 @@ router = APIRouter(include_in_schema=False)
 
 
 @router.get("/")
-async def home(request: Request, db: Session = Depends(get_db), msg: str = None):
+async def home(request: Request, user = Depends(get_current_user_from_token),db: Session = Depends(get_db), msg: str = None):
     # games = list_games_view(db=db)
+
+    if user is None:
+        # Redirect to login page instead of rendering it here
+        return RedirectResponse(url="/login", status_code=303)
 
     return templates.TemplateResponse(
         "general_pages/homepage.html",

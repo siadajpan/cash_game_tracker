@@ -72,14 +72,16 @@
             <p class="mb-0 lead"> You are not currently part of any team. Get started by creating or joining one! </p>
         </div>
         {% endif %}
+        <div class="d-flex justify-content-between align-items-center">
 
-        <div class="d-flex flex-wrap gap-3 my-4">
-            <a href="/team/create" class="btn btn-primary btn-lg shadow-sm">
-                <i class="bi bi-dice-5 me-2"></i> Create a Team </a>
             <a href="/team/join" class="btn btn-outline-secondary btn-lg shadow-sm">
                 <i class="bi bi-person-plus-fill me-2"></i> Join an Existing Team </a>
+            <a href="/team/create" class="btn btn-primary btn-lg shadow-sm">
+                <i class="bi bi-dice-5 me-2"></i> Create a Team </a>
         </div>
+    {% else %}
 
     {%endif%}
+
 </div>
 {% endblock %}
