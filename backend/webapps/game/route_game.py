@@ -7,11 +7,12 @@ from fastapi import APIRouter, Depends, Request, responses, HTTPException
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette import status
+from starlette.responses import RedirectResponse
 
 from backend.apis.v1.route_login import get_current_user_from_token
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.user import User
-from backend.db.repository.game import create_new_game_db
+from backend.db.repository.game import create_new_game_db, get_game_by_id, user_in_game, add_user_to_game
 from backend.db.repository.team import (
     create_new_user,
     get_user, get_team_by_id,
@@ -93,10 +94,10 @@ async def create_game(
                 team_id=team_id,
             )
 
-            create_new_game_db(game=new_game_data, current_user=current_user, db=db)
+            game = create_new_game_db(game=new_game_data, current_user=current_user, db=db)
 
             return responses.RedirectResponse(
-                "/?msg=Game created successfully",
+                f"/{game.id}/open?msg=Game created successfully",
                 status_code=status.HTTP_302_FOUND
             )
         except IntegrityError:
@@ -120,6 +121,28 @@ async def create_game(
             "user_teams": current_user.teams
         }
     )
+
+@router.get("/{game_id}/join", name="join_game_form")
+async def join_game_form(request: Request, game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user_from_token)):
+    game = get_game_by_id(game_id, db)
+    if user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/open")  # already in game
+    return templates.TemplateResponse("game/join_form.html", {"request": request, "game": game})
+
+
+@router.post("/{game_id}/join", name="join_game")
+async def join_game(request: Request, game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user_from_token)):
+    game = get_game_by_id(game_id, db)
+    add_user_to_game(user, game, db)
+    return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+
+
+# @router.get("/{game_id}/open", name="open_game")
+# async def open_game(request: Request, game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user_from_token)):
+#     game = get_game_by_id(game_id, db)
+#     if not user_in_game(user, game):
+#         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+#     return templates.TemplateResponse("game/open.html", {"request": request, "game": game})
 
 #
 # @router.get("/create", response_model=UserShow)

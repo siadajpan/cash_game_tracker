@@ -1,4 +1,4 @@
-from typing import List, Type
+from typing import List, Type, Optional
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -28,13 +28,25 @@ def create_new_game_db(game: GameCreate,
     return new_game
 
 
-def retrieve_game(practice_id: int, db: Session) -> Type[Game]:
-    item = db.get(Game, practice_id)
-
-    return item
+def get_game_by_id(game_id: int, db: Session) -> Optional[Game]:
+    return db.query(Game).filter(Game.id == game_id).one_or_none()
 
 
 def list_games(db: Session) -> List[Type[Game]]:
     practices = db.query(Game).all()
 
     return practices
+
+
+def user_in_game(user: User, game: Game):
+    return user in game.players
+
+def add_user_to_game(user: User, game: Game, db: Session) -> None:
+    """
+    Add a user to a game's players list if not already added.
+    """
+    if not user_in_game(user, game, db):
+        game.players.append(user)
+        db.add(game)   # optional, usually not needed if the game is already in session
+        db.commit()
+        db.refresh(game)

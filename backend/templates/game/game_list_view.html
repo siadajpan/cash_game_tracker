@@ -1,0 +1,21 @@
+<div class="d-flex justify-content-between">
+    <!-- Game Details container -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
+        <div class="flex-fill mb-2 mb-md-0">
+            <h6 class="mb-0 fw-bold text-primary">{{ game.date }}</h6>
+        </div>
+    </div>
+
+    <!-- Action Button -->
+    <div>
+        {% if is_user_in_game or not game.running %}
+            <a href="/game/{{ game.id }}/open" class="btn btn-secondary">
+                Open
+            </a>
+        {% elif game.running %}
+            <a href="/game/{{ game.id }}/join" class="btn btn-primary">
+                Join
+            </a>
+        {% endif %}
+    </div>
+</div>

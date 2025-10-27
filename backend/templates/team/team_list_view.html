@@ -1,0 +1,13 @@
+<div class="jumbotron">
+    <h1 class="display-6"> {{ team.name }}</h1>
+
+    <ul class="list-group list-group-flush">
+       {% for user in team.users %}
+          <li class="list-group-item">
+              {% with user=user %}
+                  {% include "user/user_list_view.html" %}
+              {% endwith %}
+          </li>
+       {% endfor %}
+    </ul>
+</div>

@@ -20,11 +20,16 @@ async def home(request: Request, user = Depends(get_current_user_from_token),db:
         # Redirect to login page instead of rendering it here
         return RedirectResponse(url="/login", status_code=303)
 
+    # Collect all running games from all user teams
+
+    running_games = [g for t in user.teams for g in t.games if g.running]
+
     return templates.TemplateResponse(
         "general_pages/homepage.html",
         {
             "request": request,
             "msg": msg,
-            "user": get_current_user(request, db)
+            "user": get_current_user(request, db),
+            "running_games": running_games,
         },
     )
