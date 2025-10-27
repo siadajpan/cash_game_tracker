@@ -32,6 +32,7 @@ def list_users(db: Session = Depends(get_db)):
     #     del doctor.hashed_password
     return users
 
+
 #
 # @router.get("/details/{doctor_id}")
 # async def doctor_details(

@@ -5,6 +5,7 @@ from sqlalchemy import text
 from backend.db.models.user import User
 from backend.db.models.team import Team
 
+
 def test_user_team_association(db_session: Session):
     # Create a new user
     user = User(

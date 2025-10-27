@@ -13,7 +13,12 @@ router = APIRouter(include_in_schema=False)
 
 
 @router.get("/")
-async def home(request: Request, user = Depends(get_current_user_from_token),db: Session = Depends(get_db), msg: str = None):
+async def home(
+    request: Request,
+    user=Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+    msg: str = None,
+):
     # games = list_games_view(db=db)
 
     if user is None:

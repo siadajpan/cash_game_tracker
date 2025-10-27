@@ -4,13 +4,15 @@ import pytest
 from sqlalchemy.orm import Session
 
 from backend.db.repository.user import get_user_by_email, create_new_user
-from backend.schemas.user import UserCreate # Adjust import as necessary
+from backend.schemas.user import UserCreate  # Adjust import as necessary
 
 # --- Mock Data Fixtures ---
+
 
 @pytest.fixture(scope="function")
 def mock_user_create_data():
     """Provides a consistent UserCreate object for testing."""
+
     # NOTE: You need to define the UserCreate Pydantic model
     class MockUserCreate(UserCreate):
         # We need to explicitly define required fields for the mock
@@ -20,9 +22,13 @@ def mock_user_create_data():
 
     return MockUserCreate()
 
+
 # --- Database Function Tests ---
 
-def test_create_and_get_user_success(db_session: Session, mock_user_create_data: UserCreate):
+
+def test_create_and_get_user_success(
+    db_session: Session, mock_user_create_data: UserCreate
+):
     """
     Tests the creation and subsequent retrieval of a user record.
     """

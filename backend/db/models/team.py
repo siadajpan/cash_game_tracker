@@ -6,7 +6,7 @@ from backend.db.models.associations import user_team_association
 
 
 class Team(Base):
-    __tablename__ = 'team'
+    __tablename__ = "team"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
 
@@ -16,9 +16,7 @@ class Team(Base):
 
     # Players in this team (Many-to-Many)
     users = relationship(
-        "User",
-        secondary=user_team_association,
-        back_populates="teams"
+        "User", secondary=user_team_association, back_populates="teams"
     )
 
     games = relationship("Game", back_populates="team")

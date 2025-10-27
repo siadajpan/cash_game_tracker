@@ -82,21 +82,18 @@ def client(
 @pytest.fixture(scope="function")
 def user_logged_in(client: TestClient, db_session: Session):
     """Logs in a test user for API testing."""
-    login_test_user(
-        client=client, email=settings.TEST_USER_EMAIL
-    )
+    login_test_user(client=client, email=settings.TEST_USER_EMAIL)
+
 
 @pytest.fixture(scope="function")
 def mock_user_create_data() -> UserCreate:
     """
-    Provides a consistent UserCreate object for testing by instantiating 
+    Provides a consistent UserCreate object for testing by instantiating
     the Pydantic model directly.
     """
     # Simply create and return an instance of the Pydantic model
     return UserCreate(
-        email="test@example.com",
-        password="securepassword123",
-        nick="TestUserNick"
+        email="test@example.com", password="securepassword123", nick="TestUserNick"
     )
 
 

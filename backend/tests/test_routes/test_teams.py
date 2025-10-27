@@ -9,6 +9,7 @@ from backend.db.models.user import User
 from backend.webapps.base import api_router
 from backend.webapps.team import route_team
 
+
 @pytest.fixture
 def client(db_session):
     test_app = FastAPI()
@@ -32,6 +33,7 @@ def client(db_session):
     # Clean up
     test_app.dependency_overrides.clear()
 
+
 def test_create_team(client, db_session):
     data = {"name": "Team1"}
 
@@ -45,6 +47,7 @@ def test_create_team(client, db_session):
     team_in_db = db_session.query(Team).filter_by(name="Team1").first()
     assert team_in_db is not None
     assert team_in_db.owner.nick == "Mock"
+
 
 # def test_create_team(client, db_session):
 #     data = {"name": "Team1"}
@@ -67,6 +70,7 @@ def test_create_team(client, db_session):
 #     with patch("backend.webapps.team.route_team.get_current_user", return_value=mock_user):
 #         response = client.post("/team/create", data=data)
 #         assert response.status_code == 302
+
 
 def test_read_practice(client):
     create_teams(client)

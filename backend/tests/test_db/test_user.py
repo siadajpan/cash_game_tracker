@@ -5,6 +5,7 @@ import backend.db.models.associations
 
 # 1. Import your Pydantic schema for type hinting the fixture
 from backend.schemas.user import UserCreate
+
 # 2. Import your database functions
 from backend.db.repository.user import create_new_user, get_user_by_email
 
@@ -13,7 +14,10 @@ from backend.db.repository.user import create_new_user, get_user_by_email
 
 # --- Database Function Tests ---
 
-def test_create_and_get_user_success(db_session: Session, mock_user_create_data: UserCreate):
+
+def test_create_and_get_user_success(
+    db_session: Session, mock_user_create_data: UserCreate
+):
     """
     Tests the creation and subsequent retrieval of a user record,
     verifying data integrity.
@@ -56,4 +60,3 @@ def test_get_nonexistent_user(db_session: Session):
     email = "unknown_user_12345@example.com"
     user = get_user_by_email(email=email, db=db_session)
     assert user is None
-

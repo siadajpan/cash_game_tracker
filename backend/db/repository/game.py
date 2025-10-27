@@ -11,9 +11,11 @@ from backend.schemas.games import GameCreate
 from datetime import date
 
 
-def create_new_game_db(game: GameCreate,
-                       current_user: User = Depends(get_current_user_from_token),
-                       db: Session = Depends(get_db)):
+def create_new_game_db(
+    game: GameCreate,
+    current_user: User = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
     new_game = Game(
         owner_id=current_user.id,
         **game.dict(),
@@ -41,12 +43,13 @@ def list_games(db: Session) -> List[Type[Game]]:
 def user_in_game(user: User, game: Game):
     return user in game.players
 
+
 def add_user_to_game(user: User, game: Game, db: Session) -> None:
     """
     Add a user to a game's players list if not already added.
     """
     if not user_in_game(user, game):
         game.players.append(user)
-        db.add(game)   # optional, usually not needed if the game is already in session
+        db.add(game)  # optional, usually not needed if the game is already in session
         db.commit()
         db.refresh(game)

@@ -8,19 +8,9 @@ from backend.webapps.team import route_team
 from backend.webapps.user import route_user
 
 api_router = APIRouter()
-api_router.include_router(
-    route_user.router, prefix="/user", tags=["user-webapp"]
-)
+api_router.include_router(route_user.router, prefix="/user", tags=["user-webapp"])
 api_router.include_router(home.router, prefix="", tags=["user-webapp"])
-api_router.include_router(
-    route_team.router, prefix="/team", tags=["team-webapp"]
-)
-api_router.include_router(
-    route_game.router, prefix="/game", tags=["team-webapp"]
-)
-api_router.include_router(
-    route_login.router, prefix="", tags=["auth-webapp"]
-)
-api_router.include_router(
-    route_user_login.router, prefix="", tags=["auth-webapp"]
-)
+api_router.include_router(route_team.router, prefix="/team", tags=["team-webapp"])
+api_router.include_router(route_game.router, prefix="/game", tags=["team-webapp"])
+api_router.include_router(route_login.router, prefix="", tags=["auth-webapp"])
+api_router.include_router(route_user_login.router, prefix="", tags=["auth-webapp"])

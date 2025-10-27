@@ -4,6 +4,7 @@ from typing import List, Optional, Type, Union
 
 from fastapi import Request
 
+
 class GameCreateForm:
     def __init__(self, request: Request):
         self.request: Request = request
@@ -24,11 +25,12 @@ class GameCreateForm:
             if team_id_str and team_id_str.isdigit() and int(team_id_str) > 0:
                 self.team_id = int(team_id_str)
             else:
-                self.team_id = None # Explicitly set to None if it's 0, empty, or invalid
+                self.team_id = (
+                    None  # Explicitly set to None if it's 0, empty, or invalid
+                )
         except ValueError:
             self.errors.append("Team selection ID is invalid.")
             self.team_id = None
-
 
         # 2. Capture and convert default buy-in
         buy_in_str = form.get("default_buy_in")
@@ -39,7 +41,6 @@ class GameCreateForm:
 
         # 3. Capture date
         self.date = form.get("date", self.date)
-
 
     async def is_valid(self):
         # Validation for Team ID
@@ -53,6 +54,7 @@ class GameCreateForm:
         # Additional checks can go here...
 
         return len(self.errors) == 0
+
 
 class GameJoinForm:
     def __init__(self, request: Request):
