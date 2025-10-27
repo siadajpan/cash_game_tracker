@@ -53,3 +53,25 @@ class GameCreateForm:
         # Additional checks can go here...
 
         return len(self.errors) == 0
+
+class GameJoinForm:
+    def __init__(self, request: Request):
+        self.request: Request = request
+        self.errors: List = []
+        self.buy_in: Optional[float] = None
+
+    async def load_data(self):
+        form = await self.request.form()
+
+        buy_in_str = form.get("buy_in")
+        try:
+            self.buy_in = float(buy_in_str) if buy_in_str else 0.0
+        except ValueError:
+            self.errors.append("Buy-in must be a valid number.")
+
+    async def is_valid(self):
+        # Validation for Default Buy-In
+        if self.buy_in is None or self.buy_in < 0:
+            self.errors.append("Buy-in must be a 0 or more.")
+
+        return len(self.errors) == 0

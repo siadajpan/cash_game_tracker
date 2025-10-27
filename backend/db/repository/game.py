@@ -45,7 +45,7 @@ def add_user_to_game(user: User, game: Game, db: Session) -> None:
     """
     Add a user to a game's players list if not already added.
     """
-    if not user_in_game(user, game, db):
+    if not user_in_game(user, game):
         game.players.append(user)
         db.add(game)   # optional, usually not needed if the game is already in session
         db.commit()

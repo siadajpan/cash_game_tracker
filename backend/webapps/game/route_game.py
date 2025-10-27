@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlite3 import IntegrityError
 from typing import List
 
-from fastapi import APIRouter, Depends, Request, responses, HTTPException
+from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette import status
@@ -20,7 +20,7 @@ from backend.db.repository.team import (
 from backend.db.session import get_db
 from backend.schemas.games import GameCreate
 from backend.schemas.user import UserCreate, UserShow
-from backend.webapps.game.forms import GameCreateForm
+from backend.webapps.game.forms import GameCreateForm, GameJoinForm
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
@@ -123,26 +123,71 @@ async def create_game(
     )
 
 @router.get("/{game_id}/join", name="join_game_form")
-async def join_game_form(request: Request, game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user_from_token)):
+async def join_game_form(
+        request: Request,
+        game_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user_from_token)
+):
     game = get_game_by_id(game_id, db)
+    # TODO Add checking if user is allowed to enter that game (if he edits href)
     if user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/open")  # already in game
-    return templates.TemplateResponse("game/join_form.html", {"request": request, "game": game})
-
+    return templates.TemplateResponse("game/join.html", {"request": request, "game": game})
 
 @router.post("/{game_id}/join", name="join_game")
-async def join_game(request: Request, game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user_from_token)):
+async def join_game(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token)
+):
+    template_name = "game/join.html"
+    errors = []
+
+    # Load form data
+    form = GameJoinForm(request)
+    await form.load_data()
+    buy_in = form.buy_in
+
+    # Fetch game
     game = get_game_by_id(game_id, db)
-    add_user_to_game(user, game, db)
-    return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+    if game is None:
+        errors.append("Game doesn't exist anymore. Maybe it was deleted.")
+
+    # Validate form
+    if not await form.is_valid():
+        errors.extend(form.errors)
+
+    if not errors:
+        try:
+            add_user_to_game(user, game, db)
+            # Redirect to the game page
+            return RedirectResponse(url=f"/game/{game.id}/open", status_code=303)
+        except IntegrityError:
+            errors.append("A database error occurred (e.g., integrity constraint violation).")
+        except Exception as e:
+            errors.append(f"An unexpected error occurred: {e}")
+
+    # Re-render template with submitted data and errors
+    return templates.TemplateResponse(
+        template_name,
+        {
+            "request": request,
+            "errors": errors,
+            "game": game,
+            "form": {"buy_in": buy_in},
+        }
+    )
 
 
-# @router.get("/{game_id}/open", name="open_game")
-# async def open_game(request: Request, game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user_from_token)):
-#     game = get_game_by_id(game_id, db)
-#     if not user_in_game(user, game):
-#         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
-#     return templates.TemplateResponse("game/open.html", {"request": request, "game": game})
+@router.get("/{game_id}/open", name="open_game")
+async def open_game(request: Request, game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user_from_token)):
+    print("openning game")
+    game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+    return templates.TemplateResponse("game/view.html", {"request": request, "game": game})
 
 #
 # @router.get("/create", response_model=UserShow)

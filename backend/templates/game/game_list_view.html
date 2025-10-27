@@ -5,17 +5,15 @@
             <h6 class="mb-0 fw-bold text-primary">{{ game.date }}</h6>
         </div>
     </div>
-
-    <!-- Action Button -->
     <div>
         {% if is_user_in_game or not game.running %}
-            <a href="/game/{{ game.id }}/open" class="btn btn-secondary">
-                Open
-            </a>
+            <form method="GET" action="/game/{{ game.id }}/open">
+                <button type="submit" class="btn btn-secondary">Open</button>
+            </form>
         {% elif game.running %}
-            <a href="/game/{{ game.id }}/join" class="btn btn-primary">
-                Join
-            </a>
+            <form method="GET" action="/game/{{ game.id }}/join">
+                <button type="submit" class="btn btn-primary">Join</button>
+            </form>
         {% endif %}
     </div>
 </div>
