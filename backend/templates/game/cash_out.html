@@ -1,11 +1,11 @@
 {% extends "shared/base.html" %}
 {% block title %}
-    <title>Request chips</title>
+    <title>Cash out</title>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <h5 class="mt-4 p-5 display-5">Request chips</h5>
+    <h5 class="mt-4 p-5 display-5">Cash out</h5>
     <div class="text-danger font-weight-bold">
         <div class="text-danger font-weight-bold">
             {% for error in errors %}
@@ -13,15 +13,15 @@
             {% endfor %}
         </div>
     </div>
-    <form method="POST" action="/game/{{ game.id }}/add_on">
+    <form method="POST" action="/game/{{ game.id }}/cash_out">
 
         <div class="row mb-3">
             <div class="col-12 col-md-6">
-                <label for="add_on" class="form-label">Add-on</label>
+                <label for="cash_out" class="form-label">Cash out</label>
                 <input type="number" step="0.01" required class="form-control"
-                       name="add_on" id="add_on"
-                       value="{{ game.default_buy_in or 0 }}"
-                       placeholder="Amount">
+                       name="cash_out" id="cash_out"
+                       value="{{0 }}"
+                       placeholder="Money out">
             </div>
         </div>
 

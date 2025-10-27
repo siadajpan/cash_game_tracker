@@ -6,31 +6,31 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from backend.apis.v1.route_login import get_current_user_from_token
-from backend.db.models.add_on import AddOn, PlayerRequestStatus
+from backend.db.models.add_on import PlayerRequestStatus
+from backend.db.models.cash_out import CashOut
 from backend.db.models.game import Game
 from backend.db.models.user import User
 
 
-def get_player_game_addons(user: User, game: Game, db: Session) -> List[AddOn]:
+def get_player_game_cash_out(user: User, game: Game, db: Session) -> List[CashOut]:
     """
     Return all AddOn objects a user has in a specific game.
     """
-    addons = (
-        db.query(AddOn)
-        .filter(AddOn.user_id == user.id, AddOn.game_id == game.id)
+    cash_outs = (
+        db.query(CashOut)
+        .filter(CashOut.user_id == user.id, CashOut.game_id == game.id)
         .all()
     )
-    return addons
+    return cash_outs
 
-
-def create_add_on_request(game: Game, amount: float, db: Session,
+def create_cash_out_request(game: Game, amount: float, db: Session,
                                                        user: User = Depends(get_current_user_from_token),
                           ):
     """
     Create a new AddOn request for the given user and game.
     The new request starts with status = REQUESTED.
     """
-    new_addon = AddOn(
+    new_cash_out = CashOut(
         user_id=user.id,
         game_id=game.id,
         time=datetime.now().isoformat(),
@@ -38,28 +38,28 @@ def create_add_on_request(game: Game, amount: float, db: Session,
         status=PlayerRequestStatus.REQUESTED
     )
 
-    db.add(new_addon)
+    db.add(new_cash_out)
     db.commit()
-    db.refresh(new_addon)
+    db.refresh(new_cash_out)
 
-    return new_addon
+    return new_cash_out
 
-def get_add_on_by_id(add_on_id: int, db: Session) -> AddOn | None:
+def get_cash_out_by_id(cash_out_id: int, db: Session) -> CashOut | None:
     """
-    Retrieve a single AddOn entry by its ID.
+    Retrieve a single CashOut entry by its ID.
     Returns None if the add-on does not exist.
     """
-    return db.query(AddOn).filter(AddOn.id == add_on_id).first()
+    return db.query(CashOut).filter(CashOut.id == cash_out_id).first()
 
-def update_add_on_status(add_on: AddOn, new_status: PlayerRequestStatus, db: Session,
-                         user: User = Depends(get_current_user_from_token),
-                         ):
+def update_cash_out_status(cash_out: CashOut, new_status: PlayerRequestStatus, db: Session,
+                           user: User = Depends(get_current_user_from_token),
+                           ):
     """
     Update the status of an existing AddOn request (e.g., APPROVED or DECLINED)
     and persist the change to the database.
     """
-    add_on.status = new_status
-    db.add(add_on)
+    cash_out.status = new_status
+    db.add(cash_out)
     db.commit()
-    db.refresh(add_on)
-    return add_on
+    db.refresh(cash_out)
+    return cash_out

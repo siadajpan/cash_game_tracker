@@ -7,7 +7,7 @@
     </div>
     <div>
         {% if is_user_in_game or not game.running %}
-            <form method="GET" action="/game/{{ game.id }}/open">
+            <form method="GET" action="/game/{{ game.id }}">
                 <button type="submit" class="btn btn-secondary">Open</button>
             </form>
         {% elif game.running %}

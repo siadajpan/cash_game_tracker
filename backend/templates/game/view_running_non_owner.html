@@ -3,9 +3,9 @@
     <li class="list-group-item">
         <div class="row fw-bold text-center">
             <div class="col-4 text-start">Player</div>
-            <div class="col-4">Money In</div>
-            {% if is_add_on_requests %}
-                <div class="col-2">Requests</div>
+            <div class="col-3">Money In</div>
+            {% if requests %}
+                <div class="col-5">Requests</div>
             {% endif %}
         </div>
     </li>
@@ -16,7 +16,7 @@
             <div class="row text-center align-items-center">
                 <div class="col-4 text-start">{{ info.player.nick }}</div>
 
-                <div class="col-4">
+                <div class="col-3">
                     {% if info.money_in % 1 %}
                         {{ "%.2f"|format(info.money_in) }}
                     {% else %}
@@ -24,12 +24,12 @@
                     {% endif %}
                 </div>
 
-                {% if is_add_on_requests %}
-                    <div class="col-2">
+                {% if requests %}
+                    <div class="col-5">
                         {% if info.add_on_request %}
-                            {{ info.add_on_request.amount }}
-                        {% else %}
-                            -
+                             Add-on: {{ info.add_on_request.amount }}
+                        {% elif info.cash_out_request %}
+                            Cash-out: {{ info.cash_out_request.amount }}
                         {% endif %}
                     </div>
                 {% endif %}
@@ -37,3 +37,13 @@
         </li>
     {% endfor %}
 </ul>
+
+<!-- Footer Buttons -->
+<div class="d-flex justify-content-between mt-3">
+    <a href="/" class="btn btn-outline-secondary">Back</a>
+
+    {% if game.running %}
+        <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
+        <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Request chips</a>
+    {% endif %}
+</div>

@@ -32,3 +32,4 @@ class User(Base):
     # NEW: Buy-ins and Add-ons
     buy_ins = relationship("BuyIn", back_populates="user", cascade="all, delete-orphan")
     add_ons = relationship("AddOn", back_populates="user", cascade="all, delete-orphan")
+    cash_outs = relationship("CashOut", back_populates="user", cascade="all, delete-orphan")

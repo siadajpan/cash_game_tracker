@@ -80,6 +80,13 @@ def get_current_user_from_token(
     return user
 
 
+def optional_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        return get_current_user_from_token(token, db)
+    except JWTError:
+        return None
+    except HTTPException:
+        return None
 def get_current_user(request, db):
     token = request.cookies.get("access_token")
     if token is None:
