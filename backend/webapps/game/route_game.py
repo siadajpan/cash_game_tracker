@@ -16,7 +16,8 @@ from backend.db.models.user import User
 from backend.db.repository.add_on import get_player_game_addons, create_add_on_request, update_add_on_status, \
     get_add_on_by_id
 from backend.db.repository.buy_in import get_player_game_buy_in, add_user_buy_in
-from backend.db.repository.cash_out import create_cash_out_request, get_player_game_cash_out
+from backend.db.repository.cash_out import create_cash_out_request, get_player_game_cash_out, get_cash_out_by_id, \
+    update_cash_out_status
 from backend.db.repository.game import (
     create_new_game_db,
     get_game_by_id,
@@ -245,7 +246,6 @@ async def open_game(
             "add_on_request": add_on_request,
             "cash_out_request": cash_out_request
         })
-    print(players_info)
     return templates.TemplateResponse(
         "game/view_running.html",
         {"request": request, "game": game, "user": user, "players_info": players_info, "requests": requests},
@@ -402,3 +402,22 @@ async def add_on(
         },
     )
 
+@router.post("/{game_id}/cash_out/{cash_out_id}/{action}", name="cash_out_approve")
+async def cash_out_approve(
+    request: Request,
+    game_id: int,
+    cash_out_id: int,
+    action: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+
+    # TODO check if current user is game owner
+    action = PlayerRequestStatus.APPROVED if action == "approve" else PlayerRequestStatus.DECLINED
+    cash_out = get_cash_out_by_id(cash_out_id, db)
+    update_cash_out_status(cash_out, action, db, user)
+
+    return RedirectResponse(url=f"/game/{game.id}", status_code=303)
