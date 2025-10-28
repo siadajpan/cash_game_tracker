@@ -1,0 +1,54 @@
+{% extends "shared/base.html" %}
+{% block title %}
+<title>Finish Game</title>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h3 class="mb-4">Finish Game: {{ game.date }}</h3>
+
+    <!-- Players table -->
+    <ul class="list-group list-group-flush mb-3">
+        <li class="list-group-item d-flex fw-bold">
+            <div class="col-3">Player</div>
+            <div class="col-3">In</div>
+            <div class="col-3">Out</div>
+            <div class="col-3">Balance</div>
+        </li>
+        {% for info in players_info %}
+        <li class="list-group-item d-flex">
+            <div class="col-3">{{ info.player.nick }}</div>
+            <div class="col-3">{{ "%.2f"|format(info.money_in) }}</div>
+            <div class="col-3">{{ "%.2f"|format(info.cash_out) }}</div>
+            <div class="col-3 {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ "%.2f"|format(info.balance) }}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Warnings -->
+    {% if not all_cashed_out %}
+        <div class="alert alert-warning">
+            Not all players have cashed out yet. You cannot finish the game.
+        </div>
+    {% endif %}
+
+    {% if sum_warning %}
+        <div class="alert alert-warning">
+            Total Buy-ins ({{ total_buy_in }}) do not equal total Cash Outs ({{ total_cash_out }}).
+        </div>
+    {% endif %}
+
+    <!-- Footer buttons -->
+    <div class="d-flex justify-content-between mt-3">
+        <a href="/game/{{ game.id }}" class="btn btn-outline-secondary px-4">Back</a>
+
+        {% if all_cashed_out %}
+            <form method="POST" action="/game/{{ game.id }}/finish">
+                <button type="submit" class="btn btn-primary px-5">Finish Game</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

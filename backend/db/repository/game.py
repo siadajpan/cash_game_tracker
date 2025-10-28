@@ -53,3 +53,17 @@ def add_user_to_game(user: User, game: Game, db: Session) -> None:
         db.add(game)  # optional, usually not needed if the game is already in session
         db.commit()
         db.refresh(game)
+
+
+def finish_the_game(user: User, game: Game, db: Session):
+    """
+    Mark a game as finished (running = False). Only the owner can finish the game.
+    """
+    if game.owner_id != user.id:
+        raise PermissionError("Only the owner can finish the game.")
+
+    game.running = False
+    db.add(game)
+    db.commit()
+    db.refresh(game)
+    return game

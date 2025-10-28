@@ -17,14 +17,14 @@ from backend.db.models.game import Game
 from backend.db.models.user import User
 from backend.db.repository.add_on import get_player_game_addons, create_add_on_request, update_add_on_status, \
     get_add_on_by_id
-from backend.db.repository.buy_in import get_player_game_buy_in, add_user_buy_in
+from backend.db.repository.buy_in import get_player_game_total_buy_in_amount, add_user_buy_in, get_player_game_buy_ins
 from backend.db.repository.cash_out import create_cash_out_request, get_player_game_cash_out, get_cash_out_by_id, \
     update_cash_out_status
 from backend.db.repository.game import (
     create_new_game_db,
     get_game_by_id,
     user_in_game,
-    add_user_to_game,
+    add_user_to_game, finish_the_game,
 )
 from backend.db.repository.team import (
     create_new_user,
@@ -209,7 +209,7 @@ def process_player(
     player: User,
     db: Session = Depends(get_db),
 ):
-    buy_in = get_player_game_buy_in(player, game, db)
+    buy_in = get_player_game_total_buy_in_amount(player, game, db)
     add_ons_requests = get_player_game_addons(player, game, db)
     cash_out_requests = get_player_game_cash_out(player, game, db)
 
@@ -261,18 +261,38 @@ async def open_game(
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
     players_info = []
-    requests = False
+    existing_requests = False
     for player in game.players:
         players_game_info = process_player(game, player, db)
         players_info.append(players_game_info)
-
+        if players_game_info["request"] is not None:
+            existing_requests = True
     return templates.TemplateResponse(
         "game/view_running.html",
-        {"request": request, "game": game, "user": user, "players_info": players_info, "requests": requests},
+        {"request": request, "game": game, "user": user, "players_info": players_info, "requests": existing_requests},
     )
 
+@router.get("/{game_id}/cash_out/{cash_out_id}", name="add_on")
+async def cash_out_view(
+    request: Request,
+    game_id: int,
+    cash_out_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+    cash_out_request = get_cash_out_by_id(cash_out_id, db)
+    player = cash_out_request.user
+    return templates.TemplateResponse(
+        "game/cash_out_decide.html",
+        {"request": request,  "player": player,   "cash_out_request": cash_out_request, "game_id": game_id }
+    )
+
+
 @router.get("/{game_id}/add_on", name="add_on")
-async def add_on(
+async def add_on_view(
     request: Request,
     game_id: int,
     db: Session = Depends(get_db),
@@ -459,3 +479,78 @@ async def cash_out_approve(
     update_cash_out_status(cash_out, action, db, user)
 
     return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+
+@router.get("/{game_id}/finish", name="finish_game_view")
+async def finish_game_view(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token)
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        return RedirectResponse(url="/")
+
+    # Check owner
+    if game.owner_id != user.id:
+        return RedirectResponse(url=f"/game/{game.id}/open")
+
+    players_info = []
+    all_cashed_out = True
+    total_money_in = 0
+    total_money_out = 0
+
+    for player in game.players:
+        buy_ins = get_player_game_buy_ins(player, game, db)
+        add_ons = get_player_game_addons(player, game, db)
+        cash_outs = get_player_game_cash_out(player, game, db)
+
+        buy_in_sum = sum([bi.amount for bi in buy_ins])
+        add_on_sum = sum([ao.amount for ao in add_ons if ao.status == PlayerRequestStatus.APPROVED])
+        money_in = buy_in_sum + add_on_sum
+        cash_out = sum([co.amount for co in cash_outs if co.status == PlayerRequestStatus.APPROVED])
+        balance = cash_out - money_in
+
+        if len(cash_outs) < len(buy_ins):
+            all_cashed_out = False
+
+        total_money_in += money_in
+        total_money_out += cash_out
+
+        players_info.append({
+            "player": player,
+            "money_in": money_in,
+            "cash_out": cash_out,
+            "balance": balance
+        })
+
+    sum_warning = total_money_in != total_money_out
+
+    return templates.TemplateResponse(
+        "game/finish.html",
+        {
+            "request": request,
+            "game": game,
+            "players_info": players_info,
+            "all_cashed_out": all_cashed_out,
+            "sum_warning": sum_warning,
+            "total_buy_in": total_money_in,
+            "total_cash_out": total_money_out
+        }
+    )
+
+@router.post("/{game_id}/finish", name="finish_game_post")
+async def finish_game_view(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token)
+):
+    print(f"user {user}")
+    game = get_game_by_id(game_id, db)
+    if not game:
+        return RedirectResponse(url="/", status_code=303)
+    if not user:
+        return RedirectResponse(url="/", status_code=303)
+    finish_the_game(user, game, db)
+    return RedirectResponse(url="/", status_code=303)

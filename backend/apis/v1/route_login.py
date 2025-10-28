@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.security.utils import get_authorization_scheme_param
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-from starlette.responses import Response
+from starlette.responses import Response, RedirectResponse
 
 from backend.apis.utils import OAuth2PasswordBearerWithCookie
 from backend.core.config import settings
@@ -65,6 +65,7 @@ def get_current_user_from_token(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
     )
+
     try:
         payload = jwt.decode(
             token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -73,7 +74,7 @@ def get_current_user_from_token(
         if email is None:
             raise credentials_exception
     except JWTError:
-        raise credentials_exception
+        return None
     user = get_user_by_email(email=email, db=db)
     if user is None:
         raise credentials_exception
@@ -87,6 +88,7 @@ def optional_current_user(token: str = Depends(oauth2_scheme), db: Session = Dep
         return None
     except HTTPException:
         return None
+
 def get_current_user(request, db):
     token = request.cookies.get("access_token")
     if token is None:
