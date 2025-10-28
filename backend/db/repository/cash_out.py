@@ -20,9 +20,13 @@ def get_player_game_cash_out(user: User, game: Game, db: Session) -> List[CashOu
     )
     return cash_outs
 
-def create_cash_out_request(game: Game, amount: float, db: Session,
-                                                       user: User = Depends(get_current_user_from_token),
-                          ):
+
+def create_cash_out_request(
+    game: Game,
+    amount: float,
+    db: Session,
+    user: User = Depends(get_current_user_from_token),
+):
     """
     Create a new AddOn request for the given user and game.
     The new request starts with status = REQUESTED.
@@ -32,7 +36,7 @@ def create_cash_out_request(game: Game, amount: float, db: Session,
         game_id=game.id,
         time=datetime.now().isoformat(),
         amount=amount,
-        status=PlayerRequestStatus.REQUESTED
+        status=PlayerRequestStatus.REQUESTED,
     )
 
     db.add(new_cash_out)
@@ -41,6 +45,7 @@ def create_cash_out_request(game: Game, amount: float, db: Session,
 
     return new_cash_out
 
+
 def get_cash_out_by_id(cash_out_id: int, db: Session) -> CashOut | None:
     """
     Retrieve a single CashOut entry by its ID.
@@ -48,9 +53,13 @@ def get_cash_out_by_id(cash_out_id: int, db: Session) -> CashOut | None:
     """
     return db.query(CashOut).filter(CashOut.id == cash_out_id).first()
 
-def update_cash_out_status(cash_out: CashOut, new_status: PlayerRequestStatus, db: Session,
-                           user: User = Depends(get_current_user_from_token),
-                           ):
+
+def update_cash_out_status(
+    cash_out: CashOut,
+    new_status: PlayerRequestStatus,
+    db: Session,
+    user: User = Depends(get_current_user_from_token),
+):
     """
     Update the status of an existing AddOn request (e.g., APPROVED or DECLINED)
     and persist the change to the database.

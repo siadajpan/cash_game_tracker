@@ -67,8 +67,10 @@ def join_team(team_model: Team, user, db: Session) -> Team:
 
     return team_model
 
+
 def get_team_by_name(team_name, db: Session):
     return db.query(Team).filter(Team.name == team_name).one_or_none()
+
 
 def get_team_users(team: Team, db: Session) -> List[User]:
     """
@@ -97,6 +99,7 @@ def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
     # Use select statement to query the database
     # The Team model must be imported/available for this to work
     return db.query(Team).filter(Team.id == team_id).one_or_none()
+
 
 def get_user(doctor_id, db):
     return db.get(User, doctor_id)

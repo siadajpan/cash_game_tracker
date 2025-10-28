@@ -29,4 +29,6 @@ class Game(Base):
 
     buy_ins = relationship("BuyIn", back_populates="game", cascade="all, delete-orphan")
     add_ons = relationship("AddOn", back_populates="game", cascade="all, delete-orphan")
-    cash_outs = relationship("CashOut", back_populates="game", cascade="all, delete-orphan")
+    cash_outs = relationship(
+        "CashOut", back_populates="game", cascade="all, delete-orphan"
+    )

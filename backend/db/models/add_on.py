@@ -20,8 +20,9 @@ class AddOn(Base):
     game_id = Column(Integer, ForeignKey("game.id"))
     time = Column(String, nullable=False)
     amount = Column(Float, nullable=False)
-    status = Column(Enum(PlayerRequestStatus), default=PlayerRequestStatus.REQUESTED, nullable=False)
+    status = Column(
+        Enum(PlayerRequestStatus), default=PlayerRequestStatus.REQUESTED, nullable=False
+    )
 
     user = relationship("User", back_populates="add_ons")
     game = relationship("Game", back_populates="add_ons")
-

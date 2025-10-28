@@ -20,14 +20,13 @@ def get_player_game_total_buy_in_amount(user: User, game: Game, db: Session) -> 
     )
     return total_buy_in or 0.0
 
+
 def get_player_game_buy_ins(user: User, game: Game, db: Session) -> List[BuyIn]:
     """
     Return the total buy-in amount a user has in a specific game.
     """
     buy_ins = (
-        db.query(BuyIn)
-        .filter(BuyIn.user_id == user.id, BuyIn.game_id == game.id)
-        .all()
+        db.query(BuyIn).filter(BuyIn.user_id == user.id, BuyIn.game_id == game.id).all()
     )
     return buy_ins
 
@@ -41,7 +40,7 @@ def add_user_buy_in(user: User, game: Game, buy_in_amount: float, db: Session):
         user_id=user.id,
         game_id=game.id,
         amount=buy_in_amount,
-        time=datetime.now().isoformat()  # store timestamp in ISO format
+        time=datetime.now().isoformat(),  # store timestamp in ISO format
     )
 
     # Add it to the session and commit

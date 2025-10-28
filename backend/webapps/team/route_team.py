@@ -17,7 +17,8 @@ from backend.db.repository.team import (
     create_new_user,
     get_user,
     create_new_team,
-    join_team, get_team_by_name,
+    join_team,
+    get_team_by_name,
 )
 from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
@@ -147,12 +148,13 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
         },
     )
 
+
 @router.get("/{team_id}")
 async def team_view(
     request: Request,
     team_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_from_token)
+    user: User = Depends(get_current_user_from_token),
 ):
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
@@ -162,20 +164,19 @@ async def team_view(
     for player in team.users:
         games_count = get_user_games_count(player, db)
         total_balance = get_user_total_balance(player, db)
-        players_info.append({
-            "player": player,
-            "games_count": games_count,
-            "total_balance": total_balance
-        })
+        players_info.append(
+            {
+                "player": player,
+                "games_count": games_count,
+                "total_balance": total_balance,
+            }
+        )
 
     return templates.TemplateResponse(
         "team/team_view.html",
-        {
-            "request": request,
-            "team": team,
-            "players_info": players_info
-        }
+        {"request": request, "team": team, "players_info": players_info},
     )
+
 
 #
 # @router.get("/details/{doctor_id}")

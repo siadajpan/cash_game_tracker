@@ -78,6 +78,7 @@ class GameJoinForm:
 
         return len(self.errors) == 0
 
+
 class AddOnRequest:
     def __init__(self, request: Request):
         self.request: Request = request
@@ -99,6 +100,7 @@ class AddOnRequest:
             self.errors.append("Add-on needs to be a positive number.")
 
         return len(self.errors) == 0
+
 
 class CashOutRequest:
     def __init__(self, request: Request):

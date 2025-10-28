@@ -5,7 +5,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
-from backend.apis.v1.route_login import get_current_user, get_current_user_from_token, optional_current_user
+from backend.apis.v1.route_login import (
+    get_current_user,
+    get_current_user_from_token,
+    optional_current_user,
+)
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.user import User
 from backend.db.session import get_db

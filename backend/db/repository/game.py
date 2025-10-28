@@ -55,17 +55,23 @@ def add_user_to_game(user: User, game: Game, db: Session) -> None:
         db.commit()
         db.refresh(game)
 
+
 def get_user_game_balance(player: User, game: Game, db: Session) -> float:
     buy_ins = get_player_game_buy_ins(player, game, db)
     add_ons = get_player_game_addons(player, game, db)
     cash_outs = get_player_game_cash_out(player, game, db)
 
     buy_in_sum = sum([bi.amount for bi in buy_ins])
-    add_on_sum = sum([ao.amount for ao in add_ons if ao.status == PlayerRequestStatus.APPROVED])
+    add_on_sum = sum(
+        [ao.amount for ao in add_ons if ao.status == PlayerRequestStatus.APPROVED]
+    )
     money_in = buy_in_sum + add_on_sum
-    cash_out = sum([co.amount for co in cash_outs if co.status == PlayerRequestStatus.APPROVED])
+    cash_out = sum(
+        [co.amount for co in cash_outs if co.status == PlayerRequestStatus.APPROVED]
+    )
     balance = cash_out - money_in
     return balance
+
 
 def finish_the_game(user: User, game: Game, db: Session):
     """
@@ -83,6 +89,7 @@ def finish_the_game(user: User, game: Game, db: Session):
 
 def get_user_games_count(user: User, db: Session) -> int:
     return len(user.games_played)
+
 
 def get_user_total_balance(user: User, db: Session) -> float:
     total = 0.0
