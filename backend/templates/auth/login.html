@@ -17,7 +17,25 @@
                 {% endfor %}
             </div>
         </div>
-        {% include "components/login_form.html" %}
+        <div class="mb-3">
+            <form method="POST">
+                <div class="mb-3">
+                    <label>Email</label>
+                    <input type="text" required placeholder="Your email" name="email" value="{{ email }}"
+                           class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label>Password</label>
+                    <input type="password" required placeholder="Your password" value="{{ password }}" name="password"
+                           class="form-control">
+                </div>
 
+                <!-- Button row -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="/register" class="btn btn-outline-secondary">Not registered?</a>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </div>
+            </form>
+        </div>
     </div>
 {% endblock %}
