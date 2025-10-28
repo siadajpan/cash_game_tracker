@@ -12,11 +12,12 @@ from backend.apis.v1.route_login import get_current_user, get_current_user_from_
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.team import Team
 from backend.db.models.user import User
+from backend.db.repository.game import get_user_games_count, get_user_total_balance
 from backend.db.repository.team import (
     create_new_user,
     get_user,
     create_new_team,
-    join_team,
+    join_team, get_team_by_name,
 )
 from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
@@ -58,9 +59,10 @@ async def create_team(
     if not name:
         errors.append("Team name is required.")
 
-    # 2. Add validation for new fields if necessary
-    # if len(description) < 10:
-    #     errors.append("Description is too short.")
+    # 2. Find the team in the database
+    team_model = get_team_by_name(name, db)
+    if team_model is not None:
+        errors.append("Team with that name already exists.")
 
     if not errors:
         try:
@@ -115,8 +117,7 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
 
     if not errors:
         # 2. Find the team in the database
-        stmt = select(Team).where(Team.name == team_name)
-        team_model = db.scalar(stmt)
+        team_model = get_team_by_name(team_name, db)
 
         if not team_model:
             errors.append(f"Team '{team_name}' not found.")
@@ -146,14 +147,35 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
         },
     )
 
+@router.get("/{team_id}")
+async def team_view(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token)
+):
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        return {"error": "Team not found"}
 
-@router.get("/list", response_model=List[UserShow])
-def list_users(db: Session = Depends(get_db)):
-    users = list_user_view(db)
-    # for doctor in user:
-    #     del doctor.hashed_password
-    return users
+    players_info = []
+    for player in team.users:
+        games_count = get_user_games_count(player, db)
+        total_balance = get_user_total_balance(player, db)
+        players_info.append({
+            "player": player,
+            "games_count": games_count,
+            "total_balance": total_balance
+        })
 
+    return templates.TemplateResponse(
+        "team/team_view.html",
+        {
+            "request": request,
+            "team": team,
+            "players_info": players_info
+        }
+    )
 
 #
 # @router.get("/details/{doctor_id}")

@@ -23,6 +23,17 @@ def get_player_game_addons(user: User, game: Game, db: Session) -> List[AddOn]:
     return addons
 
 
+def get_player_game_total_approved_add_on_amount(user: User, game: Game, db: Session) -> float:
+    """
+    Return the total buy-in amount a user has in a specific game.
+    """
+    total_add_pm = (
+        db.query(func.sum(AddOn.amount))
+        .filter(AddOn.user_id == user.id, AddOn.game_id == game.id, AddOn.status == PlayerRequestStatus.APPROVED)
+        .scalar()
+    )
+    return total_add_pm or 0.0
+
 def create_add_on_request(game: Game, amount: float, db: Session,
                                                        user: User = Depends(get_current_user_from_token),
                           ):

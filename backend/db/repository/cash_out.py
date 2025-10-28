@@ -13,9 +13,6 @@ from backend.db.models.user import User
 
 
 def get_player_game_cash_out(user: User, game: Game, db: Session) -> List[CashOut]:
-    """
-    Return all AddOn objects a user has in a specific game.
-    """
     cash_outs = (
         db.query(CashOut)
         .filter(CashOut.user_id == user.id, CashOut.game_id == game.id)

@@ -1,0 +1,33 @@
+{% extends "shared/base.html" %}
+{% block title %}<title>Past Games</title>{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4">Past Games</h3>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+    {% for game_info in games_info %}
+        <div class="col">
+            <a href="/game/{{ game_info.game.id }}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ game_info.game.date }}</h5>
+                        <ul class="list-unstyled mb-0">
+                            {% for info in game_info.players_info %}
+                                <li class="d-flex justify-content-between">
+                                    <span class="{% if info.player.id == game_info.game.owner_id %}fw-bold{% endif %}">
+                                        {{ info.player.nick }}
+                                    </span>
+                                    <span class="{% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ info.balance }}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </a>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+{% endblock %}

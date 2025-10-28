@@ -36,10 +36,14 @@
 
     {% if sum_warning %}
         <div class="alert alert-warning">
-            Total Buy-ins ({{ total_buy_in }}) do not equal total Cash Outs ({{ total_cash_out }}).
+            Total Buy-ins ({{ total_buy_in }}) do not equal total Cash Outs ({{ total_cash_out }}).<br>
+            {% if total_buy_in > total_cash_out %}
+                Money left: {{ total_buy_in - total_cash_out }}
+            {% else %}
+                Money missing: {{ total_cash_out - total_buy_in }}
+            {% endif %}
         </div>
     {% endif %}
-
     <!-- Footer buttons -->
     <div class="d-flex justify-content-between mt-3">
         <a href="/game/{{ game.id }}" class="btn btn-outline-secondary px-4">Back</a>

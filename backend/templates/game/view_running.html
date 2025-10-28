@@ -8,7 +8,7 @@
     <h5 class="mt-4 p-3 display-5">Game on {{ game.date }}</h5>
     <!-- Header -->
     {% if requests %}
-        {% set col_player = "col-3" %}
+        {% set col_player = "col-4" %}
         {% set col_in = "col-2" %}
         {% set col_out = "col-2" %}
         {% set col_requests = "col-4" %}
@@ -57,9 +57,14 @@
 
                     {% if info.request %}
                         <!-- Requests Column -->
-                        <div class="col-4">
-                            <a href="{{ info.request_href }}" class="btn btn-secondary">{{ info.request_text }}</a>
-                        </div>
+                            <div class="col-4">
+                                {% if user in info.can_approve %}
+                                    <a href="{{ info.request_href }}" class="btn btn-secondary">{{ info.request_text }}</a>
+                                {% else %}
+                                    {{ info.request_text }}
+                                {% endif %}
+                            </div>
+
                     {% endif %}
                 </div>
             </li>
