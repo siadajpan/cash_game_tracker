@@ -12,9 +12,13 @@ from backend.apis.v1.route_login import get_current_user, get_current_user_from_
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.team import Team
 from backend.db.models.user import User
+from backend.db.repository.game import get_user_games_count, get_user_total_balance
 from backend.db.repository.team import (
     create_new_user,
-    get_user, create_new_team, join_team,
+    get_user,
+    create_new_team,
+    join_team,
+    get_team_by_name,
 )
 from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
@@ -26,6 +30,7 @@ from sqlalchemy import select
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter()
 
+
 @router.get("/create")
 async def create_form(request: Request):
     # Provide empty defaults for form fields and errors
@@ -35,6 +40,7 @@ async def create_form(request: Request):
         "name": "",
     }
     return templates.TemplateResponse("team/create.html", context)
+
 
 @router.post("/create", name="create_team")
 async def create_team(
@@ -54,18 +60,18 @@ async def create_team(
     if not name:
         errors.append("Team name is required.")
 
-    # 2. Add validation for new fields if necessary
-    # if len(description) < 10:
-    #     errors.append("Description is too short.")
+    # 2. Find the team in the database
+    team_model = get_team_by_name(name, db)
+    if team_model is not None:
+        errors.append("Team with that name already exists.")
 
     if not errors:
         try:
             # Use all extracted variables
-            new_team_data = TeamCreate(name=name) # Update your Pydantic model
+            new_team_data = TeamCreate(name=name)  # Update your Pydantic model
             create_new_team(team=new_team_data, creator=current_user, db=db)
             return responses.RedirectResponse(
-                "/?msg=Team created successfully",
-                status_code=status.HTTP_302_FOUND
+                "/?msg=Team created successfully", status_code=status.HTTP_302_FOUND
             )
         except IntegrityError:
             errors.append("Team with that name already exists.")
@@ -77,7 +83,7 @@ async def create_team(
             "request": request,
             "errors": errors,
             "name": name,
-        }
+        },
     )
 
 
@@ -93,10 +99,10 @@ async def join_form(request: Request):
 
 
 @router.post("/join", name="join_team")
-async def join_team_post( # Renamed function to avoid conflict with service function
-        request: Request,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user_from_token),
+async def join_team_post(  # Renamed function to avoid conflict with service function
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
 ):
     # Load form data using your custom loader
     form = TeamJoinForm(request)
@@ -112,8 +118,7 @@ async def join_team_post( # Renamed function to avoid conflict with service func
 
     if not errors:
         # 2. Find the team in the database
-        stmt = select(Team).where(Team.name == team_name)
-        team_model = db.scalar(stmt)
+        team_model = get_team_by_name(team_name, db)
 
         if not team_model:
             errors.append(f"Team '{team_name}' not found.")
@@ -125,13 +130,13 @@ async def join_team_post( # Renamed function to avoid conflict with service func
                 join_team(team_model=team_model, user=current_user, db=db)
 
                 return responses.RedirectResponse(
-                    "/?msg=Successfully joined team",
-                    status_code=status.HTTP_302_FOUND
+                    "/?msg=Successfully joined team", status_code=status.HTTP_302_FOUND
                 )
             except Exception as e:
                 # Handle unexpected DB errors during the join process
-                errors.append(f"An unexpected error occurred while joining the team: {e}")
-
+                errors.append(
+                    f"An unexpected error occurred while joining the team: {e}"
+                )
 
     # Re-render with errors
     return templates.TemplateResponse(
@@ -140,16 +145,38 @@ async def join_team_post( # Renamed function to avoid conflict with service func
             "request": request,
             "errors": errors,
             "name": team_name,
-        }
+        },
     )
 
 
-@router.get("/list", response_model=List[UserShow])
-def list_users(db: Session = Depends(get_db)):
-    users = list_user_view(db)
-    # for doctor in user:
-    #     del doctor.hashed_password
-    return users
+@router.get("/{team_id}")
+async def team_view(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        return {"error": "Team not found"}
+
+    players_info = []
+    for player in team.users:
+        games_count = get_user_games_count(player, db)
+        total_balance = get_user_total_balance(player, db)
+        players_info.append(
+            {
+                "player": player,
+                "games_count": games_count,
+                "total_balance": total_balance,
+            }
+        )
+
+    return templates.TemplateResponse(
+        "team/team_view.html",
+        {"request": request, "team": team, "players_info": players_info},
+    )
+
 
 #
 # @router.get("/details/{doctor_id}")

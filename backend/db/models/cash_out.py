@@ -1,20 +1,12 @@
-import enum
-
-from sqlalchemy import Column, Enum, ForeignKey, Integer, String, Float
+from sqlalchemy import Column, ForeignKey, Integer, String, Float, Enum
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
+from backend.db.models.add_on import PlayerRequestStatus
 
 
-# Define the status enum
-class PlayerRequestStatus(str, enum.Enum):
-    REQUESTED = "REQUESTED"
-    APPROVED = "APPROVED"
-    DECLINED = "DECLINED"
-
-
-class AddOn(Base):
-    __tablename__ = "add_on"
+class CashOut(Base):
+    __tablename__ = "cash_out"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("user.id"))
     game_id = Column(Integer, ForeignKey("game.id"))
@@ -24,5 +16,5 @@ class AddOn(Base):
         Enum(PlayerRequestStatus), default=PlayerRequestStatus.REQUESTED, nullable=False
     )
 
-    user = relationship("User", back_populates="add_ons")
-    game = relationship("Game", back_populates="add_ons")
+    user = relationship("User", back_populates="cash_outs")
+    game = relationship("Game", back_populates="cash_outs")

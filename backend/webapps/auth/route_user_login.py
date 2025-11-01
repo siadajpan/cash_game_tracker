@@ -24,13 +24,9 @@ router = APIRouter(include_in_schema=False)
 
 @router.get("/register/")
 async def register_form(request: Request):
-    return templates.TemplateResponse(
-        "auth/register.html",
-        {
-            "request":
-                request
-        }
-    )
+    return templates.TemplateResponse("auth/register.html", {"request": request})
+
+
 @router.post("/register/")
 async def register(request: Request, db: Session = Depends(get_db)):
     form = UserCreateForm(request)
@@ -52,8 +48,7 @@ async def register(request: Request, db: Session = Depends(get_db)):
 
             # --- Auto-login after registration ---
             response = responses.RedirectResponse(
-                "/?msg=Successfully logged in",
-                status_code=status.HTTP_302_FOUND
+                "/?msg=Successfully logged in", status_code=status.HTTP_302_FOUND
             )
 
             # Pass minimal login info to your token helper
@@ -61,11 +56,7 @@ async def register(request: Request, db: Session = Depends(get_db)):
                 username = new_user.email
                 password = form.password
 
-            login_for_access_token(
-                response=response,
-                form_data=TempLoginForm(),
-                db=db
-            )
+            login_for_access_token(response=response, form_data=TempLoginForm(), db=db)
 
             return response
 
@@ -84,7 +75,8 @@ async def login(request: Request, db: Session = Depends(get_db)):
         try:
             form.__dict__.update(msg="Login Successful")
             response = responses.RedirectResponse(
-                "/?msg=Successfully logged in", status_code=status.HTTP_302_FOUND)
+                "/?msg=Successfully logged in", status_code=status.HTTP_302_FOUND
+            )
             login_for_access_token(response=response, form_data=form, db=db)
             return response
         except HTTPException:
@@ -92,7 +84,6 @@ async def login(request: Request, db: Session = Depends(get_db)):
             form.__dict__.get("errors").append("Incorrect Email or password")
             return templates.TemplateResponse("auth/login.html", form.__dict__)
     return templates.TemplateResponse("auth/login.html", form.__dict__)
-
 
 
 @router.get("/login/")
@@ -113,7 +104,8 @@ async def login(request: Request, db: Session = Depends(get_db)):
         try:
             form.__dict__.update(msg="Login Successful")
             response = responses.RedirectResponse(
-                "/?msg=Successfully logged in", status_code=status.HTTP_302_FOUND)
+                "/?msg=Successfully logged in", status_code=status.HTTP_302_FOUND
+            )
             login_for_access_token(response=response, form_data=form, db=db)
             return response
         except HTTPException:
@@ -126,7 +118,8 @@ async def login(request: Request, db: Session = Depends(get_db)):
 @router.get("/logout/")
 async def login(request: Request):
     response = responses.RedirectResponse(
-        "/?msg=Successfully logged out", status_code=status.HTTP_302_FOUND)
+        "/?msg=Successfully logged out", status_code=status.HTTP_302_FOUND
+    )
     response.delete_cookie("access_token")
 
     return response

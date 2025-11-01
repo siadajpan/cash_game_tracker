@@ -7,9 +7,11 @@ from backend.db.models.associations import user_game_association
 
 
 class Game(Base):
-    __tablename__ = 'game'
+    __tablename__ = "game"
     id = Column(Integer, primary_key=True, index=True)
-    date = Column(String, nullable=False) # Consider using Date or DateTime type instead of String
+    date = Column(
+        String, nullable=False
+    )  # Consider using Date or DateTime type instead of String
     default_buy_in = Column(Float, nullable=False)
     running = Column(Boolean, nullable=False)
 
@@ -18,11 +20,15 @@ class Game(Base):
     owner = relationship("User", back_populates="games_owned")
 
     team_id = Column(Integer, ForeignKey("team.id"))
-    team = relationship("Team",  back_populates="games")
+    team = relationship("Team", back_populates="games")
 
     # Players in this game (Many-to-Many)
     players = relationship(
-        "User",
-        secondary=user_game_association,
-        back_populates="games_played"
+        "User", secondary=user_game_association, back_populates="games_played"
+    )
+
+    buy_ins = relationship("BuyIn", back_populates="game", cascade="all, delete-orphan")
+    add_ons = relationship("AddOn", back_populates="game", cascade="all, delete-orphan")
+    cash_outs = relationship(
+        "CashOut", back_populates="game", cascade="all, delete-orphan"
     )

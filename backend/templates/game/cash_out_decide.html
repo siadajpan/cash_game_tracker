@@ -1,0 +1,45 @@
+{% extends "shared/base.html" %}
+{% block title %}
+    <title>Cash out request</title>
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <div class="card shadow p-4">
+        <h3 class="mb-4 text-center">Cash out request</h3>
+
+    <!-- Player Info Section -->
+    <div class="mb-4">
+        <h5>Player Information</h5>
+        <div class="row mb-2">
+            <div class="col-4 fw-bold">Nickname:</div>
+            <div class="col-8">{{ player.nick }}</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-4 fw-bold">Money-in:</div>
+            <div class="col-8">{{ money_in }}</div>
+        </div>
+    </div>
+
+    <!-- Current cash_out Request -->
+    <div class="mb-4">
+        <h5>Current Request</h5>
+        <div class="alert alert-info">
+            <strong>Requested amount:</strong> {{ cash_out_request.amount }}
+        </div>
+    </div>
+
+    <!-- Approve / Decline Buttons -->
+    <div class="d-flex justify-content-center gap-3">
+        <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/approve">
+            <button type="submit" class="btn btn-success px-4">Accept</button>
+        </form>
+        <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/decline">
+            <button type="submit" class="btn btn-danger px-4">Decline</button>
+        </form>
+    </div>
+</div>
+
+</div>
+{% endblock %}

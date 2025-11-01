@@ -14,72 +14,72 @@
 
         {% if team_count > 0 %}
             <!-- GAMES SECTION -->
-            {% set game_count = user.games_played | length if user.games_played is defined else 0 %}
+            {% set game_count = running_games | length %}
 
-            <div class="py-4 border-bottom mb-4 mt-5">
+            <div class="py-4">
                 {% if game_count == 1 %}
-                <h2 class="display-6 fw-bold">My Game (1)</h2>
+                <h2 class="display-7 fw-bold">Running game</h2>
                 {% else %}
-                <h2 class="display-6 fw-bold">My Games ({{ game_count }})</h2>
+                <h2 class="display-7 fw-bold">Running games</h2>
                 {% endif %}
-                <small class="text-muted">A list of all games you are participating in.</small>
             </div>
 
             {% if game_count > 0 %}
-            <ul class="list-group mb-5">
-                {% for game in user.games_played %}
-                <div class="col">
+            <ul class="list-group list-group-flush">
+                {% for game in running_games %}
+                <li class="list-group-item">
+                    {% set is_user_in_game = user in game.players %}
                     {% with game=game %}
-                    {% include "components/game_list_view.html" %}
+                    {% include "game/game_list_view.html" %}
                     {% endwith %}
-                </div>
+                </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <div class="alert alert-warning border-0 rounded-3 shadow-sm py-4 mb-5" role="alert">
-                <p class="mb-0 lead"> There are no games in your teams. Click the button below to start one! </p>
+            <div class="alert alert-info" role="alert">
+                <p class="mb-0 lead"> There are no running games in your teams. Click the button below to start one! </p>
+            </div>
+            {% endif %}
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="/game/view_past" class="btn btn-outline-secondary">View past games </a>
+                <a href="/game/create" class="btn btn-primary"> Create a new game </a>
             </div>
         {% endif %}
 
-        <div class="d-flex flex-wrap gap-3 my-4">
-            <a href="/team/create" class="btn btn-primary btn-lg shadow-sm">
-                <i class="bi bi-dice-5 me-2"></i> Create a Game
-            </a>
-        </div>
-
-        {% endif %}
-        <div class="py-4 border-bottom mb-4">
+        <div class="py-4">
             {% if team_count == 1 %}
-            <h2 class="display-6 fw-bold">My Team (1)</h2>
+            <h2 class="display-7 fw-bold">My Team</h2>
             {% else %}
-            <h2 class="display-6 fw-bold">My Teams ({{ team_count }})</h2>
+            <h2 class="display-7 fw-bold">My Teams</h2>
             {% endif %}
         </div>
 
         <!-- TEAMS SECTION -->
         {% if team_count > 0 %}
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+        <div class="list-group list-group-flush">
             {% for team in user.teams %}
-            <div class="col">
-                {% with team=team %}
-                {% include "components/team_view.html" %}
-                {% endwith %}
-            </div>
+                <li class="list-group-item">
+                    <!-- Team info -->
+                    <div>
+                        {% include "team/team_list_view.html" %}
+                    </div>
+
+
+                </li>
             {% endfor %}
         </div>
         {% else %}
-        <div class="alert alert-info border-0 rounded-3 shadow-sm py-4 mb-5" role="alert">
+        <div class="alert alert-info" role="alert">
             <p class="mb-0 lead"> You are not currently part of any team. Get started by creating or joining one! </p>
         </div>
         {% endif %}
-
-        <div class="d-flex flex-wrap gap-3 my-4">
-            <a href="/team/create" class="btn btn-primary btn-lg shadow-sm">
-                <i class="bi bi-dice-5 me-2"></i> Create a Team </a>
-            <a href="/team/join" class="btn btn-outline-secondary btn-lg shadow-sm">
-                <i class="bi bi-person-plus-fill me-2"></i> Join an Existing Team </a>
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="/team/join" class="btn btn-outline-secondary">Join an Existing Team </a>
+            <a href="/team/create" class="btn btn-primary">Create a Team </a>
         </div>
+    {% else %}
 
     {%endif%}
+
 </div>
 {% endblock %}

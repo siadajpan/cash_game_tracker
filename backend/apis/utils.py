@@ -10,11 +10,11 @@ from typing import Dict
 
 class OAuth2PasswordBearerWithCookie(OAuth2):
     def __init__(
-            self,
-            tokenUrl: str,
-            scheme_name: Optional[str] = None,
-            scopes: Optional[Dict[str, str]] = None,
-            auto_error: bool = True,
+        self,
+        tokenUrl: str,
+        scheme_name: Optional[str] = None,
+        scopes: Optional[Dict[str, str]] = None,
+        auto_error: bool = True,
     ):
         scopes = scopes or {}
         flows = OAuthFlowsModel(password={"tokenUrl": tokenUrl, "scopes": scopes})
@@ -22,7 +22,6 @@ class OAuth2PasswordBearerWithCookie(OAuth2):
 
     async def __call__(self, request: Request) -> Optional[str]:
         authorization: str = request.cookies.get("access_token")
-        print("access_token is", authorization)
 
         scheme, param = get_authorization_scheme_param(authorization)
         if not authorization or scheme.lower() != "bearer":
@@ -30,7 +29,7 @@ class OAuth2PasswordBearerWithCookie(OAuth2):
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Not authorized",
-                    headers={"WWW-Authenticate": "Bearer"}
+                    headers={"WWW-Authenticate": "Bearer"},
                 )
             else:
                 return None

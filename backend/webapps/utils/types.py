@@ -13,4 +13,3 @@ class Day:
 
 
 DAYS = [value for key, value in vars(Day).items() if not key.startswith("__")]
-

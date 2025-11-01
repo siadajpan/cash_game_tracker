@@ -14,6 +14,7 @@ def include_router(app):
     app.include_router(api_router)
     app.include_router(web_app_router)
 
+
 def configure_static(app):
     BASE_DIR = Path(__file__).resolve().parent
     STATIC_DIR = BASE_DIR / "static"

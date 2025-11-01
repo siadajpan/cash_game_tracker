@@ -27,10 +27,7 @@ def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
         The newly created Team instance.
     """
     # 1. Create the team, set the creator as owner
-    new_team = Team(
-        **team.dict(),
-        owner=creator  # Many-to-One owner relationship
-    )
+    new_team = Team(**team.dict(), owner=creator)  # Many-to-One owner relationship
 
     # 2. Add the creator as a player (Many-to-Many)
     new_team.users.append(creator)
@@ -70,6 +67,11 @@ def join_team(team_model: Team, user, db: Session) -> Team:
 
     return team_model
 
+
+def get_team_by_name(team_name, db: Session):
+    return db.query(Team).filter(Team.name == team_name).one_or_none()
+
+
 def get_team_users(team: Team, db: Session) -> List[User]:
     """
     Retrieve all users (players) in a given team.
@@ -87,6 +89,7 @@ def get_team_users(team: Team, db: Session) -> List[User]:
     # Option 2: Query explicitly from the User table
     # return db.query(User).join(User.teams).filter(Team.id == team.id).all()
 
+
 def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
     """
     Fetches a Team model instance by its ID.
@@ -96,6 +99,7 @@ def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
     # Use select statement to query the database
     # The Team model must be imported/available for this to work
     return db.query(Team).filter(Team.id == team_id).one_or_none()
+
 
 def get_user(doctor_id, db):
     return db.get(User, doctor_id)

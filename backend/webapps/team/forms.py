@@ -18,6 +18,7 @@ class TeamCreateForm:
             self.errors.append("Name is required")
         return len(self.errors) == 0
 
+
 class TeamJoinForm:
     def __init__(self, request: Request):
         self.request: Request = request

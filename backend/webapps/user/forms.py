@@ -31,4 +31,3 @@ class UserCreateForm:
         if self.password != self.repeat_password:
             self.errors.append("Passwords don't match")
         return len(self.errors) == 0
-

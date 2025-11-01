@@ -17,7 +17,6 @@
                 {% endfor %}
             </div>
         </div>
-
         <div class="mb-3">
             <form method="POST">
                 <div class="mb-3">
@@ -30,7 +29,12 @@
                     <input type="password" required placeholder="Your password" value="{{ password }}" name="password"
                            class="form-control">
                 </div>
-                <button type="submit" class="btn btn-primary">Submit</button>
+
+                <!-- Button row -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="/register" class="btn btn-outline-secondary">Not registered?</a>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </div>
             </form>
         </div>
     </div>
