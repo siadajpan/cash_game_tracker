@@ -1,63 +1,83 @@
 {% extends "shared/base.html" %}
 
 {% block title %}
-    <title>Create Chip Structure</title>
+<title>Create Chip Structure</title>
 {% endblock %}
 
 {% block content %}
-    <div class="container mt-4">
-        <h2 class="mb-4">Create New Chip Structure</h2>
-        <div class="text-danger font-weight-bold"></div>
-            {% for error in errors %}
+<div class="container mt-4 mb-5">
+    <h2 class="mb-4">Create New Chip Structure</h2>
+
+    <!-- Error Display -->
+    <div class="text-danger font-weight-bold mb-2">
+        {% for error in errors %}
             <li>{{ error }}</li>
-            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <!-- Form -->
+    <form id="chipStructureForm" method="POST">
+        <!-- Dynamic chip rows -->
+        <div id="chipRows">
+            <div class="chip-row d-flex align-items-center mb-2 gap-2">
+                <div class="flex-grow-1">
+                    {% include "chip/create.html" %}
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-chip" title="Remove chip">✕</button>
+            </div>
         </div>
 
-        <form id="chipStructureForm" method="POST">
-            <div id="chipRows">
-            <div class="row mb-3 align-items-center chip-row">
-                <div class="col-md-10">
-                {% include "chip/create.html" %}
-                </div>
-                <div class="col-md-2">
-                <label class="form-label">&nbsp;</label>
-                <button type="button" class="btn btn-danger btn-sm d-block" onclick="deleteRow(this)">✕</button>
-                </div>
-            </div>
-            </div>
-            <div class="mb-3">
-            <button type="button" class="btn btn-success" onclick="addRow()">
+        <!-- Add chip button below rows -->
+        <div class="text-center mt-3">
+            <button type="button" id="addChip" class="btn btn-secondary">
                 <i class="bi bi-plus-lg"></i> Add Chip
             </button>
-            </div>
-            <button type="submit" class="btn btn-primary">Save Chip Structure</button>
-        </form>
         </div>
 
-        <script>
-        function addRow() {
-            const container = document.getElementById('chipRows');
-            const newRow = document.createElement('div');
-            newRow.className = 'row mb-3 align-items-center chip-row';
-            newRow.innerHTML = `
-            <div class="col-md-10">
+        <!-- Save button -->
+        <div class="text-center mt-3">
+            <button type="submit" class="btn btn-primary">
+                Save Chip Structure
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Script -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const chipRows = document.getElementById("chipRows");
+    const addChipBtn = document.getElementById("addChip");
+
+    const chipTemplate = `
+        <div class="chip-row d-flex align-items-center mb-2 gap-2">
+            <div class="flex-grow-1">
                 {% include "chip/create.html" %}
             </div>
-            <div class="col-md-2">
-                <label class="form-label">&nbsp;</label>
-                <button type="button" class="btn btn-danger btn-sm d-block" onclick="deleteRow(this)">✕</button>
-            </div>
-            `;
-            container.appendChild(newRow);
-        }
+            <button type="button" class="btn btn-outline-danger btn-sm remove-chip" title="Remove chip">✕</button>
+        </div>
+    `;
 
-        function deleteRow(element) {
-            const rows = document.getElementsByClassName('chip-row');
-            if (rows.length > 1) {
-            element.closest('.chip-row').remove();
-            }
-        }
-        </script>
-    {% endblock %}
+    // Add new chip
+    addChipBtn.addEventListener("click", () => {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = chipTemplate.trim();
+        chipRows.appendChild(wrapper.firstElementChild);
+    });
 
-        
+    // Remove chip
+    chipRows.addEventListener("click", (e) => {
+        if (e.target.classList.contains("remove-chip")) {
+            const rows = document.querySelectorAll(".chip-row");
+            if (rows.length > 1) e.target.closest(".chip-row").remove();
+        }
+    });
+});
+</script>
+
+<style>
+    .chip-row {
+        margin-bottom: 0.4rem !important;
+    }
+</style>
+{% endblock %}

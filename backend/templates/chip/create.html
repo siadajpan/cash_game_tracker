@@ -1,0 +1,21 @@
+<div class="d-flex align-items-center gap-3 mb-2 flex-grow-1">
+    <!-- Color Picker -->
+    <input type="color" class="form-control form-control-color"
+           name="color" value="#FF0000"
+           style="width: 50px; height: 50px;"
+           list="presetColors" title="Choose chip color">
+
+    <datalist id="presetColors">
+        <option value="#FFFFFF">White</option>
+        <option value="#000000">Black</option>
+        <option value="#0000FF">Blue</option>
+        <option value="#008000">Green</option>
+        <option value="#FF0000">Red</option>
+        <option value="#FFFF00">Yellow</option>
+        <option value="#FFC0CB">Pink</option>
+    </datalist>
+
+    <!-- Value Input (no button here) -->
+    <input type="number" step="0.01" class="form-control flex-grow-1"
+           name="value" placeholder="Chip value" required>
+</div>

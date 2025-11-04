@@ -2,6 +2,7 @@ from sqlalchemy import Column, ForeignKey, Integer, Float
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
+from backend.db.models import chip_structure
 
 
 class Chip(Base):

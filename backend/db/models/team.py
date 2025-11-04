@@ -2,6 +2,7 @@ from sqlalchemy import Column, Enum, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
+from backend.db.models import chip_structure
 from backend.db.models.associations import user_team_association
 
 
@@ -20,3 +21,5 @@ class Team(Base):
     )
 
     games = relationship("Game", back_populates="team")
+    chip_structure = relationship("ChipStructure", back_populates="team")
+    

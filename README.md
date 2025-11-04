@@ -8,7 +8,7 @@ Install PostgreSQL and create a user and password
 # Running locally
 ```shell
 cd backend
-uvicorn main:app --reload
+poetry run uvicorn backend.main:app --reload
 ```
 To view the page, open
 ```shell

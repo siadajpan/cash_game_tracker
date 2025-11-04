@@ -3,6 +3,7 @@ from sqlalchemy import Column, ForeignKey, Integer, String, Float, Boolean
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
+from backend.db.models.chip_structure import ChipStructure  # direct import for clarity
 from backend.db.models.associations import user_game_association
 
 
@@ -22,6 +23,9 @@ class Game(Base):
     team_id = Column(Integer, ForeignKey("team.id"))
     team = relationship("Team", back_populates="games")
 
+    chip_structure_id = Column(Integer, ForeignKey("chip_structure.id"))
+    chip_structure = relationship("ChipStructure", back_populates="games")
+    
     # Players in this game (Many-to-Many)
     players = relationship(
         "User", secondary=user_game_association, back_populates="games_played"

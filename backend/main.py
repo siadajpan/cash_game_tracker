@@ -35,6 +35,7 @@ def start_application():
 
 app = start_application()
 
+
 # @app.get("/") #remove this, It is no longer needed.
 # def hello_api():
 #     return {"msg":"Hello API"}
