@@ -40,7 +40,7 @@ def add_user_buy_in(user: User, game: Game, buy_in_amount: float, db: Session):
         user_id=user.id,
         game_id=game.id,
         amount=buy_in_amount,
-        time=datetime.now().isoformat(),  # store timestamp in ISO format
+        time=datetime.today().isoformat(),  # store timestamp in ISO format
     )
 
     # Add it to the session and commit

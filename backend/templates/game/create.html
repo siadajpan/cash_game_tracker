@@ -4,121 +4,66 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <h5 class="mt-4 p-5 display-5">Create your game</h5>
-
-    <div class="text-danger font-weight-bold mb-3">
-        {% for error in errors %}
-            <li>{{ error }}</li>
-        {% endfor %}
-    </div>
-
-    <form method="POST" action="/game/create">
-
-        <!-- Team Selection -->
-        <div class="row mb-3">
-            <div class="col-12 col-md-6">
-                {% if not user_teams %}
-                    <div class="form-text text-danger">You must be part of a team to create a game.</div>
-
-                {% elif user_teams|length == 1 %}
-                    <input type="hidden" name="team_id" id="team_id" value="{{ user_teams[0].id }}">
-                    <!-- <div class="form-control bg-light">{{ user_teams[0].name }}</div> -->
-
-                {% else %}
-                    <label for="team_id" class="form-label">Select Team</label>
-                    <select name="team_id" id="team_id" required class="form-select">
-                        <option value="" disabled selected>-- Choose a team --</option>
-                        {% for team in user_teams %}
-                        <option value="{{ team.id }}"
-                                {% if team.id|string == form.team_id|string %}selected{% endif %}>
-                            {{ team.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                {% endif %}
+    <div class="container">
+        <h5 class="mt-4 p-5 display-5">Create your game</h5>
+        <div class="text-danger font-weight-bold">
+            <div class="text-danger font-weight-bold">
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
             </div>
         </div>
+        <form method="POST" action="/game/create">
 
-        <!-- Default Buy-in -->
-        <div class="row mb-3">
-            <div class="col-12 col-md-6">
-                <label for="default_buy_in" class="form-label">Default Buy-in</label>
-                <input type="number" step="0.01" required class="form-control"
-                       name="default_buy_in" id="default_buy_in"
-                       value="{{ form.default_buy_in or 0 }}"
-                       placeholder="Default buy-in">
-            </div>
-        </div>
-
-        <!-- Chip Structure (dynamic) -->
-        <div class="row mb-3">
-            <div class="col-12 col-md-6">
-                <div id="chipStructureContainer">
-                    {# Placeholder: will be updated dynamically #}
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    {% include "team/users_team_dropdown.html" %}
+                    
                 </div>
             </div>
-        </div>
 
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="/" class="btn btn-outline-secondary">Back</a>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-    </form>
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label for="default_buy_in" class="form-label">Default Buy-in</label>
+                    <input type="number" step="0.01" required class="form-control"
+                           name="default_buy_in" id="default_buy_in"
+                           value="{{ form.default_buy_in or 0 }}"
+                           placeholder="Default buy-in">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    
+                    {% if not team_chip_structures %}
+                        <a href="/chip_structure/create" class="form-text text-danger">Create new chip values.</a>
+                    {% elif chip_structures|length == 1 %}
+                        {# If there's only one chip structure, use a hidden input and show its name #}
+                        <input type="hidden" name="chip_structure_id" value="{{ chip_structures[0].id }}">
+                        <div class="form-text">Chip Structure: {{ chip_structures[0].name }}</div>
+                    {% else %}
+                        <label for="chip_structure" class="form-label">Chip Structure</label>
+                        <select name="chip_structure_id" id="chip_structure" required class="form-select">
+                            <option value="" disabled
+                                {% if not form.chip_structure_id %}selected{% endif %}>
+                                -- Choose a chip structure --
+                            </option>
+                            {% for chip_structure in chip_structures %}
+                            <option value="{{ chip_structure.id }}"
+                                    {% if chip_structure.id|string == form.chip_structure_id|string %}selected{% endif %}>
+                                {{ chip_structure.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+            </div>
+            
+
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="/" class="btn btn-outline-secondary">Back</a>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
 </div>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const teamSelect = document.getElementById("team_id");
-    const container = document.getElementById("chipStructureContainer");
-
-    // Map of team IDs → chip structures
-    const teamChipStructures = {
-        {% for team in user_teams %}
-            "{{ team.id }}": [
-                {% for cs in chip_structures if cs.team_id == team.id %}
-                    {"id": "{{ cs.id }}", "name": "{{ cs.name }}"},
-                {% endfor %}
-            ],
-        {% endfor %}
-    };
-
-    const renderChipStructures = (teamId) => {
-        const structures = teamChipStructures[teamId] || [];
-        if (structures.length === 0) {
-            container.innerHTML = `
-                <a href="/chip_structure/create" class="form-text text-danger">
-                    Create new chip values.
-                </a>
-            `;
-        } else if (structures.length === 1) {
-            container.innerHTML = `
-                <input type="hidden" name="chip_structure_id" value="${structures[0].id}">
-                <div class="form-text">Chip Structure: ${structures[0].name}</div>
-            `;
-        } else {
-            let options = '<option value="" disabled selected>-- Choose a chip structure --</option>';
-            structures.forEach(cs => {
-                options += `<option value="${cs.id}">${cs.name}</option>`;
-            });
-            container.innerHTML = `
-                <label for="chip_structure" class="form-label">Chip Structure</label>
-                <select name="chip_structure_id" id="chip_structure" required class="form-select">
-                    ${options}
-                </select>
-            `;
-        }
-    };
-
-    // Initial render if one team selected
-    if (teamSelect && teamSelect.value) renderChipStructures(teamSelect.value);
-
-    // Update dynamically on change
-    if (teamSelect) {
-        teamSelect.addEventListener("change", (e) => {
-            renderChipStructures(e.target.value);
-        });
-    }
-});
-</script>
 {% endblock %}

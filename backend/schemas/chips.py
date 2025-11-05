@@ -1,5 +1,4 @@
-from pydantic import BaseModel, validator
-
+from pydantic import BaseModel
 
 class ChipCreate(BaseModel):
     color_r: int
@@ -8,11 +7,12 @@ class ChipCreate(BaseModel):
     value: float
     chip_structure_id: int
 
-    @validator("value")
-    def ensure_correct_value(cls, value):
-        if value < 0:
-            raise ValueError(f"Chip value should be positive number got {int(value)}")
-        return value
+
+class NewChip(BaseModel):
+    color_r: int
+    color_g: int
+    color_b: int
+    value: float
 
 
 class ChipShow(BaseModel):

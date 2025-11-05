@@ -1,4 +1,5 @@
-from typing import List, Type
+from operator import ne
+from typing import List, Optional, Type
 
 from fastapi import Depends
 from backend.db.models.chip import Chip
@@ -7,31 +8,38 @@ from backend.db.models.team import Team
 from sqlalchemy.orm import Session
 
 from backend.apis.v1.route_login import get_current_user_from_token
-from backend.db.models.game import Game
-from backend.db.models.user import User
 from backend.db.session import get_db
 from backend.schemas.chips import ChipCreate
 from backend.schemas.chip_structure import ChipStructureCreate
 from datetime import date
 
 
-def create_new_chip_structure_db(chips: List[ChipCreate],
-                            team: Team,
+def create_new_chip_structure_db(chip_structure: ChipStructureCreate,
                             db: Session = Depends(get_db)):
         new_chip_structure = ChipStructure(
-            team_id=team.id
+            team_id=chip_structure.team_id, name=f"Chip Structure {date.today()}"
         )
-        new_chips = [Chip(**chip.dict()) for chip in chips]
-        new_chip_structure.chip = new_chips
-
         db.add(new_chip_structure)
-        db.add_all(new_chips)
+        db.commit()
+        db.refresh(new_chip_structure)
+
+        # Add chips to the chip structure
+        for chip_data in chip_structure.chips:
+            chip = Chip(
+                color_r=chip_data.color_r,
+                color_g=chip_data.color_g,
+                color_b=chip_data.color_b,
+                value=chip_data.value,
+                chip_structure_id=new_chip_structure.id
+            )
+            db.add(chip)
+
         db.commit()
         db.refresh(new_chip_structure)
     
         return new_chip_structure
 
-def get_chip_structure(chip_structure_id: int, db: Session) -> Type[ChipStructure]:
+def get_chip_structure(chip_structure_id: int, db: Session) -> Optional[ChipStructure]:
     item = db.get(ChipStructure, chip_structure_id)
 
     return item
@@ -41,14 +49,6 @@ def list_team_chip_structures(team_id: int, db: Session) -> List[Type[ChipStruct
 
     return items
 
-def add_team_chip_structure(team_id: int, chip_structure_id: int, db: Session) -> None:
-    team = db.get(Team, team_id)
-    chip_structure = db.get(ChipStructure, chip_structure_id)
-    team.chip_structure = chip_structure
-
-    db.add(team)
-    db.commit()
-    db.refresh(team)
 
 def list_game_chip_structure(game_id: int, db: Session) -> Type[ChipStructure]:
     item = db.query(ChipStructure).filter(ChipStructure.game_id == game_id).one_or_none()
