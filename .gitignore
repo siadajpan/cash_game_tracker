@@ -140,4 +140,5 @@ cython_debug/
 
 /.idea/
 **/*.db
+**/*.env
 .env

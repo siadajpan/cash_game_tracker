@@ -72,6 +72,20 @@ def get_team_by_name(team_name, db: Session):
     return db.query(Team).filter(Team.name == team_name).one_or_none()
 
 
+def check_team_exists(team_name: str, db: Session) -> bool:
+    """
+    Check if a team with the given name exists in the database.
+
+    Args:
+        team_name: Name of the team to check.
+        db: SQLAlchemy session.
+
+    Returns:
+        True if the team exists, False otherwise.
+    """
+    team = db.query(Team).filter(Team.name == team_name).one_or_none()
+    return team is not None
+
 def get_team_users(team: Team, db: Session) -> List[User]:
     """
     Retrieve all users (players) in a given team.
