@@ -84,13 +84,19 @@ async def create_game_form(
             [cs.name for cs in team.chip_structure],
         )
 
+    team_chip_structures = {}
+    for team in current_user.teams:
+        team_chip_structures[team.id] = list_team_chip_structures(team.id, db=None)
+
+    print("Chip structures of the user:", team_chip_structures)
     # Prepare initial form data and context for the template
     context = {
         "request": request,
         "errors": [],
         # 1. Pass the user's teams to populate the dropdown
         "user_teams": current_user.teams,
-        "team_chip_structures": team_chip_structures,
+
+        "chip_structures": team_chip_structures,
         # 2. Pass default values for the form fields
         "form": {
             "default_buy_in": 0.0,
