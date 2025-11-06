@@ -36,6 +36,7 @@ from backend.db.repository.cash_out import (
     get_cash_out_by_id,
     update_cash_out_status,
 )
+from backend.db.repository.chip_structure import list_team_chip_structures
 from backend.db.repository.game import (
     create_new_game_db,
     get_game_by_id,
@@ -50,6 +51,7 @@ from backend.db.repository.team import (
     get_team_by_id,
 )
 from backend.db.session import get_db
+from backend.schemas import chip_structure
 from backend.schemas.games import GameCreate
 from backend.schemas.user import UserCreate, UserShow
 from backend.webapps.game.game_forms import (
@@ -71,12 +73,19 @@ async def create_game_form(
     Renders the game creation form, populating team choices and default values.
     """
 
+    team_chip_structures = {}
+    for team in current_user.teams:
+        team_chip_structures[team.id] = list_team_chip_structures(team.id, db=None)
+
+    print("Chip structures of the user:", team_chip_structures)
     # Prepare initial form data and context for the template
     context = {
         "request": request,
         "errors": [],
         # 1. Pass the user's teams to populate the dropdown
         "user_teams": current_user.teams,
+        "chip_structures": team_chip_structures,
+
         # 2. Pass default values for the form fields
         "form": {
             "default_buy_in": 0.0,
