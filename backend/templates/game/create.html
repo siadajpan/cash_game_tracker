@@ -69,7 +69,7 @@
 {% block scripts %}
 <script>
     // Preload all chip structures from server
-    const teamChipStructures = {{ team_chip_structures|tojson }};
+    const teamChipStructures = {{ team_chip_structures | default('{}') | safe  }};
     console.log("Loaded teamChipStructures:", teamChipStructures);
 
     document.addEventListener('DOMContentLoaded', function() {

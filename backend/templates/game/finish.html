@@ -30,7 +30,7 @@
     <!-- Warnings -->
     {% if not all_cashed_out %}
         <div class="alert alert-warning">
-            Not all players have cashed out yet. You cannot finish the game.
+            Not all players have cashed out yet. Players who haven't cashed out will have a cash out value of 0.
         </div>
     {% endif %}
 
@@ -48,11 +48,9 @@
     <div class="d-flex justify-content-between mt-3">
         <a href="/game/{{ game.id }}" class="btn btn-outline-secondary px-4">Back</a>
 
-        {% if all_cashed_out %}
-            <form method="POST" action="/game/{{ game.id }}/finish">
-                <button type="submit" class="btn btn-primary px-5">Finish Game</button>
-            </form>
-        {% endif %}
+        <form method="POST" action="/game/{{ game.id }}/finish">
+            <button type="submit" class="btn btn-primary px-5">Finish Game</button>
+        </form>
     </div>
 </div>
 {% endblock %}
