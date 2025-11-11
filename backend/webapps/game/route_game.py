@@ -12,7 +12,6 @@ from urllib3 import request
 
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
-    optional_current_user,
 )
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.add_on import PlayerRequestStatus
@@ -522,7 +521,7 @@ async def add_on(
     request: Request,
     game_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(optional_current_user),
+    user: User = Depends(get_current_user_from_token),
 ):
     game = get_game_by_id(game_id, db)
     if not user_in_game(user, game):

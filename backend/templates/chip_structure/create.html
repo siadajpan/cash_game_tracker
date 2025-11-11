@@ -6,7 +6,7 @@
 
 {% block content %}
     <div class="container">
-        <h5 class="mt-4 p-5 display-5">Create Chip Structure</h5>
+        <h5 class="page-title">Create Chip Structure</h5>
 
         <!-- Error Display -->
         <div class="text-danger font-weight-bold">
@@ -17,21 +17,31 @@
 
         <form method="POST" id="chipStructureForm" action="/chip_structure/create">
 
+            <!-- Name Field (prefilled with today's date) -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label for="structureName" class="form-label">Name</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="structureName"
+                        name="structure_name"
+                        value="{{ today.strftime('%Y-%m-%d') }}"
+                        required
+                    >
+                </div>
+            </div>
             <!-- Team Selector -->
             <div class="row mb-3">
                 <div class="col-12 col-md-6">
                     {% include "team/users_team_dropdown.html" %}
                 </div>
             </div>
-
             <!-- Chip Rows -->
             <div class="row mb-3">
                 <div class="col-12 col-md-6" id="chipRows">
-                    <label class="form-label">Chip Values</label>
                     <div class="chip-row d-flex align-items-start gap-2 mb-2">
-                        <div class="flex-grow-1">
-                            {% include "chip/create.html" %}
-                        </div>
+                        {% include "chip/create.html" %}
                         <button type="button" class="btn btn-outline-danger btn-sm remove-chip align-self-center" title="Remove chip">✕</button>
                     </div>
                 </div>

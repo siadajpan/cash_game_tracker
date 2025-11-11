@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="container">
-    <h5 class="mt-4 p-5 display-5">Create your game</h5>
+    <h5 class="page-title">Create your game</h5>
 
     <div class="text-danger font-weight-bold">
         {% for error in errors %}
@@ -18,20 +18,7 @@
         <!-- Team selector -->
         <div class="row mb-3">
             <div class="col-12 col-md-6">
-                {% if not user_teams %}
-                    <div class="form-text text-danger">You are not part of any team.</div>
-                {% elif user_teams|length == 1 %}
-                    <input type="hidden" name="team_id" id="team_id" value="{{ user_teams[0].id }}">
-                    <div class="form-text">Team: {{ user_teams[0].name }}</div>
-                {% else %}
-                    <label for="team_id" class="form-label">Select Team</label>
-                    <select name="team_id" id="team_id" required class="form-select">
-                        <option value="" disabled selected>-- Choose a team --</option>
-                        {% for team in user_teams %}
-                        <option value="{{ team.id }}">{{ team.name }}</option>
-                        {% endfor %}
-                    </select>
-                {% endif %}
+                {% include "team/users_team_dropdown.html" %}
             </div>
         </div>
 
@@ -53,8 +40,11 @@
                 <select name="chip_structure_id" id="chip_structure" required class="form-select">
                     <option value="" disabled selected>-- Choose a chip structure --</option>
                 </select>
-                <a href="/chip_structure/create" class="form-text text-danger">Create new chip values.</a>
             </div>
+            <div class="mt-2">
+                <a href="/chip_structure/create" class="btn btn-outline-secondary">Create new chip values.</a>
+            </div>
+
         </div>
 
         <!-- Form buttons -->
