@@ -52,7 +52,7 @@ def create_add_on_request(
     new_addon = AddOn(
         user_id=user.id,
         game_id=game.id,
-        time=datetime.now().isoformat(),
+        time=datetime.today().isoformat(),
         amount=amount,
         status=PlayerRequestStatus.REQUESTED,
     )

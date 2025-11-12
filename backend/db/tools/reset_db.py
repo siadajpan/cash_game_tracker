@@ -15,21 +15,22 @@ or you understand the data loss implications before running `drop` or
 """
 import sys
 
-from backend.db.base_class import Base
 from backend.db.session import engine
+import backend.db.base as _  # noqa, ensures all models are imported
+from backend.db.base_class import Base
 
 
 def drop_all():
-    print("Dropping all tables...")
-    Base.metadata.drop_all(bind=engine)
+    print(f"Dropping all tables from: {engine.url}")
+    with engine.begin() as conn:
+        Base.metadata.drop_all(bind=conn)
     print("Done. All tables dropped.")
 
-
 def create_all():
-    print("Creating all tables...")
-    Base.metadata.create_all(bind=engine)
+    print(f"Creating all tables in: {engine.url}")
+    with engine.begin() as conn:
+        Base.metadata.create_all(bind=conn)
     print("Done. All tables created.")
-
 
 def main():
     if len(sys.argv) < 2:
@@ -51,5 +52,5 @@ def main():
 
 if __name__ == "__main__":
     drop_all()
-    create_all()
-    # main() 
+    # create_all()
+    # main()

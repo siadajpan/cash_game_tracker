@@ -23,13 +23,13 @@ class TeamJoinForm:
     def __init__(self, request: Request):
         self.request: Request = request
         self.errors: List = []
-        self.name: Optional[str] = None
+        self.search_code: Optional[str] = None
 
     async def load_data(self):
         form = await self.request.form()
-        self.name = form.get("name")
+        self.search_code = form.get("search_code")
 
     async def is_valid(self):
-        if not self.name:
-            self.errors.append("Name is required")
+        if not self.search_code:
+            self.errors.append("Search code is required")
         return len(self.errors) == 0

@@ -5,8 +5,10 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h3 class="mb-4">Team: {{ team.name }}</h3>
-
+    <h3 class="mb-4">
+            {{ team.name }} 
+            <span class="text-muted">#{{ team.search_code }}</span>
+        </h1>     
     <div class="card shadow p-3">
         <ul class="list-group list-group-flush">
             <li class="list-group-item d-flex justify-content-between fw-bold">

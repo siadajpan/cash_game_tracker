@@ -6,9 +6,7 @@ from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
 from backend.apis.v1.route_login import (
-    get_current_user,
     get_current_user_from_token,
-    optional_current_user,
 )
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.user import User
@@ -21,13 +19,9 @@ router = APIRouter(include_in_schema=False)
 @router.get("/")
 async def home(
     request: Request,
-    user: Optional[User] = Depends(optional_current_user),
-    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_current_user_from_token),
     msg: str = None,
 ):
-    if user is None:
-        return RedirectResponse(url="/login", status_code=303)
-
     running_games = [g for t in user.teams for g in t.games if g.running]
     return templates.TemplateResponse(
         "general_pages/homepage.html",

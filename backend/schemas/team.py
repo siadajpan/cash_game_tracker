@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class TeamCreate(BaseModel):
     name: str
+    search_code: str
 
 
 class TeamShow(BaseModel):
@@ -10,4 +11,4 @@ class TeamShow(BaseModel):
     name: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True

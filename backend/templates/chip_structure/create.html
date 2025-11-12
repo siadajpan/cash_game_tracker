@@ -1,83 +1,120 @@
 {% extends "shared/base.html" %}
 
 {% block title %}
-<title>Create Chip Structure</title>
+    <title>Create Chip Structure</title>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5">
-    <h2 class="mb-4">Create New Chip Structure</h2>
+    <div class="container">
+        <h5 class="page-title">Create Chip Structure</h5>
 
-    <!-- Error Display -->
-    <div class="text-danger font-weight-bold mb-2">
-        {% for error in errors %}
-            <li>{{ error }}</li>
-        {% endfor %}
+        <!-- Error Display -->
+        <div class="text-danger font-weight-bold">
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </div>
+
+        <form method="POST" id="chipStructureForm" action="/chip_structure/create">
+
+            <!-- Name Field (prefilled with today's date) -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label for="name" class="form-label">Name</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="name"
+                        name="name"
+                        value="{{ form.name }}"
+                        required
+                    >
+                </div>
+            </div>
+            <!-- Team Selector -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    {% include "team/users_team_dropdown.html" %}
+                </div>
+            </div>
+            <!-- Chip Rows -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6" id="chipRows">
+                    <div class="chip-row d-flex align-items-start gap-2 mb-2">
+                        {% include "chip/create.html" %}
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-chip align-self-center" title="Remove chip">✕</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Chip Button -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6 text-center text-md-start">
+                    <button type="button" id="addChip" class="btn btn-secondary">
+                        <i class="bi bi-plus-lg"></i> Add Chip
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit & Back Buttons -->
+            <div class="row mb-5">
+                <div class="col-12 col-md-6 d-flex justify-content-between align-items-center">
+                    <a href="/" class="btn btn-outline-secondary">Back</a>
+                    <button type="submit" class="btn btn-primary">Save Chip Structure</button>
+                </div>
+            </div>
+        </form>
     </div>
 
-    <!-- Form -->
-    <form id="chipStructureForm" method="POST">
-        <!-- Dynamic chip rows -->
-        <div id="chipRows">
-            <div class="chip-row d-flex align-items-center mb-2 gap-2">
-                <div class="flex-grow-1">
-                    {% include "chip/create.html" %}
+    <!-- Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const chipRows = document.getElementById("chipRows");
+            const addChipBtn = document.getElementById("addChip");
+
+            const chipTemplate = `
+                <div class="chip-row d-flex align-items-start gap-2 mb-2">
+                    <div class="flex-grow-1">
+                        {% include "chip/create.html" %}
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-chip align-self-center" title="Remove chip">✕</button>
                 </div>
-                <button type="button" class="btn btn-outline-danger btn-sm remove-chip" title="Remove chip">✕</button>
-            </div>
-        </div>
+            `;
 
-        <!-- Add chip button below rows -->
-        <div class="text-center mt-3">
-            <button type="button" id="addChip" class="btn btn-secondary">
-                <i class="bi bi-plus-lg"></i> Add Chip
-            </button>
-        </div>
+            // Add new chip
+            addChipBtn.addEventListener("click", () => {
+                const wrapper = document.createElement("div");
+                wrapper.innerHTML = chipTemplate.trim();
+                chipRows.appendChild(wrapper.firstElementChild);
+            });
 
-        <!-- Save button -->
-        <div class="text-center mt-3">
-            <button type="submit" class="btn btn-primary">
-                Save Chip Structure
-            </button>
-        </div>
-    </form>
-</div>
+            // Remove chip
+            chipRows.addEventListener("click", (e) => {
+                if (e.target.classList.contains("remove-chip")) {
+                    const rows = document.querySelectorAll(".chip-row");
+                    if (rows.length > 1) e.target.closest(".chip-row").remove();
+                }
+            });
+        });
+    </script>
 
-<!-- Script -->
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const chipRows = document.getElementById("chipRows");
-    const addChipBtn = document.getElementById("addChip");
-
-    const chipTemplate = `
-        <div class="chip-row d-flex align-items-center mb-2 gap-2">
-            <div class="flex-grow-1">
-                {% include "chip/create.html" %}
-            </div>
-            <button type="button" class="btn btn-outline-danger btn-sm remove-chip" title="Remove chip">✕</button>
-        </div>
-    `;
-
-    // Add new chip
-    addChipBtn.addEventListener("click", () => {
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = chipTemplate.trim();
-        chipRows.appendChild(wrapper.firstElementChild);
-    });
-
-    // Remove chip
-    chipRows.addEventListener("click", (e) => {
-        if (e.target.classList.contains("remove-chip")) {
-            const rows = document.querySelectorAll(".chip-row");
-            if (rows.length > 1) e.target.closest(".chip-row").remove();
+    <!-- Styling -->
+    <style>
+        .chip-row {
+            margin-bottom: 0.4rem !important;
         }
-    });
-});
-</script>
 
-<style>
-    .chip-row {
-        margin-bottom: 0.4rem !important;
-    }
-</style>
+        .remove-chip {
+            height: 38px;
+            width: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chip-row select,
+        .chip-row input {
+            min-height: 38px;
+        }
+    </style>
 {% endblock %}

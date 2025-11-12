@@ -1,6 +1,8 @@
 from collections import defaultdict
+from multiprocessing import Value
 from select import select
 from typing import Dict, List, Type, Optional
+import random
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -27,7 +29,7 @@ def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
         The newly created Team instance.
     """
     # 1. Create the team, set the creator as owner
-    new_team = Team(**team.dict(), owner=creator)  # Many-to-One owner relationship
+    new_team = Team(**team.model_dump(), owner=creator)  # Many-to-One owner relationship
 
     # 2. Add the creator as a player (Many-to-Many)
     new_team.users.append(creator)
@@ -72,6 +74,21 @@ def get_team_by_name(team_name, db: Session):
     return db.query(Team).filter(Team.name == team_name).one_or_none()
 
 
+def check_team_exists(team_name: str, db: Session) -> bool:
+    """
+    Check if a team with the given name exists in the database.
+
+    Args:
+        team_name: Name of the team to check.
+        db: SQLAlchemy session.
+
+    Returns:
+        True if the team exists, False otherwise.
+    """
+    team = db.query(Team).filter(Team.name == team_name).one_or_none()
+    return team is not None
+
+
 def get_team_users(team: Team, db: Session) -> List[User]:
     """
     Retrieve all users (players) in a given team.
@@ -93,12 +110,39 @@ def get_team_users(team: Team, db: Session) -> List[User]:
 def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
     """
     Fetches a Team model instance by its ID.
-
-    NOTE: In a real application, this function should be moved to services/team.py.
     """
-    # Use select statement to query the database
-    # The Team model must be imported/available for this to work
     return db.query(Team).filter(Team.id == team_id).one_or_none()
+
+
+def generate_team_code(db: Session, min_digits: int = 4, max_digits=8, max_attempts: int = 100) -> str:
+    """
+    Generate a unique numeric team code.
+    Starts with 4 digits, expands if all are taken.
+    """
+    digits = min_digits
+
+    for _ in range(max_digits - min_digits):
+        # generate a few random codes at this digit length
+        for _ in range(max_attempts):
+            code_int = random.randint(0, 10**digits - 1)
+            code = f"{code_int:0{digits}d}"  # zero-padded
+
+            # Check if it exists
+            exists = db.query(Team).filter_by(search_code=code).first()
+            if not exists:
+                return code
+
+        # if all attempts failed, increase digit count
+        digits += 1
+        print(f"All {digits-1}-digit codes exhausted, switching to {digits}-digit codes.")
+
+    raise ValueError("Can't generate the team code, try again.")
+
+def get_team_by_search_code(search_code: str, db: Session) -> Optional[Team]:
+    """
+    Fetches a Team model instance by its ID.
+    """
+    return db.query(Team).filter(Team.search_code == search_code).one_or_none()
 
 
 def get_user(doctor_id, db):

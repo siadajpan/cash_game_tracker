@@ -4,6 +4,9 @@ from typing import List, Optional, Type, Union
 
 from fastapi import Request
 
+from backend.db.models.chip_amount import ChipAmount
+from backend.schemas.chip_amount import ChipAmountCreate
+
 
 class GameCreateForm:
     def __init__(self, request: Request):
@@ -101,25 +104,49 @@ class AddOnRequest:
 
         return len(self.errors) == 0
 
-
 class CashOutRequest:
     def __init__(self, request: Request):
         self.request: Request = request
-        self.errors: List = []
+        self.errors: List[str] = []
         self.amount: float = 0.0
+        self.chips_amounts: List[ChipAmountCreate] = []
 
-    async def load_data(self):
+    async def load_data(self, chip_structure: List):
+        """
+        Load total cash-out amount and per-chip quantities from form.
+        `chip_structure` should be a list of Chip objects (in display order).
+        """
         form = await self.request.form()
 
-        cash_out = form.get("cash_out")
+        # Total value
+        cash_out = form.get("totalValue")
         try:
             self.amount = float(cash_out)
-        except ValueError:
-            self.errors.append("Add-on be a valid number.")
+        except (ValueError, TypeError):
+            self.errors.append("Cash-out amount must be a valid number.")
+            self.amount = 0.0
+
+        # Load chip counts
+        self.chips_amounts = []
+        for idx, chip in enumerate(chip_structure, start=1):
+            key = f"chip_{idx}"
+            count_str = form.get(key, "0")
+
+            try:
+                count = int(count_str)
+                if count < 0:
+                    raise ValueError
+            except ValueError:
+                self.errors.append(f"Invalid count for chip with value {chip['value']}")
+                count = 0
+
+            # only store nonzero chips
+            if count > 0:
+                self.chips_amounts.append(ChipAmountCreate(chip_id=chip['id'], amount=count))
 
     async def is_valid(self):
-        # Validation for Default Buy-In
+        # Validation for total
         if self.amount is None or self.amount < 0:
-            self.errors.append("Add-on needs to be 0 or more.")
+            self.errors.append("Cash-out total must be 0 or more.")
 
         return len(self.errors) == 0

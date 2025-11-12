@@ -1,14 +1,17 @@
 from pydantic import BaseModel
 
+from backend.schemas.chips import NewChip
+
 
 class ChipStructureCreate(BaseModel):
+    name: str
     team_id: int
-    game_id: int
+    chips: list[NewChip] = []
+
 
 class ChipStructureShow(BaseModel):
     id: str
     team_id: int
-    game_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

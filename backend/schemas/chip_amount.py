@@ -1,15 +1,13 @@
 from pydantic import BaseModel
 
 
-class ChipCreate(BaseModel):
-    color: str
-    value: float
-    chip_structure_id: int
+class ChipAmountCreate(BaseModel):
+    chip_id: int
+    amount: int
 
 
-class NewChip(BaseModel):
-    color: str
-    value: float
+class NewChipAmount(BaseModel):
+    amount: int
 
 
 class ChipShow(BaseModel):

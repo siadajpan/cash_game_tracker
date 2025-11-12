@@ -1,17 +1,14 @@
 {% extends "shared/base.html" %}
 {% block title %}
-    <title>Cash out request</title>
+    <title>Cash Out Decision</title>
 {% endblock %}
 
 {% block content %}
+<div class="container">
+    <div class="page-title">Cash Out Request</div>
 
-<div class="container mt-5">
-    <div class="card shadow p-4">
-        <h3 class="mb-4 text-center">Cash out request</h3>
-
-    <!-- Player Info Section -->
+    <!-- Player Info -->
     <div class="mb-4">
-        <h5>Player Information</h5>
         <div class="row mb-2">
             <div class="col-4 fw-bold">Nickname:</div>
             <div class="col-8">{{ player.nick }}</div>
@@ -22,24 +19,50 @@
         </div>
     </div>
 
-    <!-- Current cash_out Request -->
+    <!-- Cash Out Table (read-only) -->
     <div class="mb-4">
-        <h5>Current Request</h5>
-        <div class="alert alert-info">
-            <strong>Requested amount:</strong> {{ cash_out_request.amount }}
-        </div>
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Color</th>
+                    <th>Value</th>
+                    <th>Count</th>
+                    <th class="text-end" style="width: 80px;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chip_amount in cash_out_request.chip_amounts %}
+                <tr>
+                    <td>
+                        <button type="button" class="btn btn-sm"
+                                style="background-color: {{ chip_amount.chip.color }}; width: 30px; height: 30px;" disabled>
+                        </button>
+                    </td>
+                    <td>{{ "%.2f"|format(chip_amount.chip.value) }}</td>
+                    <td>{{ chip_amount.amount }}</td>
+                    <td  class="text-end">{{ "%.2f"|format(chip_amount.chip.value * chip_amount.amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+                    
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
+                    <td id="totalValue" class="fw-bold fs-4">{{ cash_out_request.amount }}</td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
 
-    <!-- Approve / Decline Buttons -->
-    <div class="d-flex justify-content-center gap-3">
-        <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/approve">
-            <button type="submit" class="btn btn-success px-4">Accept</button>
-        </form>
+    <!-- Accept / Decline Buttons -->
+    <div class="d-flex justify-content-between mt-4">
         <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/decline">
-            <button type="submit" class="btn btn-danger px-4">Decline</button>
+            <button type="submit" class="btn btn-outline-secondary px-4">Decline</button>
+        </form>
+        <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/approve">
+            <button type="submit" class="btn btn-primary px-4">Accept</button>
         </form>
     </div>
 </div>
 
-</div>
 {% endblock %}

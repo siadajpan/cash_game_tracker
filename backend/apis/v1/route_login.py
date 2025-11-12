@@ -57,15 +57,14 @@ oauth2_scheme = OAuth2PasswordBearerWithCookie(
 def get_current_user_from_token(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
-    if not token:
-        # No token provided (unauthenticated user)
-        return None
-
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
     )
 
+    if not token:
+        # No token provided (unauthenticated user)
+        raise credentials_exception
     try:
         payload = jwt.decode(
             token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -74,22 +73,11 @@ def get_current_user_from_token(
         if email is None:
             raise credentials_exception
     except JWTError:
-        return None
+        raise credentials_exception
     user = get_user_by_email(email=email, db=db)
     if user is None:
         raise credentials_exception
     return user
-
-
-def optional_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-):
-    try:
-        return get_current_user_from_token(token, db)
-    except JWTError:
-        return None
-    except HTTPException:
-        return None
 
 
 def get_current_user(request, db):

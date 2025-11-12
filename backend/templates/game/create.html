@@ -5,9 +5,9 @@
 
 {% block content %}
 <div class="container">
-    <h5 class="mt-4 p-5 display-5">Create your game</h5>
+    <h5 class="page-title">Create your game</h5>
 
-    <div class="text-danger font-weight-bold mb-3">
+    <div class="text-danger font-weight-bold">
         {% for error in errors %}
             <li>{{ error }}</li>
         {% endfor %}
@@ -15,32 +15,14 @@
 
     <form method="POST" action="/game/create">
 
-        <!-- Team Selection -->
+        <!-- Team selector -->
         <div class="row mb-3">
             <div class="col-12 col-md-6">
-                {% if not user_teams %}
-                    <div class="form-text text-danger">You must be part of a team to create a game.</div>
-
-                {% elif user_teams|length == 1 %}
-                    <input type="hidden" name="team_id" id="team_id" value="{{ user_teams[0].id }}">
-                    <!-- <div class="form-control bg-light">{{ user_teams[0].name }}</div> -->
-
-                {% else %}
-                    <label for="team_id" class="form-label">Select Team</label>
-                    <select name="team_id" id="team_id" required class="form-select">
-                        <option value="" disabled selected>-- Choose a team --</option>
-                        {% for team in user_teams %}
-                        <option value="{{ team.id }}"
-                                {% if team.id|string == form.team_id|string %}selected{% endif %}>
-                            {{ team.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                {% endif %}
+                {% include "team/users_team_dropdown.html" %}
             </div>
         </div>
 
-        <!-- Default Buy-in -->
+        <!-- Default buy-in -->
         <div class="row mb-3">
             <div class="col-12 col-md-6">
                 <label for="default_buy_in" class="form-label">Default Buy-in</label>
@@ -51,74 +33,77 @@
             </div>
         </div>
 
-        <!-- Chip Structure (dynamic) -->
+        <!-- Chip structure -->
         <div class="row mb-3">
             <div class="col-12 col-md-6">
-                <div id="chipStructureContainer">
-                    {# Placeholder: will be updated dynamically #}
-                </div>
+                <label for="chip_structure_id" class="form-label">Chip Structure</label>
+                <select name="chip_structure_id" id="chip_structure_id" required class="form-select">
+                    <option value="" disabled selected>-- Choose a chip structure --</option>
+                </select>
             </div>
+            <div class="mt-2">
+                <a href="/chip_structure/create" class="btn btn-outline-secondary">Create new chip values.</a>
+            </div>
+
         </div>
 
+        <!-- Form buttons -->
         <div class="d-flex justify-content-between align-items-center">
             <a href="/" class="btn btn-outline-secondary">Back</a>
             <button type="submit" class="btn btn-primary">Submit</button>
         </div>
     </form>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const teamSelect = document.getElementById("team_id");
-    const container = document.getElementById("chipStructureContainer");
+    // Preload all chip structures from server
+    const teamChipStructures = {{ team_chip_structures | default('{}') | safe  }};
+    console.log("Loaded teamChipStructures:", teamChipStructures);
 
-    // Map of team IDs → chip structures
-    const teamChipStructures = {
-        {% for team in user_teams %}
-            "{{ team.id }}": [
-                {% for cs in chip_structures if cs.team_id == team.id %}
-                    {"id": "{{ cs.id }}", "name": "{{ cs.name }}"},
-                {% endfor %}
-            ],
-        {% endfor %}
-    };
+    document.addEventListener('DOMContentLoaded', function() {
+        const teamSelect = document.getElementById('team_id');  // select or hidden input
+        const chipSelect = document.getElementById('chip_structure_id');
 
-    const renderChipStructures = (teamId) => {
-        const structures = teamChipStructures[teamId] || [];
-        if (structures.length === 0) {
-            container.innerHTML = `
-                <a href="/chip_structure/create" class="form-text text-danger">
-                    Create new chip values.
-                </a>
-            `;
-        } else if (structures.length === 1) {
-            container.innerHTML = `
-                <input type="hidden" name="chip_structure_id" value="${structures[0].id}">
-                <div class="form-text">Chip Structure: ${structures[0].name}</div>
-            `;
-        } else {
-            let options = '<option value="" disabled selected>-- Choose a chip structure --</option>';
-            structures.forEach(cs => {
-                options += `<option value="${cs.id}">${cs.name}</option>`;
+        if (!chipSelect || !teamSelect) return;
+
+        function updateChipDropdown(teamId) {
+            console.log("Updating chip dropdown for teamId:", teamId);
+            const chipStructures = teamChipStructures[teamId] || [];
+            console.log("chipStructures found:", chipStructures);
+
+            chipSelect.innerHTML = '';
+
+            if (chipStructures.length === 0) {
+                chipSelect.innerHTML = `<option disabled selected>No chip structures available</option>`;
+                return;
+            }
+
+            if (chipStructures.length > 1) {
+                chipSelect.innerHTML = `<option value="" disabled selected>-- Choose a chip structure --</option>`;
+            }
+
+            chipStructures.forEach(cs => {
+                const option = document.createElement('option');
+                option.value = cs.id;
+                option.textContent = cs.name;
+                chipSelect.appendChild(option);
             });
-            container.innerHTML = `
-                <label for="chip_structure" class="form-label">Chip Structure</label>
-                <select name="chip_structure_id" id="chip_structure" required class="form-select">
-                    ${options}
-                </select>
-            `;
         }
-    };
 
-    // Initial render if one team selected
-    if (teamSelect && teamSelect.value) renderChipStructures(teamSelect.value);
-
-    // Update dynamically on change
-    if (teamSelect) {
-        teamSelect.addEventListener("change", (e) => {
-            renderChipStructures(e.target.value);
-        });
-    }
-});
+        // Multi-team: listen to select change
+        if (teamSelect.tagName === 'SELECT') {
+            teamSelect.addEventListener('change', () => {
+                console.log("Team selection changed to:", teamSelect.value);
+                updateChipDropdown(teamSelect.value);
+            });
+        }
+        // Single-team: hidden input, populate immediately
+        else if (teamSelect.type === 'hidden') {
+            console.log("Single team detected, populating chip dropdown:", teamSelect.value);
+            updateChipDropdown(teamSelect.value);
+        }
+    });
 </script>
 {% endblock %}
