@@ -20,9 +20,9 @@ router = APIRouter(include_in_schema=False)
 async def home(
     request: Request,
     user: Optional[User] = Depends(get_current_user_from_token),
-    db: Session = Depends(get_db),
     msg: str = None,
 ):
+    print("\n************current user", user)
     running_games = [g for t in user.teams for g in t.games if g.running]
     return templates.TemplateResponse(
         "general_pages/homepage.html",

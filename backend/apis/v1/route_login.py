@@ -61,10 +61,11 @@ def get_current_user_from_token(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
     )
+    print(f"\ngetting credentials from token {token}")
 
     if not token:
         # No token provided (unauthenticated user)
-        return credentials_exception
+        raise credentials_exception
     try:
         payload = jwt.decode(
             token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -73,12 +74,11 @@ def get_current_user_from_token(
         if email is None:
             raise credentials_exception
     except JWTError:
-        return None
+        raise credentials_exception
     user = get_user_by_email(email=email, db=db)
     if user is None:
         raise credentials_exception
     return user
-
 
 
 def get_current_user(request, db):

@@ -86,6 +86,7 @@ def check_team_exists(team_name: str, db: Session) -> bool:
     team = db.query(Team).filter(Team.name == team_name).one_or_none()
     return team is not None
 
+
 def get_team_users(team: Team, db: Session) -> List[User]:
     """
     Retrieve all users (players) in a given team.

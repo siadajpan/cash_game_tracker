@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from sqlite3 import IntegrityError
 from fastapi import APIRouter, Depends, Request, Request, responses
@@ -35,7 +34,7 @@ async def create_chip_structure_form(
     context = {
         "request": request,
         "user_teams": current_user.teams,
-
+        "form": {"name": datetime.today().date()},
         "errors": [],
     }
 
@@ -72,7 +71,11 @@ async def create_chip_structure(
             {
                 "request": request,
                 "errors": errors,
-                "form": {"team_id": form.team_id, "chips": form.chips},
+                "form": {
+                    "team_id": form.team_id,
+                    "chips": form.chips,
+                    "name": form.name,
+                },
                 "user_teams": current_user.teams,
             },
         )
@@ -80,16 +83,17 @@ async def create_chip_structure(
     try:
         # Create a new ChipStructure
         new_chip_structure_data = ChipStructureCreate(
-            team_id=form.team_id, chips=form.chips
+            team_id=form.team_id, chips=form.chips, name=form.name
         )
-        create_new_chip_structure_db(
-            chip_structure=new_chip_structure_data, db=db
+        create_new_chip_structure_db(chip_structure=new_chip_structure_data, db=db)
+        return responses.RedirectResponse(
+            url="/game/create", status_code=status.HTTP_303_SEE_OTHER
         )
-        print("returning redirect")
-        return responses.RedirectResponse(url="/game/create", status_code=status.HTTP_303_SEE_OTHER)
 
     except IntegrityError:
-        errors.append("A database error occurred (e.g., integrity constraint violation).")
+        errors.append(
+            "A database error occurred (e.g., integrity constraint violation)."
+        )
     except Exception as e:
         errors.append(f"An unexpected error occurred: {e}")
         print(e)

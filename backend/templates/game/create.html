@@ -36,8 +36,8 @@
         <!-- Chip structure -->
         <div class="row mb-3">
             <div class="col-12 col-md-6">
-                <label for="chip_structure" class="form-label">Chip Structure</label>
-                <select name="chip_structure_id" id="chip_structure" required class="form-select">
+                <label for="chip_structure_id" class="form-label">Chip Structure</label>
+                <select name="chip_structure_id" id="chip_structure_id" required class="form-select">
                     <option value="" disabled selected>-- Choose a chip structure --</option>
                 </select>
             </div>
@@ -64,7 +64,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const teamSelect = document.getElementById('team_id');  // select or hidden input
-        const chipSelect = document.getElementById('chip_structure');
+        const chipSelect = document.getElementById('chip_structure_id');
 
         if (!chipSelect || !teamSelect) return;
 

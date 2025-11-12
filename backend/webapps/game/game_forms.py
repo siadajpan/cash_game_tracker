@@ -111,7 +111,8 @@ class CashOutRequest:
     async def load_data(self):
         form = await self.request.form()
 
-        cash_out = form.get("cash_out")
+        cash_out = form.get("totalValue")
+        print("cash out", cash_out)
         try:
             self.amount = float(cash_out)
         except ValueError:

@@ -25,7 +25,7 @@ class Game(Base):
 
     chip_structure_id = Column(Integer, ForeignKey("chip_structure.id"))
     chip_structure = relationship("ChipStructure", back_populates="games")
-    
+
     # Players in this game (Many-to-Many)
     players = relationship(
         "User", secondary=user_game_association, back_populates="games_played"

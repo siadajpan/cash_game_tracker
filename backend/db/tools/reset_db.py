@@ -51,5 +51,5 @@ def main():
 
 if __name__ == "__main__":
     drop_all()
-    create_all()
-    # main() 
+    # create_all()
+    # main()

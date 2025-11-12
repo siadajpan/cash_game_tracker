@@ -31,7 +31,7 @@ def start_application():
     include_router(app)
     configure_static(app)
     create_tables()
-    
+
     return app
 
 

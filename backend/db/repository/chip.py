@@ -13,9 +13,11 @@ from backend.schemas.chips import ChipStructureCreate, ChipCreate
 from datetime import date
 
 
-def create_new_chip(chip: ChipCreate,
-                       current_user: User = Depends(get_current_user_from_token),
-                       db: Session = Depends(get_db)):
+def create_new_chip(
+    chip: ChipCreate,
+    current_user: User = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
     new_chip = Chip(
         owner_id=current_user.id,
         **chip.dict(),
@@ -41,6 +43,7 @@ def list_chips_in_structure(chip_structure_id: int, db: Session) -> List[Type[Ch
 
     return chips
 
+
 def edit_chip_value(chip_id: int, new_value: float, db: Session) -> Type[Chip]:
     chip = db.get(Chip, chip_id)
     chip.value = new_value
@@ -49,4 +52,3 @@ def edit_chip_value(chip_id: int, new_value: float, db: Session) -> Type[Chip]:
     db.refresh(chip)
 
     return chip
-

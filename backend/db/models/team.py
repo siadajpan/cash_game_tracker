@@ -22,4 +22,3 @@ class Team(Base):
 
     games = relationship("Game", back_populates="team")
     chip_structure = relationship("ChipStructure", back_populates="team")
-    
