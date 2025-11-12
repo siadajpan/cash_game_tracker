@@ -22,7 +22,6 @@ async def home(
     user: Optional[User] = Depends(get_current_user_from_token),
     msg: str = None,
 ):
-    print("\n************current user", user)
     running_games = [g for t in user.teams for g in t.games if g.running]
     return templates.TemplateResponse(
         "general_pages/homepage.html",

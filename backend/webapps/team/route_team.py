@@ -15,6 +15,7 @@ from backend.db.models.user import User
 from backend.db.repository.game import get_user_games_count, get_user_total_balance
 from backend.db.repository.team import (
     create_new_user,
+    generate_team_code,
     get_user,
     create_new_team,
     join_team,
@@ -59,16 +60,12 @@ async def create_team(
     # 1. Validation for name
     if not name:
         errors.append("Team name is required.")
-
-    # 2. Find the team in the database
-    team_model = get_team_by_name(name, db)
-    if team_model is not None:
-        errors.append("Team with that name already exists.")
-
+    
+    team_search_code = generate_team_code(db)
     if not errors:
         try:
             # Use all extracted variables
-            new_team_data = TeamCreate(name=name)  # Update your Pydantic model
+            new_team_data = TeamCreate(name=name, search_code=team_search_code)  # Update your Pydantic model
             create_new_team(team=new_team_data, creator=current_user, db=db)
             return responses.RedirectResponse(
                 "/?msg=Team created successfully", status_code=status.HTTP_302_FOUND

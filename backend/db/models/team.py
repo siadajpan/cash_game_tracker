@@ -10,6 +10,7 @@ class Team(Base):
     __tablename__ = "team"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
+    search_code = Column(String(200), nullable=False)
 
     # Owner (Many-to-One: Many teams owned by one user)
     owner_id = Column(Integer, ForeignKey("user.id"))

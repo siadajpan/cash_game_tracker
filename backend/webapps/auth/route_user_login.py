@@ -48,7 +48,7 @@ async def register(request: Request, db: Session = Depends(get_db)):
 
             # --- Auto-login after registration ---
             response = responses.RedirectResponse(
-                "/?msg=Successfully logged in", status_code=status.HTTP_302_FOUND
+                "/", status_code=status.HTTP_302_FOUND
             )
 
             # Pass minimal login info to your token helper
@@ -75,7 +75,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
         try:
             form.__dict__.update(msg="Login Successful")
             response = responses.RedirectResponse(
-                "/?msg=Successfully logged in", status_code=status.HTTP_302_FOUND
+                "/", status_code=status.HTTP_302_FOUND
             )
             login_for_access_token(response=response, form_data=form, db=db)
             return response
@@ -104,7 +104,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
         try:
             form.__dict__.update(msg="Login Successful")
             response = responses.RedirectResponse(
-                "/?msg=Successfully logged in", status_code=status.HTTP_302_FOUND
+                "/", status_code=status.HTTP_302_FOUND
             )
             login_for_access_token(response=response, form_data=form, db=db)
             return response

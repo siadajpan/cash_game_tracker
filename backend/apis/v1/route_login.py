@@ -61,7 +61,6 @@ def get_current_user_from_token(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
     )
-    print(f"\ngetting credentials from token {token}")
 
     if not token:
         # No token provided (unauthenticated user)
