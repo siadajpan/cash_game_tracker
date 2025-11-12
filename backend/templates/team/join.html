@@ -5,7 +5,7 @@
 
 {% block content %}
     <div class="container">
-        <h5 class="mt-4 p-5 display-5">Find a team to join</h5>
+        <h5 class="page-title">Find a team to join</h5>
         <div class="text-danger font-weight-bold">
             <div class="text-danger font-weight-bold">
                 {% for error in errors %}
@@ -18,10 +18,10 @@
             <form method="POST" action="/team/join">
                 <div class="row mb-3">
                     <div class="col">
-                        <label>Name</label>
+                        <label>Team code</label>
                         <input type="text" required class="form-control"
-                               name="name" value="{{ name }}"
-                               placeholder="Team name">
+                               name="search_code" value="{{ search_code }}"
+                               placeholder="4 digits team code">
                     </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">

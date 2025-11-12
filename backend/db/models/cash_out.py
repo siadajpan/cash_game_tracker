@@ -15,6 +15,7 @@ class CashOut(Base):
     status = Column(
         Enum(PlayerRequestStatus), default=PlayerRequestStatus.REQUESTED, nullable=False
     )
-
+    
+    chip_amounts = relationship("ChipAmount", back_populates="cash_out", cascade="all, delete-orphan")
     user = relationship("User", back_populates="cash_outs")
     game = relationship("Game", back_populates="cash_outs")

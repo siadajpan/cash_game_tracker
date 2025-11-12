@@ -18,9 +18,9 @@
 
             <div class="py-4">
                 {% if game_count == 1 %}
-                <h2 class="display-7 fw-bold">Running game</h2>
-                {% else %}
-                <h2 class="display-7 fw-bold">Running games</h2>
+                <h2 class="display-7">Running game</h2>
+                {% elif game_count > 1 %}
+                <h2 class="display-7">Running games</h2>
                 {% endif %}
             </div>
 
@@ -46,17 +46,9 @@
             </div>
         {% endif %}
 
-        <div class="py-4">
-            {% if team_count == 1 %}
-            <h2 class="display-7 fw-bold">My Team</h2>
-            {% else %}
-            <h2 class="display-7 fw-bold">My Teams</h2>
-            {% endif %}
-        </div>
-
         <!-- TEAMS SECTION -->
         {% if team_count > 0 %}
-        <div class="list-group list-group-flush">
+        <div class="list-group list-group-flush mt-4">
             {% for team in user.teams %}
                 <li class="list-group-item">
                     <!-- Team info -->

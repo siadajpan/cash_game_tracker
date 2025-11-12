@@ -44,6 +44,12 @@ def get_chip_structure(chip_structure_id: int, db: Session) -> Optional[ChipStru
 
     return item
 
+def get_chip_structure_as_list(chip_structure_id: int, db: Session) -> List[dict]:
+    chip_structure = get_chip_structure(chip_structure_id, db)
+    chip_structure_list = [
+        {"id": chip.id, "color": chip.color, "value": chip.value} for chip in chip_structure.chips
+    ]
+    return chip_structure_list
 
 def list_team_chip_structures(team_id: int, db: Session) -> List[Type[ChipStructure]]:
     items = db.query(ChipStructure).filter(ChipStructure.team_id == team_id).all()

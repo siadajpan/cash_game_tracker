@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="container">
-    <h5 class="page-title">Cash Out</h5>
+    <div class="page-title">Cash Out</div>
 
     <!-- Error Display -->
     <div class="text-danger font-weight-bold">
@@ -31,7 +31,8 @@
                         {% for chip in chip_structure %}
                         <tr class="chip-row">
                             <td>
-                                <div class="chip-color-box" style="background-color: {{ chip.color }};"></div>
+                                <button type="button" class="btn btn-sm" 
+                                        style="background-color: {{ chip.color }}; width: 30px; height: 30px;" disabled></button>
                             </td>
                             <td class="chip-value" data-value="{{ chip.value }}">
                                 {{ "%.2f"|format(chip.value) }}
@@ -43,13 +44,15 @@
                         </tr>
                         {% endfor %}
                     </tbody>
+                    
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
+                            <td id="totalValue" class="fw-bold fs-4">0.00</td>
+                        </tr>
+                    </tfoot>
                 </table>
                 <input type="hidden" name="totalValue" id="totalValueInput" value="0.00">
-
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                    <h5>Total:</h5>
-                    <h5 id="totalValue">$0.00</h5>
-                </div>
 
             </div>
         </div>
@@ -60,22 +63,6 @@
         </div>
     </form>
 </div>
-
-<style>
-    .chip-color-box {
-        width: 30px;
-        height: 30px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        display: inline-block;
-    }
-
-    table.table th,
-    table.table td {
-        vertical-align: middle;
-        text-align: center;
-    }
-</style>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -96,7 +83,7 @@
                 row.querySelector(".chip-total").textContent = subtotal.toFixed(2);
             });
 
-            totalValueEl.textContent = `$${total.toFixed(2)}`;
+            totalValueEl.textContent = `${total.toFixed(2)}`;
             totalValueInput.value = total.toFixed(2); // 👈 update hidden field
         });
     });

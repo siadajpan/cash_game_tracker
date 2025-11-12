@@ -16,6 +16,7 @@ from backend.db.repository.game import get_user_games_count, get_user_total_bala
 from backend.db.repository.team import (
     create_new_user,
     generate_team_code,
+    get_team_by_search_code,
     get_user,
     create_new_team,
     join_team,
@@ -105,22 +106,22 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
     form = TeamJoinForm(request)
     await form.load_data()
 
-    team_name = form.name
+    search_code = form.search_code
     template_name = "team/join.html"
     errors = []
 
     # 1. Validation for name submission
-    if not team_name:
-        errors.append("Team name is required.")
+    if not search_code:
+        errors.append("Team search code is required.")
 
     if not errors:
         # 2. Find the team in the database
-        team_model = get_team_by_name(team_name, db)
+        team_model = get_team_by_search_code(search_code, db)
 
         if not team_model:
-            errors.append(f"Team '{team_name}' not found.")
+            errors.append(f"Team with code '{search_code}' not found.")
         elif current_user in team_model.users:
-            errors.append(f"You are already a member of team '{team_name}'.")
+            errors.append(f"You are already a member of team {team_model.name}#{search_code}.")
         else:
             # 3. Use the imported service function to join the team
             try:
@@ -141,7 +142,7 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
         {
             "request": request,
             "errors": errors,
-            "name": team_name,
+            "search_code": search_code,
         },
     )
 
