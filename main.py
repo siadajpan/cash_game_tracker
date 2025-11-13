@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
 from backend.apis.base import api_router
 from backend.core.config import settings
@@ -30,11 +31,20 @@ def start_application():
     include_router(app)
     configure_static(app)
     create_tables()
+
     return app
 
 
 app = start_application()
 
-# @app.get("/") #remove this, It is no longer needed.
-# def hello_api():
-#     return {"msg":"Hello API"}
+
+@app.middleware("http")
+async def redirect_unauthorized_to_login(request: Request, call_next):
+    response = await call_next(request)
+
+    if response.status_code == status.HTTP_401_UNAUTHORIZED:
+        # Only redirect for HTML requests, not API calls
+        if request.url.path.startswith("/api"):
+            return response
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    return response
