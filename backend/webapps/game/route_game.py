@@ -105,7 +105,6 @@ async def create_game(
 ):
     form = await request.form()
     errors = []
-    print("received id", form.get("chip_structure_id"))
     try:
         # Let Pydantic handle validation
         new_game_data = GameCreate(

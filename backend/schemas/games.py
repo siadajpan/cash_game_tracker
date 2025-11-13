@@ -22,7 +22,6 @@ class GameCreate(BaseModel):
 
     @field_validator("chip_structure_id")
     def ensure_chip_structure_selected(cls, value):
-        print("cls", cls, value)
         if not value:
             raise ValueError("Select chip structure")
         return value
