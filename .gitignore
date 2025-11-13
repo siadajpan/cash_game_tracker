@@ -143,3 +143,4 @@ cython_debug/
 **/*.env
 .env
 /.vscode
+postgres_data/*
