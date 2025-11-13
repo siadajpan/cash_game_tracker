@@ -341,3 +341,32 @@ async def finish_game_view(
         return RedirectResponse(url="/", status_code=303)
     finish_the_game(user, game, db)
     return RedirectResponse(url="/", status_code=303)
+
+
+@router.get("/api/check_update")
+def check_update(user: User = Depends(get_current_user_from_token), db: Session = Depends(get_db)):
+    # Get latest game in the user’s teams
+    team_ids = [team.id for team in user.teams]
+    latest_game = (
+        db.query(Game)
+        .filter(Game.team_id.in_(team_ids))
+        .order_by(Game.date.desc())
+        .first()
+    )
+
+    if not latest_game:
+        return {"new_game": False}
+
+    # Compare against user.last_checked_game_time if you track it, or use a simpler check
+    if not hasattr(user, "last_checked_game_time") or not user.last_checked_game_time:
+        user.last_checked_game_time = datetime.now()
+        db.commit()
+        return {"new_game": True}
+
+    new_game = latest_game.date > user.last_checked_game_time
+
+    if new_game:
+        user.last_checked_game_time = datetime.now()
+        db.commit()
+
+    return {"new_game": new_game}
