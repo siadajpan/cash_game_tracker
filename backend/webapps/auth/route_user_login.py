@@ -12,7 +12,11 @@ from starlette import status
 
 from backend.apis.v1.route_login import login_for_access_token
 from backend.core.config import TEMPLATES_DIR
-from backend.db.repository.user import create_new_user, get_user_by_email, update_user_password
+from backend.db.repository.user import (
+    create_new_user,
+    get_user_by_email,
+    update_user_password,
+)
 from backend.db.session import get_db
 from backend.schemas.user import UserCreate
 from backend.webapps.auth.forms import LoginForm
@@ -42,9 +46,7 @@ async def register(request: Request, db: Session = Depends(get_db)):
         print("user", user)
         update_user_password(user, form.password, db)
         # --- Auto-login after registration ---
-        response = responses.RedirectResponse(
-            "/", status_code=status.HTTP_302_FOUND
-        )
+        response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
 
         # Pass minimal login info to your token helper
         class TempLoginForm:
@@ -59,6 +61,7 @@ async def register(request: Request, db: Session = Depends(get_db)):
         form.errors.append("Unknown error")
 
     return templates.TemplateResponse("auth/reset_password.html", form.__dict__)
+
 
 @router.get("/register/")
 async def register_form(request: Request):

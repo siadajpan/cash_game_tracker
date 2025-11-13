@@ -26,11 +26,13 @@ def drop_all():
         Base.metadata.drop_all(bind=conn)
     print("Done. All tables dropped.")
 
+
 def create_all():
     print(f"Creating all tables in: {engine.url}")
     with engine.begin() as conn:
         Base.metadata.create_all(bind=conn)
     print("Done. All tables created.")
+
 
 def main():
     if len(sys.argv) < 2:

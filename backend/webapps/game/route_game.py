@@ -262,7 +262,13 @@ def process_player(
     can_approve = []
 
     if len(cash_out_requests_non_declined):
-        money_out = sum([req.amount for req in cash_out_requests if req.status == PlayerRequestStatus.APPROVED])
+        money_out = sum(
+            [
+                req.amount
+                for req in cash_out_requests
+                if req.status == PlayerRequestStatus.APPROVED
+            ]
+        )
         cash_out_req = cash_out_requests[-1]
 
         if cash_out_req.status == PlayerRequestStatus.REQUESTED:

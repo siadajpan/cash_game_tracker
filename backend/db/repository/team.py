@@ -29,7 +29,9 @@ def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
         The newly created Team instance.
     """
     # 1. Create the team, set the creator as owner
-    new_team = Team(**team.model_dump(), owner=creator)  # Many-to-One owner relationship
+    new_team = Team(
+        **team.model_dump(), owner=creator
+    )  # Many-to-One owner relationship
 
     # 2. Add the creator as a player (Many-to-Many)
     new_team.users.append(creator)
@@ -114,7 +116,9 @@ def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
     return db.query(Team).filter(Team.id == team_id).one_or_none()
 
 
-def generate_team_code(db: Session, min_digits: int = 4, max_digits=8, max_attempts: int = 100) -> str:
+def generate_team_code(
+    db: Session, min_digits: int = 4, max_digits=8, max_attempts: int = 100
+) -> str:
     """
     Generate a unique numeric team code.
     Starts with 4 digits, expands if all are taken.
@@ -134,9 +138,12 @@ def generate_team_code(db: Session, min_digits: int = 4, max_digits=8, max_attem
 
         # if all attempts failed, increase digit count
         digits += 1
-        print(f"All {digits-1}-digit codes exhausted, switching to {digits}-digit codes.")
+        print(
+            f"All {digits-1}-digit codes exhausted, switching to {digits}-digit codes."
+        )
 
     raise ValueError("Can't generate the team code, try again.")
+
 
 def get_team_by_search_code(search_code: str, db: Session) -> Optional[Team]:
     """

@@ -25,12 +25,15 @@ class UserCreateForm:
         if not self.nick:
             self.errors.append("Nick is required")
         if not self.password or len(self.password) < settings.PASSWORD_LENGTH:
-            self.errors.append(f"Password needs to be at least {settings.PASSWORD_LENGTH} characters")
+            self.errors.append(
+                f"Password needs to be at least {settings.PASSWORD_LENGTH} characters"
+            )
         if not self.email:
             self.errors.append("Wrong email address")
         if self.password != self.repeat_password:
             self.errors.append("Passwords don't match")
         return len(self.errors) == 0
+
 
 class ResetPasswordForm:
     def __init__(self, request: Request):
@@ -48,7 +51,9 @@ class ResetPasswordForm:
 
     async def is_valid(self):
         if not self.password or len(self.password) < settings.PASSWORD_LENGTH:
-            self.errors.append(f"Password needs to be at least {settings.PASSWORD_LENGTH} characters")
+            self.errors.append(
+                f"Password needs to be at least {settings.PASSWORD_LENGTH} characters"
+            )
         if not self.email:
             self.errors.append("Wrong email address")
         if self.password != self.repeat_password:

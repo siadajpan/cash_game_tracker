@@ -61,16 +61,16 @@ async def create_team(
     # 1. Validation for name
     if not name:
         errors.append("Team name is required.")
-    
+
     team_search_code = generate_team_code(db)
     if not errors:
         try:
             # Use all extracted variables
-            new_team_data = TeamCreate(name=name, search_code=team_search_code)  # Update your Pydantic model
+            new_team_data = TeamCreate(
+                name=name, search_code=team_search_code
+            )  # Update your Pydantic model
             create_new_team(team=new_team_data, creator=current_user, db=db)
-            return responses.RedirectResponse(
-                "/", status_code=status.HTTP_302_FOUND
-            )
+            return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
         except IntegrityError:
             errors.append("Team with that name already exists.")
 
@@ -121,7 +121,9 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
         if not team_model:
             errors.append(f"Team with code '{search_code}' not found.")
         elif current_user in team_model.users:
-            errors.append(f"You are already a member of team {team_model.name}#{search_code}.")
+            errors.append(
+                f"You are already a member of team {team_model.name}#{search_code}."
+            )
         else:
             # 3. Use the imported service function to join the team
             try:
