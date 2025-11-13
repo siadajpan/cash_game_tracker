@@ -15,8 +15,8 @@ from backend.apis.v1.route_login import (
     get_current_user_from_token,
 )
 from backend.core.config import TEMPLATES_DIR
-from backend.db.models.add_on import PlayerRequestStatus
 from backend.db.models.game import Game
+from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.user import User
 from backend.db.repository.add_on import (
     get_player_game_addons,

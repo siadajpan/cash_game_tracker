@@ -1,16 +1,10 @@
-import enum
 
 from sqlalchemy import Column, Enum, ForeignKey, Integer, String, Float
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
+from backend.db.models.player_request_status import PlayerRequestStatus
 
-
-# Define the status enum
-class PlayerRequestStatus(str, enum.Enum):
-    REQUESTED = "REQUESTED"
-    APPROVED = "APPROVED"
-    DECLINED = "DECLINED"
 
 
 class AddOn(Base):

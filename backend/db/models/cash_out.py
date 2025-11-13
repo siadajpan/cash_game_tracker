@@ -2,7 +2,7 @@ from sqlalchemy import Column, ForeignKey, Integer, String, Float, Enum
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
-from backend.db.models.add_on import PlayerRequestStatus
+from backend.db.models.player_request_status import PlayerRequestStatus
 
 
 class CashOut(Base):
