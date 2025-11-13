@@ -16,13 +16,15 @@
             <!-- GAMES SECTION -->
             {% set game_count = running_games | length %}
 
-            <div class="py-4">
-                {% if game_count == 1 %}
-                <h2 class="display-7">Running game</h2>
-                {% elif game_count > 1 %}
-                <h2 class="display-7">Running games</h2>
-                {% endif %}
-            </div>
+            {% if game_count == 1 %}
+                <div class="py-4">
+                    <h2 class="display-7">Running game</h2>
+                </div>
+            {% elif game_count > 1 %}
+                <div class="py-4">
+                    <h2 class="display-7">Running games</h2>
+                </div>
+            {% endif %}
 
             {% if game_count > 0 %}
             <ul class="list-group list-group-flush">

@@ -19,5 +19,13 @@ def create_new_user(user: UserCreate, db: Session):
 
 
 def get_user_by_email(email: str, db: Session):
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email).one_or_none()
+    return user
+
+
+def update_user_password(user, new_password, db: Session):
+    hashed_password = Hasher.get_password_hash(new_password)
+    user.hashed_password = hashed_password
+    db.commit()
+    db.refresh(user)
     return user

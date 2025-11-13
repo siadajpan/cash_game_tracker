@@ -69,7 +69,7 @@ async def create_team(
             new_team_data = TeamCreate(name=name, search_code=team_search_code)  # Update your Pydantic model
             create_new_team(team=new_team_data, creator=current_user, db=db)
             return responses.RedirectResponse(
-                "/?msg=Team created successfully", status_code=status.HTTP_302_FOUND
+                "/", status_code=status.HTTP_302_FOUND
             )
         except IntegrityError:
             errors.append("Team with that name already exists.")
