@@ -1,4 +1,16 @@
 services:
+
+  duckdns:
+    image: linuxserver/duckdns
+    container_name: duckdns
+    restart: always
+    environment:
+      - SUBDOMAINS=cashgame
+      - TOKEN=ad5fb859-c5e7-4dec-9099-88f79287b616
+      - LOG_FILE=true
+    volumes:
+      - ./duckdns:/config
+
   db:
     image: postgres:16
     container_name: postgres_db
@@ -21,7 +33,7 @@ services:
       - db
     env_file: .env
     ports:
-      - "8000:8000"
+      - "8000"
     volumes:
       - .:/app
     command: >
@@ -29,5 +41,21 @@ services:
       --bind 0.0.0.0:8000
       --workers 4
 
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
