@@ -71,22 +71,13 @@ async def create_game_form(
         team_chip_structures[team.id] = [
             {"id": cs.id, "name": str(cs.name)} for cs in team.chip_structure
         ]
-        # print(
-        #     "team:",
-        #     team.name,
-        #     "chip structures:",
-        #     [cs.name for cs in team.chip_structure],
-        # )
+
     team_chip_structures = json.dumps(team_chip_structures)
-    print("Chip structures of the user:", team_chip_structures)
-    # Prepare initial form data and context for the template
     context = {
         "request": request,
         "errors": [],
-        # 1. Pass the user's teams to populate the dropdown
         "user_teams": current_user.teams,
         "team_chip_structures": team_chip_structures,
-        # 2. Pass default values for the form fields
         "form": {
             "default_buy_in": 0.0,
             "date": datetime.today().date().isoformat(),  # Format as YYYY-MM-DD
@@ -105,7 +96,6 @@ async def create_game(
 ):
     form = await request.form()
     errors = []
-    print("received id", form.get("chip_structure_id"))
     try:
         # Let Pydantic handle validation
         new_game_data = GameCreate(
@@ -272,7 +262,13 @@ def process_player(
     can_approve = []
 
     if len(cash_out_requests_non_declined):
-        money_out = sum([req.amount for req in cash_out_requests if req.status == PlayerRequestStatus.APPROVED])
+        money_out = sum(
+            [
+                req.amount
+                for req in cash_out_requests
+                if req.status == PlayerRequestStatus.APPROVED
+            ]
+        )
         cash_out_req = cash_out_requests[-1]
 
         if cash_out_req.status == PlayerRequestStatus.REQUESTED:

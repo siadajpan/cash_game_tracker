@@ -30,5 +30,7 @@ class Settings:
     TEST_USER_EMAIL = "test@example.com"
     TEST_USER_PASSWORD = "test_password"
 
+    PASSWORD_LENGTH = 4
+
 
 settings = Settings()

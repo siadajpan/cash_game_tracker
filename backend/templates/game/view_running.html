@@ -4,8 +4,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h5 class="mt-4 p-3 display-5">Game on {{ game.date }}</h5>
+<div class="container">
+    <div class="page-title">Game on {{ game.date }}</div>
     <!-- Header -->
     {% if requests %}
         {% set col_player = "col-4" %}

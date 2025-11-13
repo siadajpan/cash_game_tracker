@@ -104,6 +104,7 @@ class AddOnRequest:
 
         return len(self.errors) == 0
 
+
 class CashOutRequest:
     def __init__(self, request: Request):
         self.request: Request = request
@@ -142,7 +143,9 @@ class CashOutRequest:
 
             # only store nonzero chips
             if count > 0:
-                self.chips_amounts.append(ChipAmountCreate(chip_id=chip['id'], amount=count))
+                self.chips_amounts.append(
+                    ChipAmountCreate(chip_id=chip["id"], amount=count)
+                )
 
     async def is_valid(self):
         # Validation for total
