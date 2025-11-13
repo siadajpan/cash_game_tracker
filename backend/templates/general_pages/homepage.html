@@ -77,3 +77,16 @@
 
 </div>
 {% endblock %}
+{% block scripts %}
+<script>
+setInterval(async () => {
+    const response = await fetch("/game/api/check_update");  // create this endpoint
+    if (response.ok) {
+        const data = await response.json();
+        if (data.new_game) {
+            location.reload();
+        }
+    }
+}, 10000); // every 10 seconds
+</script>
+{% endblock %}
