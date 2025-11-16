@@ -13,6 +13,8 @@ from backend.webapps.user import route_user
 api_router = APIRouter()
 api_router.include_router(route_user.router, prefix="/user", tags=["user-webapp"])
 api_router.include_router(home.router, prefix="", tags=["user-webapp"])
+api_router.include_router(home.health_router)
+
 api_router.include_router(route_team.router, prefix="/team", tags=["team-webapp"])
 api_router.include_router(
     route_chip_structure.router, prefix="/chip_structure", tags=["team-webapp"]
