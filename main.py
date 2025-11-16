@@ -70,5 +70,5 @@ async def redirect_unauthorized_to_login(request: Request, call_next):
         # Only redirect for HTML requests, not API calls
         if request.url.path.startswith("/api"):
             return response
-        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/login", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
     return response
