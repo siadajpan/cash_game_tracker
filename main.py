@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.trustedhost import TrustedHostMiddleware 
 
 from backend.apis.base import api_router
 from backend.core.config import settings
@@ -45,6 +46,10 @@ def wait_for_db(engine, retries=10, delay=2):
 
 def start_application():
     app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
+    app.add_middleware(
+        TrustedHostMiddleware, 
+        allowed_hosts=["*"]
+    )
     include_router(app)
     configure_static(app)
     wait_for_db(engine) 
