@@ -10,6 +10,8 @@ services:
     volumes:
       - .:/app
     command: >
-      poetry run gunicorn -k uvicorn.workers.UvicornWorker main:app
+      poetry run gunicorn -k uvicorn.workers.UvicornWorker
       --bind 0.0.0.0:8000
       --workers 4
+      --forwarded-allow-ips "*"
+      main:app
