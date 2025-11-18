@@ -2,67 +2,68 @@
 {% block title %}
 <title>Cash Out</title>
 {% endblock %}
+{% block page_heading %}Cash Out{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-title">Cash Out</div>
 
-    <!-- Error Display -->
-    <div class="text-danger font-weight-bold">
-        {% for error in errors %}
-        <li>{{ error }}</li>
-        {% endfor %}
+<!-- Error Display -->
+<div class="text-danger font-weight-bold">
+    {% for error in errors %}
+    <li>{{ error }}</li>
+    {% endfor %}
+</div>
+
+<form method="POST" action="/game/{{ game_id }}/cash_out" id="cashOutForm">
+    <div class="row mb-3">
+        <div class="col-12 col-md-8">
+
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Color</th>
+                        <th>Value</th>
+                        <th>Count</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for chip in chip_structure %}
+                    <tr class="chip-row">
+                        <td>
+                            <button type="button" class="btn btn-sm" 
+                                    style="background-color: {{ chip.color }}; width: 30px; height: 30px; filter: none;" disabled></button>
+                        </td>
+                        <td class="chip-value" data-value="{{ chip.value }}">
+                            {{ "%.2f"|format(chip.value) }}
+                        </td>
+                        <td>
+                            <input type="number" min="0" value="0" class="form-control chip-count" name="chip_{{ loop.index }}">
+                        </td>
+                        <td class="chip-total">0.00</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
+                        <td id="totalValue" class="fw-bold fs-4">0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <input type="hidden" name="totalValue" id="totalValueInput" value="0.00">
+
+        </div>
     </div>
 
-    <form method="POST" action="/game/{{ game_id }}/cash_out" id="cashOutForm">
-        <div class="row mb-3">
-            <div class="col-12 col-md-8">
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <a href="/game/{{ game_id }}" class="btn btn-outline-secondary">Back</a>
+        <button type="submit" class="btn btn-primary">Request Cash Out</button>
+    </div>
+</form>
 
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;">Color</th>
-                            <th>Value</th>
-                            <th>Count</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for chip in chip_structure %}
-                        <tr class="chip-row">
-                            <td>
-                                <button type="button" class="btn btn-sm" 
-                                        style="background-color: {{ chip.color }}; width: 30px; height: 30px; filter: none;" disabled></button>
-                            </td>
-                            <td class="chip-value" data-value="{{ chip.value }}">
-                                {{ "%.2f"|format(chip.value) }}
-                            </td>
-                            <td>
-                                <input type="number" min="0" value="0" class="form-control chip-count" name="chip_{{ loop.index }}">
-                            </td>
-                            <td class="chip-total">0.00</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    
-                    <tfoot class="table-light">
-                        <tr>
-                            <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
-                            <td id="totalValue" class="fw-bold fs-4">0.00</td>
-                        </tr>
-                    </tfoot>
-                </table>
-                <input type="hidden" name="totalValue" id="totalValueInput" value="0.00">
-
-            </div>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <a href="/game/{{ game_id }}" class="btn btn-outline-secondary">Back</a>
-            <button type="submit" class="btn btn-primary">Request Cash Out</button>
-        </div>
-    </form>
-</div>
+{% endblock %}
+{% block scripts %}
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {

@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from fastapi.middleware.trustedhost import TrustedHostMiddleware 
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from backend.apis.base import api_router
 from backend.core.config import settings
@@ -29,30 +29,29 @@ def configure_static(app):
 def create_tables():
     Base.metadata.create_all(bind=engine)
 
-def create_enums(engine): 
+
+def create_enums(engine):
     PlayerRequestStatusEnum.create(bind=engine, checkfirst=True)
 
-def wait_for_db(engine, retries=10, delay=2): 
-    for i in range(retries): 
-        try: 
-            with engine.connect() as conn: 
-                print("Database is ready!") 
-                return True 
-        except OperationalError: 
-            print(f"Database not ready, retrying {i+1}/{retries}...") 
-            time.sleep(delay) 
+
+def wait_for_db(engine, retries=10, delay=2):
+    for i in range(retries):
+        try:
+            with engine.connect() as conn:
+                print("Database is ready!")
+                return True
+        except OperationalError:
+            print(f"Database not ready, retrying {i+1}/{retries}...")
+            time.sleep(delay)
     raise Exception("Database not available after retries")
 
 
 def start_application():
     app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
-    app.add_middleware(
-        TrustedHostMiddleware, 
-        allowed_hosts=["*"]
-    )
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
     include_router(app)
     configure_static(app)
-    wait_for_db(engine) 
+    wait_for_db(engine)
     create_enums(engine)
     create_tables()
 
@@ -70,5 +69,7 @@ async def redirect_unauthorized_to_login(request: Request, call_next):
         # Only redirect for HTML requests, not API calls
         if request.url.path.startswith("/api"):
             return response
-        return RedirectResponse(url="/login", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+        return RedirectResponse(
+            url="/login", status_code=status.HTTP_307_TEMPORARY_REDIRECT
+        )
     return response

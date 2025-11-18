@@ -2,11 +2,10 @@
 {% block title %}
     <title>Create game</title>
 {% endblock %}
+{% block page_heading %}Create your game{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="page-title">Create your game</div>
-
     <div class="text-danger font-weight-bold">
         {% for error in errors %}
             <li>{{ error }}</li>

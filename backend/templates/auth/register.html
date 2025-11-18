@@ -3,58 +3,56 @@
 {% block title %}
 <title>Register</title>
 {% endblock %}
+{% block page_heading %}Register{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-title">Register</div>
-    <div class="text-danger font-weight-bold">
-        {% for error in errors %}
-        <li>{{error}}</li>
-        {% endfor %}
-    </div>
+<div class="text-danger font-weight-bold">
+    {% for error in errors %}
+    <li>{{error}}</li>
+    {% endfor %}
+</div>
 
-    <div class="mb-3">
-        <form method="POST">
-            <div class="row mb-3">
-                <div class="col">
-                <label for="nick">Nick</label>
-                <input type="text" required class="form-control"
-                       id="nick" name="nick" value="{{nick}}"
-                       placeholder="Nick">
-                </div>
+<div class="mb-3">
+    <form method="POST">
+        <div class="row mb-3">
+            <div class="col">
+            <label for="nick">Nick</label>
+            <input type="text" required class="form-control"
+                    id="nick" name="nick" value="{{nick}}"
+                    placeholder="Nick">
             </div>
-            <div class="row mb-3">
-                <div class="col">
-                    <label>Email</label>
-                    <input type="email" required placeholder="Your email"
-                           name="email" value="{{email}}"
-                           class="form-control">
-                </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col">
+                <label>Email</label>
+                <input type="email" required placeholder="Your email"
+                        name="email" value="{{email}}"
+                        class="form-control">
             </div>
-            <div class="row mb-3">
-                <div class="col">
-                    <label>Password</label>
-                    <input type="password" required
-                           placeholder="Choose a secure password"
-                           value="{{password}}" name="password"
-                           class="form-control">
-                </div>
-
-                <div class="col">
-                    <label>Repeat password</label>
-                    <input type="password" required
-                           placeholder="Repeat password"
-                           value="{{repeat_password}}" name="repeat_password"
-                           class="form-control">
-                </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col">
+                <label>Password</label>
+                <input type="password" required
+                        placeholder="Choose a secure password"
+                        value="{{password}}" name="password"
+                        class="form-control">
             </div>
 
-            <!-- Button row -->
-            <div class="d-flex justify-content-between align-items-center">
-                <a href="/login" class="btn btn-outline-secondary">Already registered?</a>
-                <button type="submit" class="btn btn-primary">Register</button>
+            <div class="col">
+                <label>Repeat password</label>
+                <input type="password" required
+                        placeholder="Repeat password"
+                        value="{{repeat_password}}" name="repeat_password"
+                        class="form-control">
             </div>
-        </form>
-    </div>
+        </div>
+
+        <!-- Button row -->
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="/login" class="btn btn-outline-secondary">Already registered?</a>
+            <button type="submit" class="btn btn-primary">Register</button>
+        </div>
+    </form>
 </div>
 {% endblock %}

@@ -4,78 +4,71 @@
 {% block title %}
 <title>Cash game manager</title>
 {% endblock %}
+{% block page_heading %}Over-bet: cash game{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
 
-    {% if request.cookies.access_token %}
+{% set team_count = user.teams | length %}
 
-        {% set team_count = user.teams | length %}
+{% if team_count > 0 %}
+    <!-- GAMES SECTION -->
+    {% set game_count = running_games | length %}
 
-        {% if team_count > 0 %}
-            <!-- GAMES SECTION -->
-            {% set game_count = running_games | length %}
+    {% if game_count == 1 %}
+        <h2 class="display-6">Running game</h2>
+    {% elif game_count > 1 %}
+        <h2 class="display-6">Running games</h2>
+    {% endif %}
 
-            {% if game_count == 1 %}
-                <div class="py-4">
-                    <h2 class="display-7">Running game</h2>
-                </div>
-            {% elif game_count > 1 %}
-                <div class="py-4">
-                    <h2 class="display-7">Running games</h2>
-                </div>
-            {% endif %}
-
-            {% if game_count > 0 %}
-            <ul class="list-group list-group-flush">
-                {% for game in running_games %}
-                <li class="list-group-item">
-                    {% set is_user_in_game = user in game.players %}
-                    {% with game=game %}
-                    {% include "game/game_list_view.html" %}
-                    {% endwith %}
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <div class="alert alert-info" role="alert">
-                <p class="mb-0 lead"> There are no running games in your teams. Click the button below to start one! </p>
-            </div>
-            {% endif %}
-            <div class="d-flex justify-content-between align-items-center">
-                <a href="/game/view_past" class="btn btn-outline-secondary">View past games </a>
-                <a href="/game/create" class="btn btn-primary"> Create a new game </a>
-            </div>
-        {% endif %}
-
-        <!-- TEAMS SECTION -->
-        {% if team_count > 0 %}
-        <div class="list-group list-group-flush mt-4">
-            {% for team in user.teams %}
-                <li class="list-group-item">
-                    <!-- Team info -->
-                    <div>
-                        {% include "team/team_list_view.html" %}
-                    </div>
-
-
-                </li>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="alert alert-info" role="alert">
-            <p class="mb-0 lead"> You are not currently part of any team. Get started by creating or joining one! </p>
-        </div>
-        {% endif %}
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="/team/join" class="btn btn-outline-secondary">Join an Existing Team </a>
-            <a href="/team/create" class="btn btn-primary">Create a Team </a>
-        </div>
+    {% if game_count > 0 %}
+    <ul class="list-group list-group-flush">
+        {% for game in running_games %}
+        <li class="list-group-item">
+            {% set is_user_in_game = user in game.players %}
+            {% with game=game %}
+            {% include "game/game_list_view.html" %}
+            {% endwith %}
+        </li>
+        {% endfor %}
+    </ul>
     {% else %}
+    <div class="alert alert-info" role="alert">
+        <p class="mb-0 lead"> There are no running games in your teams. Click the button below to start one! </p>
+    </div>
+    {% endif %}
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="/game/view_past" class="btn btn-outline-secondary">View past games </a>
+        <a href="/game/create" class="btn btn-primary"> Create a new game </a>
+    </div>
+{% endif %}
 
-    {%endif%}
 
+<!-- TEAMS SECTION -->
+{% if team_count > 0 %}
+<div class="list-group list-group-flush mt-4">
+    {% for team in user.teams %}
+        <li class="list-group-item">
+            <!-- Team info -->
+            <div>
+                {% include "team/team_list_view.html" %}
+            </div>
+
+
+        </li>
+    {% endfor %}
 </div>
+
+{% else %}
+<div class="alert alert-info" role="alert">
+    <p class="mb-0 lead"> You are not currently part of any team. Get started by creating or joining one! </p>
+</div>
+{% endif %}
+<div class="d-flex justify-content-between align-items-center">
+    <a href="/team/join" class="btn btn-outline-secondary">Join an Existing Team </a>
+    <a href="/team/create" class="btn btn-primary">Create a Team </a>
+</div>
+
+
 {% endblock %}
 {% block scripts %}
 <script>

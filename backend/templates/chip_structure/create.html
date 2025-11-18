@@ -4,117 +4,119 @@
     <title>Create Chip Structure</title>
 {% endblock %}
 
+{% block page_heading %}Create Chip Structure{% endblock %}
+
 {% block content %}
-    <div class="container">
-        <div class="page-title">Create Chip Structure</div>
 
-        <!-- Error Display -->
-        <div class="text-danger font-weight-bold">
-            {% for error in errors %}
-                <li>{{ error }}</li>
-            {% endfor %}
+<!-- Error Display -->
+<div class="text-danger font-weight-bold">
+    {% for error in errors %}
+        <li>{{ error }}</li>
+    {% endfor %}
+</div>
+
+<form method="POST" id="chipStructureForm" action="/chip_structure/create">
+
+    <!-- Name Field (prefilled with today's date) -->
+    <div class="row mb-3">
+        <div class="col-12 col-md-6">
+            <label for="name" class="form-label">Name</label>
+            <input
+                type="text"
+                class="form-control"
+                id="name"
+                name="name"
+                value="{{ form.name }}"
+                required
+            >
         </div>
-
-        <form method="POST" id="chipStructureForm" action="/chip_structure/create">
-
-            <!-- Name Field (prefilled with today's date) -->
-            <div class="row mb-3">
-                <div class="col-12 col-md-6">
-                    <label for="name" class="form-label">Name</label>
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="name"
-                        name="name"
-                        value="{{ form.name }}"
-                        required
-                    >
-                </div>
+    </div>
+    <!-- Team Selector -->
+    <div class="row mb-3">
+        <div class="col-12 col-md-6">
+            {% include "team/users_team_dropdown.html" %}
+        </div>
+    </div>
+    <!-- Chip Rows -->
+    <div class="row mb-3">
+        <div class="col-12 col-md-6" id="chipRows">
+            <div class="chip-row d-flex align-items-start gap-2 mb-2">
+                {% include "chip/create.html" %}
+                <button type="button" class="btn btn-outline-danger btn-sm remove-chip align-self-center" title="Remove chip">✕</button>
             </div>
-            <!-- Team Selector -->
-            <div class="row mb-3">
-                <div class="col-12 col-md-6">
-                    {% include "team/users_team_dropdown.html" %}
-                </div>
-            </div>
-            <!-- Chip Rows -->
-            <div class="row mb-3">
-                <div class="col-12 col-md-6" id="chipRows">
-                    <div class="chip-row d-flex align-items-start gap-2 mb-2">
-                        {% include "chip/create.html" %}
-                        <button type="button" class="btn btn-outline-danger btn-sm remove-chip align-self-center" title="Remove chip">✕</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add Chip Button -->
-            <div class="row mb-3">
-                <div class="col-12 col-md-6 text-center text-md-start">
-                    <button type="button" id="addChip" class="btn btn-secondary">
-                        <i class="bi bi-plus-lg"></i> Add Chip
-                    </button>
-                </div>
-            </div>
-
-            <!-- Submit & Back Buttons -->
-            <div class="row mb-5">
-                <div class="col-12 col-md-6 d-flex justify-content-between align-items-center">
-                    <a href="/game/create" class="btn btn-outline-secondary">Back</a>
-                    <button type="submit" class="btn btn-primary">Save Chip Structure</button>
-                </div>
-            </div>
-        </form>
+        </div>
     </div>
 
-    <!-- Script -->
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const chipRows = document.getElementById("chipRows");
-            const addChipBtn = document.getElementById("addChip");
+    <!-- Add Chip Button -->
+    <div class="row mb-3">
+        <div class="col-12 col-md-6 text-center text-md-start">
+            <button type="button" id="addChip" class="btn btn-secondary">
+                <i class="bi bi-plus-lg"></i> Add Chip
+            </button>
+        </div>
+    </div>
 
-            const chipTemplate = `
-                <div class="chip-row d-flex align-items-start gap-2 mb-2">
-                    <div class="flex-grow-1">
-                        {% include "chip/create.html" %}
-                    </div>
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-chip align-self-center" title="Remove chip">✕</button>
+    <!-- Submit & Back Buttons -->
+    <div class="row mb-5">
+        <div class="col-12 col-md-6 d-flex justify-content-between align-items-center">
+            <a href="/game/create" class="btn btn-outline-secondary">Back</a>
+            <button type="submit" class="btn btn-primary">Save Chip Structure</button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+{% block scripts %}
+
+<!-- Script -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const chipRows = document.getElementById("chipRows");
+        const addChipBtn = document.getElementById("addChip");
+
+        const chipTemplate = `
+            <div class="chip-row d-flex align-items-start gap-2 mb-2">
+                <div class="flex-grow-1">
+                    {% include "chip/create.html" %}
                 </div>
-            `;
+                <button type="button" class="btn btn-outline-danger btn-sm remove-chip align-self-center" title="Remove chip">✕</button>
+            </div>
+        `;
 
-            // Add new chip
-            addChipBtn.addEventListener("click", () => {
-                const wrapper = document.createElement("div");
-                wrapper.innerHTML = chipTemplate.trim();
-                chipRows.appendChild(wrapper.firstElementChild);
-            });
-
-            // Remove chip
-            chipRows.addEventListener("click", (e) => {
-                if (e.target.classList.contains("remove-chip")) {
-                    const rows = document.querySelectorAll(".chip-row");
-                    if (rows.length > 1) e.target.closest(".chip-row").remove();
-                }
-            });
+        // Add new chip
+        addChipBtn.addEventListener("click", () => {
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = chipTemplate.trim();
+            chipRows.appendChild(wrapper.firstElementChild);
         });
-    </script>
 
-    <!-- Styling -->
-    <style>
-        .chip-row {
-            margin-bottom: 0.4rem !important;
-        }
+        // Remove chip
+        chipRows.addEventListener("click", (e) => {
+            if (e.target.classList.contains("remove-chip")) {
+                const rows = document.querySelectorAll(".chip-row");
+                if (rows.length > 1) e.target.closest(".chip-row").remove();
+            }
+        });
+    });
+</script>
 
-        .remove-chip {
-            height: 38px;
-            width: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+<!-- Styling -->
+<style>
+    .chip-row {
+        margin-bottom: 0.4rem !important;
+    }
 
-        .chip-row select,
-        .chip-row input {
-            min-height: 38px;
-        }
-    </style>
+    .remove-chip {
+        height: 38px;
+        width: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chip-row select,
+    .chip-row input {
+        min-height: 38px;
+    }
+</style>
 {% endblock %}
