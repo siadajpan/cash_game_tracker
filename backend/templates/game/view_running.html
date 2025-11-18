@@ -70,19 +70,34 @@
     {% endfor %}
 </ul>
 
-
-<div class="d-flex mt-3">
-    {% if game.running %}
-        {% if user.id == game.owner_id %}
+{% if game.running %}
+    {% if user.id == game.owner_id %}
+        
+        <div class="d-flex mt-3 justify-content-between"> 
             <a href="/game/{{ game.id }}/finish" class="btn btn-danger">Finish game</a>
-        {% endif %}
-        <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
-        <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
-    {% endif %}
-</div>
+            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
+            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
+        </div>
+        
+        <div class="d-flex mt-3"> 
+            <a href="/" class="btn btn-outline-secondary">Back</a>
+        </div>
 
-<div class="d-flex mt-3">
-    <a href="/" class="btn btn-outline-secondary">Back</a>
-</div>
+    {% else %}
+
+        <div class="d-flex mt-3 justify-content-between">
+            
+            <a href="/" class="btn btn-outline-secondary">Back</a>
+            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
+            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
+
+        </div>
+        
+    {% endif %}
+{% else %}
+    <div class="d-flex mt-3"> 
+        <a href="/" class="btn btn-outline-secondary">Back</a>
+    </div>
+{% endif %}
 
 {% endblock %}

@@ -4,7 +4,7 @@
 {% block title %}
 <title>Cash game manager</title>
 {% endblock %}
-{% block page_heading %}Over-bet: cash game{% endblock %}
+{% block page_heading %}{% endblock %}
 
 {% block content %}
 
@@ -15,9 +15,9 @@
     {% set game_count = running_games | length %}
 
     {% if game_count == 1 %}
-        <h2 class="display-6">Running game</h2>
+        <h2 class="display-6 mt-3">Running game</h2>
     {% elif game_count > 1 %}
-        <h2 class="display-6">Running games</h2>
+        <h2 class="display-6 mt-3">Running games</h2>
     {% endif %}
 
     {% if game_count > 0 %}
@@ -43,9 +43,12 @@
 {% endif %}
 
 
-<!-- TEAMS SECTION -->
-{% if team_count > 0 %}
-<div class="list-group list-group-flush mt-4">
+{% if team_count == 1 %}
+    <h2 class="display-6 mt-3">My team</h2>
+{% elif team_count > 1 %}
+    <h2 class="display-6 mt-3">My teams</h2>
+{% endif %}{% if team_count > 0 %}
+<div class="list-group list-group-flush mt-1">
     {% for team in user.teams %}
         <li class="list-group-item">
             <!-- Team info -->
