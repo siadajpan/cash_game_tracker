@@ -20,7 +20,6 @@
 <div class="mb-4">
 
 <h5>Add-on History</h5>
-{% set previous_addons = player.add_ons | rejectattr("id", "equalto", add_on_request.id) | list %}
 {% if previous_addons | length > 0 %}
     <ul class=" list-group-flush list-group">
         {% for add_on in previous_addons %}

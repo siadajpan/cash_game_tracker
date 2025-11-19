@@ -73,6 +73,12 @@ def get_user_game_balance(player: User, game: Game, db: Session) -> float:
     return balance
 
 
+def get_game_add_on_requests(game: Game, db: Session):
+    return [add_on for add_on in game.add_ons if add_on.status == PlayerRequestStatus.REQUESTED]
+
+def get_game_cash_out_requests(game: Game, db: Session):
+    return [cash_out for cash_out in game.cash_outs if cash_out.status == PlayerRequestStatus.REQUESTED]
+
 def finish_the_game(user: User, game: Game, db: Session):
     """
     Mark a game as finished (running = False). Only the owner can finish the game.
@@ -80,6 +86,12 @@ def finish_the_game(user: User, game: Game, db: Session):
     if game.owner_id != user.id:
         raise PermissionError("Only the owner can finish the game.")
 
+    add_ons = get_game_add_on_requests(game, db)
+    cash_outs = get_game_cash_out_requests(game, db)
+    for request in add_ons + cash_outs:
+        request.status = PlayerRequestStatus.DECLINED
+        db.add(request)
+        
     game.running = False
     db.add(game)
     db.commit()
