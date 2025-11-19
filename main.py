@@ -7,7 +7,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from backend.apis.base import api_router
-from backend.core.config import settings
+from backend.core.config import STATIC_DIR, settings
 from backend.db.base import Base
 from backend.db.models.player_request_status import PlayerRequestStatusEnum
 from backend.db.session import engine
@@ -21,8 +21,6 @@ def include_router(app):
 
 
 def configure_static(app):
-    BASE_DIR = Path(__file__).resolve().parent
-    STATIC_DIR = BASE_DIR / "backend/static"
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 

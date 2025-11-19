@@ -9,7 +9,7 @@ load_dotenv(dotenv_path=env_path)
 BACKEND_DIR = BASE_DIR / "backend"
 # Base directory of the project
 TEMPLATES_DIR = BACKEND_DIR / "templates"
-STATIC_DIR = BACKEND_DIR / "static"
+STATIC_DIR = BACKEND_DIR / "public"
 
 
 class Settings:
