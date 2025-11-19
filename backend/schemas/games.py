@@ -1,16 +1,9 @@
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
 
 
 class GameCreate(BaseModel):
-    model_config = ConfigDict(
-        # This tells Pydantic to use the exception message directly
-        # for assertion errors, overriding the default "Assertion failed, {msg}"
-        error_msg_templates={
-            "assertion_error": "{msg}",
-        }
-    )
     date: str
     default_buy_in: float
     running: bool
@@ -37,6 +30,20 @@ class GameCreate(BaseModel):
         if not value:
             raise PydanticCustomError(
                 "chip_structure_error", "Select Chip Structure or create a new one"
+            )
+        return value
+
+
+class GameJoin(BaseModel):
+    buy_in: Optional[float] = None
+
+    @field_validator("buy_in")
+    def ensure_correct_buyin(cls, value):
+        if value < 0:
+            raise PydanticCustomError(
+                'buy_in_negative', 
+                'Buy-in must be a positive number. Got {value}', 
+                {'value': value}, # Context dictionary for the template
             )
         return value
 

@@ -1,15 +1,14 @@
 import json
 from datetime import datetime
 from sqlite3 import IntegrityError
-from typing import List
 
 from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
+from pydantic_core import PydanticCustomError
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.responses import RedirectResponse
-from urllib3 import request
 import math
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
@@ -20,20 +19,14 @@ from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.user import User
 from backend.db.repository.add_on import (
     get_player_game_addons,
-    create_add_on_request,
-    update_add_on_status,
-    get_add_on_by_id,
-    get_player_game_total_approved_add_on_amount,
 )
 from backend.db.repository.buy_in import (
     get_player_game_total_buy_in_amount,
     add_user_buy_in,
-    get_player_game_buy_ins,
 )
 from backend.db.repository.cash_out import (
     get_player_game_cash_out,
 )
-from backend.db.repository.chip_structure import list_team_chip_structures
 from backend.db.repository.game import (
     create_new_game_db,
     get_game_by_id,
@@ -43,17 +36,10 @@ from backend.db.repository.game import (
     get_user_game_balance,
 )
 from backend.db.repository.team import (
-    create_new_user,
-    get_user,
     get_team_by_id,
 )
 from backend.db.session import get_db
-from backend.schemas import chip_structure
-from backend.schemas.games import GameCreate
-from backend.schemas.user import UserCreate, UserShow
-from backend.webapps.game.game_forms import (
-    GameJoinForm,
-)
+from backend.schemas.games import GameCreate, GameJoin
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
@@ -202,33 +188,31 @@ async def join_game(
 ):
     template_name = "game/join.html"
     errors = []
-
+    form = await request.form()
     # Load form data
-    form = GameJoinForm(request)
-    await form.load_data()
-    buy_in = form.buy_in
+    try:
+        game = get_game_by_id(game_id, db)
+        buy_in=form.get("buy_in")
 
-    # Fetch game
-    game = get_game_by_id(game_id, db)
-    if game is None:
-        errors.append("Game doesn't exist anymore. Maybe it was deleted.")
+        form = GameJoin(buy_in=buy_in)
 
-    # Validate form
-    if not await form.is_valid():
-        errors.extend(form.errors)
+        # Fetch game
+        if game is None:
+            errors.append("Game doesn't exist anymore. Maybe it was deleted.")
 
-    if not errors:
-        try:
-            add_user_to_game(user, game, db)
-            add_user_buy_in(user, game, buy_in, db)
-            # Redirect to the game page
-            return RedirectResponse(url=f"/game/{game.id}", status_code=303)
-        except IntegrityError:
-            errors.append(
-                "A database error occurred (e.g., integrity constraint violation)."
-            )
-        except Exception as e:
-            errors.append(f"An unexpected error occurred: {e}")
+        add_user_to_game(user, game, db)
+        add_user_buy_in(user, game, buy_in, db)
+        # Redirect to the game page
+        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+    
+    except ValidationError as e:
+        errors.extend([err['msg'] for err in e.errors()])
+    except IntegrityError:
+        errors.append(
+            "A database error occurred (e.g., integrity constraint violation)."
+        )
+    except Exception as e:
+        errors.append(f"An unexpected error occurred: {e}")
 
     # Re-render template with submitted data and errors
     return templates.TemplateResponse(
@@ -237,7 +221,7 @@ async def join_game(
             "request": request,
             "errors": errors,
             "game": game,
-            "form": {"buy_in": buy_in},
+            "form": form,
         },
     )
 
