@@ -17,7 +17,7 @@
     {% set col_out = "col-4" %}
 {% endif %}
 
-<ul class="list-group list-group-flush">
+<ul class="list-group list-group-flush mb-3">
     <li class="list-group-item">
         <div class="row fw-bold text-center">
             <div class="{{ col_player }} text-start">Player</div>
@@ -73,10 +73,10 @@
 {% if game.running %}
     {% if user.id == game.owner_id %}
         
-        <div class="d-flex mt-3 justify-content-between"> 
+        <div class="d-flex justify-content-between"> 
             <a href="/game/{{ game.id }}/finish" class="btn btn-danger">Finish game</a>
-            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
-            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
+            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
+            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
         </div>
         
         <div class="d-flex mt-3"> 
@@ -85,7 +85,7 @@
 
     {% else %}
 
-        <div class="d-flex mt-3 justify-content-between">
+        <div class="d-flex justify-content-between">
             
             <a href="/" class="btn btn-outline-secondary">Back</a>
             <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
@@ -95,7 +95,7 @@
         
     {% endif %}
 {% else %}
-    <div class="d-flex mt-3"> 
+    <div class="d-flex "> 
         <a href="/" class="btn btn-outline-secondary">Back</a>
     </div>
 {% endif %}
