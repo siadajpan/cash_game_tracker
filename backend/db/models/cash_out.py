@@ -2,7 +2,10 @@ from sqlalchemy import Column, ForeignKey, Integer, String, Float, Enum
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
-from backend.db.models.player_request_status import PlayerRequestStatus
+from backend.db.models.player_request_status import (
+    PlayerRequestStatus,
+    PlayerRequestStatusEnum,
+)
 
 
 class CashOut(Base):
@@ -13,7 +16,7 @@ class CashOut(Base):
     time = Column(String, nullable=False)
     amount = Column(Float, nullable=False)
     status = Column(
-        Enum(PlayerRequestStatus), default=PlayerRequestStatus.REQUESTED, nullable=False
+        PlayerRequestStatusEnum, default=PlayerRequestStatus.REQUESTED, nullable=False
     )
 
     chip_amounts = relationship(

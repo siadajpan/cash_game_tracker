@@ -2,34 +2,35 @@
 {% block title %}
     <title>Team {{ team.name }}</title>
 {% endblock %}
+{% block page_heading %}{{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-title">
-            {{ team.name }} 
-            <span class="text-muted">#{{ team.search_code }}</span>
-    </div>     
-    <ul class="list-group list-group-flush">
-        <li class="list-group-item d-flex justify-content-between fw-bold">
-            <span>Player</span>
-            <span>Games Played</span>
-            <span>Total Balance</span>
+
+<ul class="list-group list-group-flush">
+    <li class="list-group-item d-flex justify-content-between fw-bold">
+        <span>Player</span>
+        <span>Games Played</span>
+        <span>Total Balance</span>
+    </li>
+
+    {% for info in players_info %}
+        <li class="list-group-item d-flex align-items-center">
+
+            <div class="col-4">{{ info.player.nick }}</div>
+            <div class="col-4 text-center">{{ info.games_count }}</div>
+            <div class="col-4 text-end {% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                {% if info.total_balance % 1 %}
+                    {{ "%.2f"|format(info.total_balance) }}
+                {% else %}
+                    {{ info.total_balance|int }}
+                {% endif %}
+            </div>
         </li>
+    {% endfor %}
+</ul>
 
-        {% for info in players_info %}
-            <li class="list-group-item d-flex align-items-center">
 
-                <div class="col-4">{{ info.player.nick }}</div>
-                <div class="col-4 text-center">{{ info.games_count }}</div>
-                <div class="col-4 text-end {% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                    {% if info.total_balance % 1 %}
-                        {{ "%.2f"|format(info.total_balance) }}
-                    {% else %}
-                        {{ info.total_balance|int }}
-                    {% endif %}
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
+<div class="d-flex mt-3">
+    <a href="/" class="btn btn-outline-secondary">Back</a>
 </div>
 {% endblock %}

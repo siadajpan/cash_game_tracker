@@ -22,8 +22,19 @@
 {% with msg=msg %}
     {% include "components/alerts.html" %}
 {% endwith %}
-{% block content %}
+{% block title %}
 {% endblock %}
+
+<div class="container">
+    {% set heading_content = self.page_heading() %}
+
+    {% if heading_content | trim | length > 0 %}
+    <div class="page-title">{{ heading_content }}</div>    
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"

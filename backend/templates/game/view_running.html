@@ -2,88 +2,102 @@
 {% block title %}
     <title>Game on {{ game.date }}</title>
 {% endblock %}
+{% block page_heading %}Game on {{ game.date }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-title">Game on {{ game.date }}</div>
-    <!-- Header -->
-    {% if requests %}
-        {% set col_player = "col-4" %}
-        {% set col_in = "col-2" %}
-        {% set col_out = "col-2" %}
-        {% set col_requests = "col-4" %}
-    {% else %}
-        {% set col_player = "col-4" %}
-        {% set col_in = "col-4" %}
-        {% set col_out = "col-4" %}
-    {% endif %}
+<!-- Header -->
+{% if requests %}
+    {% set col_player = "col-4" %}
+    {% set col_in = "col-2" %}
+    {% set col_out = "col-2" %}
+    {% set col_requests = "col-4" %}
+{% else %}
+    {% set col_player = "col-4" %}
+    {% set col_in = "col-4" %}
+    {% set col_out = "col-4" %}
+{% endif %}
 
-    <ul class="list-group list-group-flush">
+<ul class="list-group list-group-flush mb-3">
+    <li class="list-group-item">
+        <div class="row fw-bold text-center">
+            <div class="{{ col_player }} text-start">Player</div>
+            <div class="{{ col_in }}">In</div>
+            <div class="{{ col_out }}">Out</div>
+            {% if requests %}
+                <div class="{{ col_requests }}">Requests</div>
+            {% endif %}
+        </div>
+    </li>
+
+    <!-- Players -->
+    {% for info in players_info %}
+
         <li class="list-group-item">
-            <div class="row fw-bold text-center">
-                <div class="{{ col_player }} text-start">Player</div>
-                <div class="{{ col_in }}">In</div>
-                <div class="{{ col_out }}">Out</div>
-                {% if requests %}
-                    <div class="{{ col_requests }}">Requests</div>
+            <div class="row text-center align-items-center">
+                <div class="{{ col_player }} text-start">{{ info.player.nick }}</div>
+                <div class="{{ col_in }}">
+                    {% if info.money_in % 1 %}
+                        {{ "%.2f"|format(info.money_in) }}
+                    {% else %}
+                        {{ info.money_in|int }}
+                    {% endif %}
+                </div>
+                <div class="{{ col_out }}">
+                    {% if info.money_out is not none %}
+                        {% if info.money_out % 1 %}
+                            {{ "%.2f"|format(info.money_out) }}
+                        {% else %}
+                            {{ info.money_out|int }}
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+
+                {% if info.request %}
+                    <!-- Requests Column -->
+                        <div class="col-4">
+                            {% if user in info.can_approve %}
+                                <a href="{{ info.request_href }}" class="btn btn-secondary">{{ info.request_text }}</a>
+                            {% else %}
+                                {{ info.request_text }}
+                            {% endif %}
+                        </div>
+
                 {% endif %}
             </div>
         </li>
+    {% endfor %}
+</ul>
 
-        <!-- Players -->
-        {% for info in players_info %}
-
-            <li class="list-group-item">
-                <div class="row text-center align-items-center">
-                    <div class="{{ col_player }} text-start">{{ info.player.nick }}</div>
-                    <div class="{{ col_in }}">
-                        {% if info.money_in % 1 %}
-                            {{ "%.2f"|format(info.money_in) }}
-                        {% else %}
-                            {{ info.money_in|int }}
-                        {% endif %}
-                    </div>
-                    <div class="{{ col_out }}">
-                        {% if info.money_out is not none %}
-                            {% if info.money_out % 1 %}
-                                {{ "%.2f"|format(info.money_out) }}
-                            {% else %}
-                                {{ info.money_out|int }}
-                            {% endif %}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </div>
-
-                    {% if info.request %}
-                        <!-- Requests Column -->
-                            <div class="col-4">
-                                {% if user in info.can_approve %}
-                                    <a href="{{ info.request_href }}" class="btn btn-secondary">{{ info.request_text }}</a>
-                                {% else %}
-                                    {{ info.request_text }}
-                                {% endif %}
-                            </div>
-
-                    {% endif %}
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
-
-
-    <!-- Footer Buttons -->
-    <div class="d-flex justify-content-between mt-3">
-        <a href="/" class="btn btn-outline-secondary">Back</a>
-
-        {% if game.running %}
-            {% if user.id == game.owner_id %}
-                <a href="/game/{{ game.id }}/finish" class="btn btn-primary">Finish game</a>
-            {% endif %}
+{% if game.running %}
+    {% if user.id == game.owner_id %}
+        
+        <div class="d-flex justify-content-between"> 
+            <a href="/game/{{ game.id }}/finish" class="btn btn-danger">Finish game</a>
             <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
-            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Request chips</a>
-        {% endif %}
+            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
+        </div>
+        
+        <div class="d-flex mt-3"> 
+            <a href="/" class="btn btn-outline-secondary">Back</a>
+        </div>
+
+    {% else %}
+
+        <div class="d-flex justify-content-between">
+            
+            <a href="/" class="btn btn-outline-secondary">Back</a>
+            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
+            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
+
+        </div>
+        
+    {% endif %}
+{% else %}
+    <div class="d-flex "> 
+        <a href="/" class="btn btn-outline-secondary">Back</a>
     </div>
-</div>
+{% endif %}
 
 {% endblock %}

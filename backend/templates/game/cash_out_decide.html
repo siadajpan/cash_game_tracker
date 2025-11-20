@@ -1,68 +1,76 @@
-{% extends "shared/base.html" %}
-{% block title %}
-    <title>Cash Out Decision</title>
-{% endblock %}
+{% extends "shared/base.html" %} {% block title %}
+<title>Cash Out Decision</title>
+{% endblock %} {% block page_heading %}Cash Out Request{% endblock %} {% block
+content %}
 
-{% block content %}
-<div class="container">
-    <div class="page-title">Cash Out Request</div>
+<!-- Player Info -->
+<div class="mb-4">
+  <div class="row mb-2">
+    <div class="col-4 fw-bold">Nickname:</div>
+    <div class="col-8">{{ player.nick }}</div>
+  </div>
+  <div class="row mb-2">
+    <div class="col-4 fw-bold">Money-in:</div>
+    <div class="col-8">{{ money_in }}</div>
+  </div>
+</div>
 
-    <!-- Player Info -->
-    <div class="mb-4">
-        <div class="row mb-2">
-            <div class="col-4 fw-bold">Nickname:</div>
-            <div class="col-8">{{ player.nick }}</div>
-        </div>
-        <div class="row mb-2">
-            <div class="col-4 fw-bold">Money-in:</div>
-            <div class="col-8">{{ money_in }}</div>
-        </div>
-    </div>
+<!-- Cash Out Table (read-only) -->
+<div class="mb-4">
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th style="width: 80px">Color</th>
+        <th>Value</th>
+        <th>Count</th>
+        <th class="text-end" style="width: 80px">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for chip_amount in cash_out_request.chip_amounts %}
+      <tr>
+        <td>
+          <button
+            type="button"
+            class="btn btn-sm"
+            style="background-color: {{ chip_amount.chip.color }}; width: 30px; height: 30px;"
+            disabled
+          ></button>
+        </td>
+        <td>{{ "%.2f"|format(chip_amount.chip.value) }}</td>
+        <td>{{ chip_amount.amount }}</td>
+        <td class="text-end">
+          {{ "%.2f"|format(chip_amount.chip.value * chip_amount.amount) }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
 
-    <!-- Cash Out Table (read-only) -->
-    <div class="mb-4">
-        <table class="table align-middle">
-            <thead>
-                <tr>
-                    <th style="width: 80px;">Color</th>
-                    <th>Value</th>
-                    <th>Count</th>
-                    <th class="text-end" style="width: 80px;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for chip_amount in cash_out_request.chip_amounts %}
-                <tr>
-                    <td>
-                        <button type="button" class="btn btn-sm"
-                                style="background-color: {{ chip_amount.chip.color }}; width: 30px; height: 30px;" disabled>
-                        </button>
-                    </td>
-                    <td>{{ "%.2f"|format(chip_amount.chip.value) }}</td>
-                    <td>{{ chip_amount.amount }}</td>
-                    <td  class="text-end">{{ "%.2f"|format(chip_amount.chip.value * chip_amount.amount) }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-                    
-            <tfoot>
-                <tr>
-                    <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
-                    <td id="totalValue" class="fw-bold fs-4">{{ cash_out_request.amount }}</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
+        <td id="totalValue" class="fw-bold fs-4">
+          {{ cash_out_request.amount }}
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
 
-    <!-- Accept / Decline Buttons -->
-    <div class="d-flex justify-content-between mt-4">
-        <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/decline">
-            <button type="submit" class="btn btn-outline-secondary px-4">Decline</button>
-        </form>
-        <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/approve">
-            <button type="submit" class="btn btn-primary px-4">Accept</button>
-        </form>
-    </div>
+<!-- Accept / Decline Buttons -->
+<div class="d-flex justify-content-between mt-4">
+  <form
+    method="POST"
+    action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/decline"
+  >
+    <button type="submit" class="btn btn-danger px-4">Decline</button>
+  </form>
+  <form
+    method="POST"
+    action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/approve"
+  >
+    <button type="submit" class="btn btn-primary px-4">Accept</button>
+  </form>
 </div>
 
 {% endblock %}

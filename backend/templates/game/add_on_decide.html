@@ -2,67 +2,62 @@
 {% block title %}
     <title>Add on request</title>
 {% endblock %}
+{% block page_heading %}Add-on Request{% endblock %}
 
 {% block content %}
-
-<div class="container">
-    <div class="page-title">Add-on Request</div>
-
-    <!-- Player Info Section -->
-    <div class="mb-4">
-        <h5>Player Information</h5>
-        <div class="row mb-2">
-            <div class="col-4 fw-bold">Nickname:</div>
-            <div class="col-8">{{ player.nick }}</div>
-        </div>
-        <div class="row mb-2">
-            <div class="col-4 fw-bold">Initial Buy-in:</div>
-            <div class="col-8">{{ buy_in }}</div>
-        </div>
+<!-- Player Info Section -->
+<div class="mb-4">
+    <h5>Player Information</h5>
+    <div class="row mb-2">
+        <div class="col-4 fw-bold">Nickname:</div>
+        <div class="col-8">{{ player.nick }}</div>
     </div>
-    <div class="mb-4">
-
-    <h5>Add-on History</h5>
-    {% set previous_addons = player.add_ons | rejectattr("id", "equalto", add_on_request.id) | list %}
-    {% if previous_addons | length > 0 %}
-        <ul class=" list-group-flush list-group">
-            {% for add_on in previous_addons %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div class="col-4">{{ add_on.amount }}</div>
-                    <div class="col-4 text-center">
-                        {% if add_on.status == "DECLINED" %}
-                            <span class="text-danger">Declined</span>
-                        {% elif add_on.status == "APPROVED" %}
-                            <span class="text-success">Approved</span>
-                        {% else %}
-                            <span class="text-secondary">Requested</span>
-                        {% endif %}
-                    </div>
-                    <div class="col-4 text-end">
-                        {{ add_on.time.split('T')[1][:5] if 'T' in add_on.time else add_on.time }}
-                    </div>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="text-muted">No previous add-ons.</p>
-    {% endif %}
-
+    <div class="row mb-2">
+        <div class="col-4 fw-bold">Initial Buy-in:</div>
+        <div class="col-8">{{ buy_in }}</div>
     </div>
-    
-    <div class="d-flex mt-3">
-        <h5>Requested amount: {{ add_on_request.amount }}</h5>
-    </div>
+</div>
+<div class="mb-4">
 
-    <!-- Approve / Decline Buttons -->
-    <div class="d-flex justify-content-between mt-4">
-        <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/decline">
-            <button type="submit" class="btn btn-outline-secondary px-4">Decline</button>
-        </form>
-        <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/approve">
-            <button type="submit" class="btn btn-primary px-4">Accept</button>
-        </form>
-    </div>
+<h5>Add-on History</h5>
+{% if previous_addons | length > 0 %}
+    <ul class=" list-group-flush list-group">
+        {% for add_on in previous_addons %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="col-4">{{ add_on.amount }}</div>
+                <div class="col-4 text-center">
+                    {% if add_on.status == "DECLINED" %}
+                        <span class="text-danger">Declined</span>
+                    {% elif add_on.status == "APPROVED" %}
+                        <span class="text-success">Approved</span>
+                    {% else %}
+                        <span class="text-secondary">Requested</span>
+                    {% endif %}
+                </div>
+                <div class="col-4 text-end">
+                    {{ add_on.time.split('T')[1][:5] if 'T' in add_on.time else add_on.time }}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted">No previous add-ons.</p>
+{% endif %}
 
 </div>
+
+<div class="d-flex mt-3">
+    <h5>Requested amount: {{ add_on_request.amount }}</h5>
+</div>
+
+<!-- Approve / Decline Buttons -->
+<div class="d-flex justify-content-between mt-4">
+    <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/decline">
+        <button type="submit" class="btn btn-danger px-4">Decline</button>
+    </form>
+    <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/approve">
+        <button type="submit" class="btn btn-primary px-4">Accept</button>
+    </form>
+</div>
+
 {% endblock %}

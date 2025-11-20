@@ -2,37 +2,26 @@
 {% block title %}
     <title>Join a game</title>
 {% endblock %}
+{% block page_heading %}Join a game{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-title">Join a game</div>
-    <div class="text-danger font-weight-bold">
-        <div class="text-danger font-weight-bold">
-            {% for error in errors %}
-                <li>{{ error }}</li>
-            {% endfor %}
-        </div>
+<form method="POST" action="/game/{{ game.id }}/join">
+    <!-- Hidden input for game_id -->
+    <input type="hidden" name="game_id" value="{{ game.id }}">
+
+    <div class="form-floating mb-3">
+            <input type="number" step="0.01" required class="form-control"
+                    name="buy_in" id="buy_in"
+                    value="{{ game.default_buy_in or 0 }}"
+                    placeholder>
+            <label for="buy_in" class="form-label">Buy-in</label>
+
     </div>
-    <form method="POST" action="/game/{{ game.id }}/join">
-        <!-- Hidden input for game_id -->
-        <input type="hidden" name="game_id" value="{{ game.id }}">
 
-        <div class="row mb-3">
-            <div class="col-12 col-md-6">
-                <label for="buy_in" class="form-label">Buy-in</label>
-                <input type="number" step="0.01" required class="form-control"
-                       name="buy_in" id="buy_in"
-                       value="{{ game.default_buy_in or 0 }}"
-                       placeholder="Default buy-in">
-            </div>
-        </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="/" class="btn btn-outline-secondary">Back</a>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
 
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="/" class="btn btn-outline-secondary">Back</a>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-    </form>
-
-
-</div>
 {% endblock %}

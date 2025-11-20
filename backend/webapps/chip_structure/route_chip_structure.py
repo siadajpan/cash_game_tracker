@@ -2,19 +2,18 @@ from datetime import datetime
 from sqlite3 import IntegrityError
 from fastapi import APIRouter, Depends, Request, Request, responses
 from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
+from pydantic_core import PydanticCustomError
 from requests import Session
 
 from backend.apis.v1.route_login import get_current_user_from_token
 from backend.core.config import TEMPLATES_DIR
-from backend.db.models import chip
 from backend.db.models.user import User
 from backend.db.repository.chip_structure import create_new_chip_structure_db
-from backend.db.repository.team import get_team_by_id
 from backend.db.session import get_db
-from backend.schemas.chip_structure import ChipStructureCreate
-from backend.schemas.chips import ChipCreate
-from backend.schemas.games import GameCreate
-from backend.webapps.chip_structure.chip_structure_form import ChipStructureCreateForm
+from backend.webapps.chip_structure.chip_structure_form import (
+    ChipStructureCreateForm,
+)
 from fastapi import status
 
 
@@ -47,48 +46,32 @@ async def create_chip_structure(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token),
 ):
-    form = ChipStructureCreateForm(request)
-    await form.load_data()
-    print("Form chips:", form.chips)
+
+    form = await request.form()
     errors = []
 
-    # Validate form
-    if not await form.is_valid():
-        errors.extend(form.errors)
-
-    # Check team validity
-    team = get_team_by_id(form.team_id, db)
-    if not team:
-        errors.append("Selected team does not exist.")
-
-    if not form.chips or len(form.chips) == 0:
-        errors.append("At least one chip value must be provided.")
-
-    # If errors, return immediately
-    if errors:
-        return templates.TemplateResponse(
-            "chip_structure/create.html",
-            {
-                "request": request,
-                "errors": errors,
-                "form": {
-                    "team_id": form.team_id,
-                    "chips": form.chips,
-                    "name": form.name,
-                },
-                "user_teams": current_user.teams,
-            },
-        )
+    # Convert form data to a dictionary for Pydantic
+    form_data_dict = {
+        **form,
+        "color": form.getlist("color"),  # Pass the raw lists for the model_validator
+        "value": form.getlist("value"),
+        "created_by": current_user.id,
+    }
 
     try:
-        # Create a new ChipStructure
-        new_chip_structure_data = ChipStructureCreate(
-            team_id=form.team_id, chips=form.chips, name=form.name
-        )
-        create_new_chip_structure_db(chip_structure=new_chip_structure_data, db=db)
+        chip_structure = ChipStructureCreateForm(**form_data_dict)
+        create_new_chip_structure_db(chip_structure=chip_structure, db=db)
         return responses.RedirectResponse(
             url="/game/create", status_code=status.HTTP_303_SEE_OTHER
         )
+    except PydanticCustomError as e:
+        # Catch errors from both model_validator (which raises PydanticCustomError)
+        # and standard Pydantic validation.
+        errors.extend([err["msg"] for err in e.errors()])
+
+    except ValidationError as e:
+        # Catch Pydantic validation errors
+        errors.extend([err["msg"] for err in e.errors()])
 
     except IntegrityError:
         errors.append(
@@ -96,14 +79,13 @@ async def create_chip_structure(
         )
     except Exception as e:
         errors.append(f"An unexpected error occurred: {e}")
-        print(e)
 
     return templates.TemplateResponse(
         "chip_structure/create.html",
         {
             "request": request,
             "errors": errors,
-            "form": {"team_id": form.team_id, "chips": form.chips},
+            "form": form,
             "user_teams": current_user.teams,
         },
     )
