@@ -46,7 +46,6 @@ async def create_chip_structure(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token),
 ):
-
     form = await request.form()
     errors = []
 

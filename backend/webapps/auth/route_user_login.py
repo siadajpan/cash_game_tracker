@@ -110,21 +110,24 @@ async def register(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/login/")
 async def login(request: Request, db: Session = Depends(get_db)):
-    form = LoginForm(request)
-    await form.load_data()
-    if await form.is_valid():
-        try:
-            form.__dict__.update(msg="Login Successful")
-            response = responses.RedirectResponse(
-                "/", status_code=status.HTTP_302_FOUND
-            )
-            login_for_access_token(response=response, form_data=form, db=db)
-            return response
-        except HTTPException:
-            form.__dict__.update(msg="")
-            form.__dict__.get("errors").append("Incorrect Email or password")
-            return templates.TemplateResponse("auth/login.html", form.__dict__)
-    return templates.TemplateResponse("auth/login.html", form.__dict__)
+    form = await request.form()
+    errors = []
+    try:
+        form_data = LoginForm(username=form.get("email"), password=form.get("password"))
+
+        response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+        login_for_access_token(response=response, form_data=form_data, db=db)
+        return response
+
+    except ValidationError as e:
+        # Catch Pydantic validation errors
+        errors.extend([err["msg"] for err in e.errors()])
+    except HTTPException:
+        errors.append("Incorrect Email or password")
+
+    return templates.TemplateResponse(
+        "auth/login.html", {"request": request, "form": form, "errors": errors}
+    )
 
 
 @router.get("/login/")
@@ -133,27 +136,9 @@ async def login(request: Request):
         "auth/login.html",
         {
             "request": request,
+            "form": {},
         },
     )
-
-
-@router.post("/login/")
-async def login(request: Request, db: Session = Depends(get_db)):
-    form = LoginForm(request)
-    await form.load_data()
-    if await form.is_valid():
-        try:
-            form.__dict__.update(msg="Login Successful")
-            response = responses.RedirectResponse(
-                "/", status_code=status.HTTP_302_FOUND
-            )
-            login_for_access_token(response=response, form_data=form, db=db)
-            return response
-        except HTTPException:
-            form.__dict__.update(msg="")
-            form.__dict__.get("errors").append("Incorrect Email or password")
-            return templates.TemplateResponse("auth/login.html", form.__dict__)
-    return templates.TemplateResponse("auth/login.html", form.__dict__)
 
 
 @router.get("/logout/")

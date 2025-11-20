@@ -74,10 +74,20 @@ def get_user_game_balance(player: User, game: Game, db: Session) -> float:
 
 
 def get_game_add_on_requests(game: Game, db: Session):
-    return [add_on for add_on in game.add_ons if add_on.status == PlayerRequestStatus.REQUESTED]
+    return [
+        add_on
+        for add_on in game.add_ons
+        if add_on.status == PlayerRequestStatus.REQUESTED
+    ]
+
 
 def get_game_cash_out_requests(game: Game, db: Session):
-    return [cash_out for cash_out in game.cash_outs if cash_out.status == PlayerRequestStatus.REQUESTED]
+    return [
+        cash_out
+        for cash_out in game.cash_outs
+        if cash_out.status == PlayerRequestStatus.REQUESTED
+    ]
+
 
 def finish_the_game(user: User, game: Game, db: Session):
     """
@@ -91,7 +101,7 @@ def finish_the_game(user: User, game: Game, db: Session):
     for request in add_ons + cash_outs:
         request.status = PlayerRequestStatus.DECLINED
         db.add(request)
-        
+
     game.running = False
     db.add(game)
     db.commit()

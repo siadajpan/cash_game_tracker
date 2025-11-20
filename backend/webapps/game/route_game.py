@@ -188,7 +188,7 @@ async def join_game(
     # Load form data
     try:
         game = get_game_by_id(game_id, db)
-        buy_in=form.get("buy_in")
+        buy_in = form.get("buy_in")
 
         form = GameJoin(buy_in=buy_in)
 
@@ -200,9 +200,9 @@ async def join_game(
         add_user_buy_in(user, game, buy_in, db)
         # Redirect to the game page
         return RedirectResponse(url=f"/game/{game.id}", status_code=303)
-    
+
     except ValidationError as e:
-        errors.extend([err['msg'] for err in e.errors()])
+        errors.extend([err["msg"] for err in e.errors()])
     except IntegrityError:
         errors.append(
             "A database error occurred (e.g., integrity constraint violation)."
