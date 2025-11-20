@@ -18,45 +18,35 @@ block content %}
     <label>Name</label>
   </div>
   <!-- Team Selector -->
-  <div class="row mb-3">
-    <div class="col-md-6">
-      {% with selected_team_id=form.team_id %} {% include
-      "team/users_team_dropdown.html" %} {% endwith %}
-    </div>
+  <div class="mb-3">
+    {% with selected_team_id=form.team_id %} {% include
+    "team/users_team_dropdown.html" %} {% endwith %}
   </div>
   <!-- Chip Rows -->
-  <div class="row mb-3">
-    <div class="col-12 col-md-6" id="chipRows">
-      <div class="chip-row d-flex align-items-start gap-2 mb-2">
-        {% include "chip/create.html" %}
-        <button
-          type="button"
-          class="btn btn-outline-danger btn-sm remove-chip align-self-center"
-          title="Remove chip"
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add Chip Button -->
-  <div class="row mb-3">
-    <div class="col-12 col-md-6 text-center text-md-start">
-      <button type="button" id="addChip" class="btn btn-secondary">
-        <i class="bi bi-plus-lg"></i> Add Chip
+  <div class="row mb-3" id="chipRows">
+    <div class="chip-row d-flex align-items-start gap-2 mb-2">
+      {% include "chip/create.html" %}
+      <button
+        type="button"
+        class="btn btn-outline-danger btn-sm remove-chip align-self-center"
+        title="Remove chip"
+      >
+        ✕
       </button>
     </div>
   </div>
 
+  <!-- Add Chip Button -->
+  <div class="mb-3 text-center">
+    <button type="button" id="addChip" class="btn btn-secondary">
+      <i class="bi-plus-lg"></i> Add Chip
+    </button>
+  </div>
+
   <!-- Submit & Back Buttons -->
-  <div class="row mb-5">
-    <div
-      class="col-12 col-md-6 d-flex justify-content-between align-items-center"
-    >
-      <a href="/game/create" class="btn btn-outline-secondary">Back</a>
-      <button type="submit" class="btn btn-primary">Save Chip Structure</button>
-    </div>
+  <div class="d-flex justify-content-between">
+    <a href="/game/create" class="btn btn-outline-secondary">Back</a>
+    <button type="submit" class="btn btn-primary">Save Chip Structure</button>
   </div>
 </form>
 
