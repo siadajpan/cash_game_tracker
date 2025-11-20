@@ -1,108 +1,109 @@
-{% extends "shared/base.html" %}
-{% block title %}
-    <title>Create game</title>
-{% endblock %}
-{% block page_heading %}Create your game{% endblock %}
-
-{% block content %}
+{% extends "shared/base.html" %} {% block title %}
+<title>Create game</title>
+{% endblock %} {% block page_heading %}Create your game{% endblock %} {% block
+content %}
 <div class="container">
-    <div class="text-danger font-weight-bold">
-        {% for error in errors %}
-            <li>{{ error }}</li>
-        {% endfor %}
+  <div class="text-danger font-weight-bold">
+    {% for error in errors %}
+    <li>{{ error }}</li>
+    {% endfor %}
+  </div>
+
+  <form method="POST" action="/game/create">
+    <!-- Team selector -->
+    <div class="mb-3">{% include "team/users_team_dropdown.html" %}</div>
+
+    <!-- Default buy-in -->
+    <div class="form-floating mb-3">
+      <input
+        type="number"
+        step="0.01"
+        required
+        class="form-control"
+        name="default_buy_in"
+        id="default_buy_in"
+        value="{{ form.default_buy_in or 0 }}"
+        placeholder="Default buy-in"
+      />
+      <label for="default_buy_in" class="form-label">Default Buy-in</label>
     </div>
 
-    <form method="POST" action="/game/create">
+    <!-- Chip structure -->
+    <div class="form-floating mb-3">
+      <select
+        name="chip_structure_id"
+        id="chip_structure_id"
+        required
+        class="form-select"
+      >
+        <option value="" disabled selected>
+          -- Choose a chip structure --
+        </option>
+      </select>
+      <label for="chip_structure_id" class="form-label">Chip Structure</label>
 
-        <!-- Team selector -->
-        <div class="row mb-3">
-            <div class="col-12 col-md-6">
-                {% include "team/users_team_dropdown.html" %}
-            </div>
-        </div>
+      <div class="mt-2">
+        <a href="/chip_structure/create" class="btn btn-outline-secondary"
+          >Create new chip values.</a
+        >
+      </div>
+    </div>
 
-        <!-- Default buy-in -->
-        <div class="row mb-3">
-            <div class="col-12 col-md-6">
-                <label for="default_buy_in" class="form-label">Default Buy-in</label>
-                <input type="number" step="0.01" required class="form-control"
-                       name="default_buy_in" id="default_buy_in"
-                       value="{{ form.default_buy_in or 0 }}"
-                       placeholder="Default buy-in">
-            </div>
-        </div>
-
-        <!-- Chip structure -->
-        <div class="row mb-3">
-            <div class="col-12 col-md-6">
-                <label for="chip_structure_id" class="form-label">Chip Structure</label>
-                <select name="chip_structure_id" id="chip_structure_id" required class="form-select">
-                    <option value="" disabled selected>-- Choose a chip structure --</option>
-                </select>
-            </div>
-            <div class="mt-2">
-                <a href="/chip_structure/create" class="btn btn-outline-secondary">Create new chip values.</a>
-            </div>
-
-        </div>
-
-        <!-- Form buttons -->
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="/" class="btn btn-outline-secondary">Back</a>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-    </form>
+    <!-- Form buttons -->
+    <div class="d-flex justify-content-between align-items-center">
+      <a href="/" class="btn btn-outline-secondary">Back</a>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+  </form>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-    // Preload all chip structures from server
-    const teamChipStructures = {{ team_chip_structures | default('{}') | safe  }};
-    console.log("Loaded teamChipStructures:", teamChipStructures);
+  // Preload all chip structures from server
+  const teamChipStructures = {{ team_chip_structures | default('{}') | safe  }};
+  console.log("Loaded teamChipStructures:", teamChipStructures);
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const teamSelect = document.getElementById('team_id');  // select or hidden input
-        const chipSelect = document.getElementById('chip_structure_id');
+  document.addEventListener('DOMContentLoaded', function() {
+      const teamSelect = document.getElementById('team_id');  // select or hidden input
+      const chipSelect = document.getElementById('chip_structure_id');
 
-        if (!chipSelect || !teamSelect) return;
+      if (!chipSelect || !teamSelect) return;
 
-        function updateChipDropdown(teamId) {
-            console.log("Updating chip dropdown for teamId:", teamId);
-            const chipStructures = teamChipStructures[teamId] || [];
-            console.log("chipStructures found:", chipStructures);
+      function updateChipDropdown(teamId) {
+          console.log("Updating chip dropdown for teamId:", teamId);
+          const chipStructures = teamChipStructures[teamId] || [];
+          console.log("chipStructures found:", chipStructures);
 
-            chipSelect.innerHTML = '';
+          chipSelect.innerHTML = '';
 
-            if (chipStructures.length === 0) {
-                chipSelect.innerHTML = `<option disabled selected>No chip structures available</option>`;
-                return;
-            }
+          if (chipStructures.length === 0) {
+              chipSelect.innerHTML = `<option disabled selected>No chip structures available</option>`;
+              return;
+          }
 
-            if (chipStructures.length > 1) {
-                chipSelect.innerHTML = `<option value="" disabled selected>-- Choose a chip structure --</option>`;
-            }
+          if (chipStructures.length > 1) {
+              chipSelect.innerHTML = `<option value="" disabled selected>-- Choose a chip structure --</option>`;
+          }
 
-            chipStructures.forEach(cs => {
-                const option = document.createElement('option');
-                option.value = cs.id;
-                option.textContent = cs.name;
-                chipSelect.appendChild(option);
-            });
-        }
+          chipStructures.forEach(cs => {
+              const option = document.createElement('option');
+              option.value = cs.id;
+              option.textContent = cs.name;
+              chipSelect.appendChild(option);
+          });
+      }
 
-        // Multi-team: listen to select change
-        if (teamSelect.tagName === 'SELECT') {
-            teamSelect.addEventListener('change', () => {
-                console.log("Team selection changed to:", teamSelect.value);
-                updateChipDropdown(teamSelect.value);
-            });
-        }
-        // Single-team: hidden input, populate immediately
-        else if (teamSelect.type === 'hidden') {
-            console.log("Single team detected, populating chip dropdown:", teamSelect.value);
-            updateChipDropdown(teamSelect.value);
-        }
-    });
+      // Multi-team: listen to select change
+      if (teamSelect.tagName === 'SELECT') {
+          teamSelect.addEventListener('change', () => {
+              console.log("Team selection changed to:", teamSelect.value);
+              updateChipDropdown(teamSelect.value);
+          });
+      }
+      // Single-team: hidden input, populate immediately
+      else if (teamSelect.type === 'hidden') {
+          console.log("Single team detected, populating chip dropdown:", teamSelect.value);
+          updateChipDropdown(teamSelect.value);
+      }
+  });
 </script>
 {% endblock %}

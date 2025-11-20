@@ -1,93 +1,97 @@
-{% extends "shared/base.html" %}
-{% block title %}
+{% extends "shared/base.html" %} {% block title %}
 <title>Cash Out</title>
-{% endblock %}
-{% block page_heading %}Cash Out{% endblock %}
-
-{% block content %}
+{% endblock %} {% block page_heading %}Cash Out{% endblock %} {% block content
+%}
 
 <!-- Error Display -->
 <div class="text-danger font-weight-bold">
-    {% for error in errors %}
-    <li>{{ error }}</li>
-    {% endfor %}
+  {% for error in errors %}
+  <li>{{ error }}</li>
+  {% endfor %}
 </div>
 
 <form method="POST" action="/game/{{ game_id }}/cash_out" id="cashOutForm">
-    <div class="row mb-3">
-        <div class="col-12 col-md-8">
+  <div class="row mb-3">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th style="width: 60px">Color</th>
+          <th style="width: 100px">Value</th>
+          <th style="width: 100px">Count</th>
+          <th style="text-align: right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for chip in chip_structure %}
+        <tr class="chip-row">
+          <td>
+            <button
+              type="button"
+              class="btn btn-sm"
+              style="background-color: {{ chip.color }}; width: 30px; height: 30px; filter: none;"
+              disabled
+            ></button>
+          </td>
+          <td class="chip-value" data-value="{{ chip.value }}">
+            {{ "%.2f"|format(chip.value) }}
+          </td>
+          <td>
+            <input
+              type="number"
+              min="0"
+              value="0"
+              class="form-control chip-count"
+              name="chip_{{ loop.index }}"
+            />
+          </td>
+          <td class="chip-total chip-total-static" style="text-align: right">
+            0.00
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th style="width: 80px;">Color</th>
-                        <th>Value</th>
-                        <th>Count</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for chip in chip_structure %}
-                    <tr class="chip-row">
-                        <td>
-                            <button type="button" class="btn btn-sm" 
-                                    style="background-color: {{ chip.color }}; width: 30px; height: 30px; filter: none;" disabled></button>
-                        </td>
-                        <td class="chip-value" data-value="{{ chip.value }}">
-                            {{ "%.2f"|format(chip.value) }}
-                        </td>
-                        <td>
-                            <input type="number" min="0" value="0" class="form-control chip-count" name="chip_{{ loop.index }}">
-                        </td>
-                        <td class="chip-total">0.00</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                
-                <tfoot class="table-light">
-                    <tr>
-                        <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
-                        <td id="totalValue" class="fw-bold fs-4">0.00</td>
-                    </tr>
-                </tfoot>
-            </table>
-            <input type="hidden" name="totalValue" id="totalValueInput" value="0.00">
-
-        </div>
+    <!-- The floating total display below the table -->
+    <div class="d-flex justify-content-end mb-3">
+      <span class="text-end fw-bold fs-4 me-3">Total:</span>
+      <span id="totalValue" class="fw-bold fs-4">0.00</span>
     </div>
+    <input type="hidden" name="totalValue" id="totalValueInput" value="0.00" />
+  </div>
 
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <a href="/game/{{ game_id }}" class="btn btn-outline-secondary">Back</a>
-        <button type="submit" class="btn btn-primary">Request Cash Out</button>
-    </div>
+  <div class="d-flex justify-content-between align-items-center mt-4">
+    <a href="/game/{{ game_id }}" class="btn btn-outline-secondary">Back</a>
+    <button type="submit" class="btn btn-primary">Request Cash Out</button>
+  </div>
 </form>
 
-{% endblock %}
-{% block scripts %}
-
+{% endblock %} {% block scripts %}
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const form = document.getElementById("cashOutForm");
-        const totalValueEl = document.getElementById("totalValue");
-        const totalValueInput = document.getElementById("totalValueInput");
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("cashOutForm");
+    const totalValueEl = document.getElementById("totalValue");
+    const totalValueInput = document.getElementById("totalValueInput");
 
-        form.addEventListener("input", (e) => {
-            if (!e.target.classList.contains("chip-count")) return;
+    form.addEventListener("input", (e) => {
+      if (!e.target.classList.contains("chip-count")) return;
 
-            let total = 0;
-            document.querySelectorAll(".chip-row").forEach(row => {
-                const value = parseFloat(row.querySelector(".chip-value").dataset.value);
-                const count = parseInt(row.querySelector(".chip-count").value) || 0;
-                const subtotal = value * count;
-                total += subtotal;
+      let total = 0;
+      document.querySelectorAll(".chip-row").forEach((row) => {
+        const value = parseFloat(
+          row.querySelector(".chip-value").dataset.value
+        );
+        const count = parseInt(row.querySelector(".chip-count").value) || 0;
+        const subtotal = value * count;
+        total += subtotal;
 
-                row.querySelector(".chip-total").textContent = subtotal.toFixed(2);
-            });
+        row.querySelector(".chip-total").textContent = subtotal.toFixed(2);
+      });
 
-            totalValueEl.textContent = `${total.toFixed(2)}`;
-            totalValueInput.value = total.toFixed(2); // 👈 update hidden field
-        });
+      totalValueEl.textContent = `${total.toFixed(2)}`;
+      totalValueInput.value = total.toFixed(2); // 👈 update hidden field
     });
+  });
 </script>
 
 {% endblock %}

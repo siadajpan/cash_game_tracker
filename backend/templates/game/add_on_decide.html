@@ -53,7 +53,7 @@
 <!-- Approve / Decline Buttons -->
 <div class="d-flex justify-content-between mt-4">
     <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/decline">
-        <button type="submit" class="btn btn-outline-secondary px-4">Decline</button>
+        <button type="submit" class="btn btn-danger px-4">Decline</button>
     </form>
     <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/approve">
         <button type="submit" class="btn btn-primary px-4">Accept</button>

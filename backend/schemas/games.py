@@ -42,6 +42,7 @@ class GameJoin(BaseModel):
         if value < 0:
             raise PydanticCustomError(
                 'buy_in_negative', 
+                # Use a template string for the message
                 'Buy-in must be a positive number. Got {value}', 
                 {'value': value}, # Context dictionary for the template
             )

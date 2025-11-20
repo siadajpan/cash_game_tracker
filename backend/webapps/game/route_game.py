@@ -27,6 +27,10 @@ from backend.db.repository.buy_in import (
 from backend.db.repository.cash_out import (
     get_player_game_cash_out,
 )
+from backend.db.repository.chip_structure import (
+    get_user_team_chip_structures_dict,
+    list_team_chip_structures,
+)
 from backend.db.repository.game import (
     create_new_game_db,
     get_game_by_id,
@@ -52,13 +56,7 @@ async def create_game_form(
     """
     Renders the game creation form, populating team choices and default values.
     """
-    team_chip_structures = {}
-    for team in current_user.teams:
-        team_chip_structures[team.id] = [
-            {"id": cs.id, "name": str(cs.name)} for cs in team.chip_structure
-        ]
-
-    team_chip_structures = json.dumps(team_chip_structures)
+    team_chip_structures = get_user_team_chip_structures_dict(current_user)
     context = {
         "request": request,
         "errors": [],
@@ -67,7 +65,6 @@ async def create_game_form(
         "form": {
             "default_buy_in": 0.0,
             "date": datetime.today().date().isoformat(),  # Format as YYYY-MM-DD
-            "team_id": None,  # No team selected by default
         },
     }
 
@@ -117,6 +114,7 @@ async def create_game(
         errors.append("Database integrity error occurred.")
     except Exception as e:
         errors.append(f"Unexpected error: {e}")
+    team_chip_structures = get_user_team_chip_structures_dict(current_user)
 
     # Render back with errors
     return templates.TemplateResponse(
@@ -124,10 +122,8 @@ async def create_game(
         {
             "request": request,
             "errors": errors,
-            "form": {
-                "default_buy_in": form.get("default_buy_in"),
-                "team_id": form.get("team_id"),
-            },
+            "team_chip_structures": team_chip_structures,
+            "form": form,
             "user_teams": current_user.teams,
         },
     )

@@ -1,43 +1,91 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from click import Option
 from fastapi import Request
+from pydantic import BaseModel, field_validator, model_validator
 
 from backend.schemas.chips import NewChip
+from pydantic_core import PydanticCustomError
 
 
-class ChipStructureCreateForm:
-    def __init__(self, request: Request):
-        self.request: Request = request
-        self.errors: List[str] = []
-        self.team_id: Optional[int] = None
-        self.created_by: Optional[int] = None
-        self.chips: List[dict] = []
-        self.name: Option[str] = None
+class ChipStructureCreateForm(BaseModel):
+    team_id: Optional[int] = None
+    created_by: Optional[int] = None
+    chips: List[NewChip] = []
+    name: Optional[str] = None
 
-    async def load_data(self):
-        form = await self.request.form()
-        self.name = form.get("name")
+    @model_validator(mode="before")
+    @classmethod
+    def process_form_data(cls, data: Any) -> Any:
+        """
+        Parses raw form data (formdata) containing color/value lists
+        and transforms it into the structured 'chips' field.
+        This runs *before* field-level validators.
+        """
+        if not isinstance(data, dict):
+            # This handles cases where data might not be a dictionary yet.
+            # However, for manual instantiation, it will always be a dict.
+            return data
 
-        # Extract repeated chip fields
-        chip_colors = form.getlist("color")
-        chip_values = form.getlist("value")
+        # Extract the list fields from the raw input dictionary (the form data)
+        chip_colors = data.get("color", [])
+        chip_values = data.get("value", [])
 
-        # Combine into structured list
-        self.chips = []
+        if not chip_colors and not chip_values:
+            # If no chip data is submitted, skip complex parsing
+            return data
+
+        chips_list = []
+
+        # This is where your read_chips logic moves:
         for color, value in zip(chip_colors, chip_values):
             if not color or not value:
-                self.errors.append("Each chip must have a color and a value.")
-                continue
-            self.chips.append(NewChip(color=color, value=value))
+                raise PydanticCustomError(
+                    "chip_color_error", "Each chip must have a color and a value."
+                )
+            try:
+                chip_value_int = int(value)
+            except ValueError:
+                raise PydanticCustomError(
+                    "chip_value_format_error", "Chip value must be an integer."
+                )
 
-        # Basic fields
-        self.team_id = form.get("team_id")
-        self.created_by = form.get("created_by")
+            # Note: We let the NewChip sub-model validation handle the positive check,
+            # or you can enforce it here again:
+            if chip_value_int <= 0:
+                raise PydanticCustomError(
+                    "chip_value_error", "Chip value must be a positive number."
+                )
 
-    async def is_valid(self):
-        if not self.team_id:
-            self.errors.append("Team ID is required.")
-        if not self.chips:
-            self.errors.append("At least one chip must be provided.")
-        return len(self.errors) == 0
+            # Append the structured data. Pydantic will convert this dict
+            # into a NewChip object during model creation.
+            chips_list.append({"color": color, "value": chip_value_int})
+
+        # Add the structured 'chips' list to the data dictionary
+        data["chips"] = chips_list
+
+        # Remove the raw list fields that are not part of the final model structure
+        data.pop("color", None)
+        data.pop("value", None)
+
+        return data
+
+    # NOTE: The chip validation from your original field_validator is now
+    # implicitly handled by the NewChip model conversion above and the model_validator logic.
+
+    @field_validator("name")
+    def ensure_correct_name(cls, value):
+        if value == "":
+            raise PydanticCustomError(
+                "name_error",
+                f"name not correct",
+            )
+        return value
+
+    @field_validator("team_id")
+    def ensure_correct_team_id(cls, value):
+        if value is not None and value < 0:
+            raise PydanticCustomError(
+                "team_id_error",
+                f"Team id not correct.",
+            )
+        return value
