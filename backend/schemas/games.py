@@ -1,16 +1,10 @@
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, field_validator
 from pydantic_core import PydanticCustomError
 
 
+
 class GameCreate(BaseModel):
-    model_config = ConfigDict(
-        # This tells Pydantic to use the exception message directly
-        # for assertion errors, overriding the default "Assertion failed, {msg}"
-        error_msg_templates={
-            "assertion_error": "{msg}",
-        }
-    )
     date: str
     default_buy_in: float
     running: bool
@@ -29,7 +23,7 @@ class GameCreate(BaseModel):
     @field_validator("date")
     def ensure_correct_date(cls, value):
         if not value:
-            raise AssertionError("Failed to fill the date")
+            raise ValueError("Failed to fill the date")
         return value
 
     @field_validator("chip_structure_id")
