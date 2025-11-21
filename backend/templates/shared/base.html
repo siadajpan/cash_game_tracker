@@ -25,6 +25,10 @@
 {% block title %}
 {% endblock %}
 
+{% with errors=errors %}
+    {% include "components/errors.html" %}
+{% endwith %}
+
 <div class="container">
     {% set heading_content = self.page_heading() %}
 

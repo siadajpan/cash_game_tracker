@@ -2,8 +2,6 @@ from sqlalchemy import Column, Enum, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
-from backend.db.models import chip_structure
-from backend.db.models.associations import user_team_association
 
 
 class Team(Base):
@@ -17,9 +15,16 @@ class Team(Base):
     owner = relationship("User", back_populates="teams_owned")
 
     # Players in this team (Many-to-Many)
-    users = relationship(
-        "User", secondary=user_team_association, back_populates="teams"
+    user_associations = relationship(
+        "UserTeam", 
+        back_populates="team",
+        cascade="all, delete-orphan" # Recommended for Association Objects
     )
 
     games = relationship("Game", back_populates="team")
     chip_structure = relationship("ChipStructure", back_populates="team")
+    
+    @property
+    def users(self):
+        # Retrieve the User objects via the association objects
+        return [assoc.user for assoc in self.user_associations]

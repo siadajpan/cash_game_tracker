@@ -10,10 +10,8 @@ from backend.db.models.chip import Chip  # noqa
 from backend.db.models.buy_in import BuyIn  # noqa
 from backend.db.models.chip_amount import ChipAmount  # noqa
 from backend.db.models.add_on import AddOn  # noqa
-
-# Import association tables
-from backend.db.models.associations import user_team_association  # noqa
-from backend.db.models.associations import user_game_association  # noqa
+from backend.db.models.user_team import UserTeam  # noqa
+from backend.db.models.user_game import UserGame  # noqa
 
 # List of all models for metadata
 # models = (User, Team, Game, ChipStructure, Chip, BuyIn, CashOut, AddOn, ChipAmount)

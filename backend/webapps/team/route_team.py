@@ -5,6 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
+from pydantic_core import PydanticCustomError
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -50,37 +51,31 @@ async def create_team(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token),
 ):
-    # ... rest of your original custom form loading code ...
-    form = TeamCreateForm(request)
-    await form.load_data()
-
-    name = form.name
-    template_name = "team/create.html"
+    form = await request.form()
     errors = []
 
-    # 1. Validation for name
-    if not name:
-        errors.append("Team name is required.")
+    try:
+        team_create_form = TeamCreateForm(**form)
 
-    team_search_code = generate_team_code(db)
-    if not errors:
-        try:
-            # Use all extracted variables
-            new_team_data = TeamCreate(
-                name=name, search_code=team_search_code
-            )  # Update your Pydantic model
-            create_new_team(team=new_team_data, creator=current_user, db=db)
-            return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
-        except IntegrityError:
-            errors.append("Team with that name already exists.")
+        team_search_code = generate_team_code(db)
+        # Use all extracted variables
+        new_team_data = TeamCreate(
+            **form, search_code=team_search_code
+        ) 
+        create_new_team(team=new_team_data, creator=current_user, db=db)
+        return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+    except PydanticCustomError as e:
+        errors.append(e.message())
+    except IntegrityError:
+        errors.append("Team with that name already exists.")
 
     # Re-render with all submitted data
     return templates.TemplateResponse(
-        template_name,
+        "team/create.html",
         {
             "request": request,
             "errors": errors,
-            "name": name,
+            "form": form,
         },
     )
 
@@ -102,46 +97,46 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token),
 ):
+    form = await request.form()
     # Load form data using your custom loader
-    form = TeamJoinForm(request)
-    await form.load_data()
-
-    search_code = form.search_code
     template_name = "team/join.html"
     errors = []
 
-    # 1. Validation for name submission
-    if not search_code:
-        errors.append("Team search code is required.")
+    try:
+        form = TeamJoinForm(**form)
 
-    if not errors:
+        search_code = form.search_code
+    
         # 2. Find the team in the database
         team_model = get_team_by_search_code(search_code, db)
 
         if not team_model:
-            errors.append(f"Team with code '{search_code}' not found.")
+            raise PydanticCustomError("team_model", f"Team with code '{search_code}' not found.")
+
         elif current_user in team_model.users:
-            errors.append(
+            raise PydanticCustomError("already_member",
                 f"You are already a member of team {team_model.name}#{search_code}."
             )
-        else:
-            # 3. Use the imported service function to join the team
-            try:
-                join_team(team_model=team_model, user=current_user, db=db)
+            
+        join_team(team_model=team_model, user=current_user, db=db)
 
-                return responses.RedirectResponse(
-                    "/?msg=Successfully joined team", status_code=status.HTTP_302_FOUND
-                )
-            except Exception as e:
-                # Handle unexpected DB errors during the join process
-                errors.append(
-                    f"An unexpected error occurred while joining the team: {e}"
-                )
+        return responses.RedirectResponse(
+            "/", status_code=status.HTTP_302_FOUND
+        )
+    except PydanticCustomError as e:
+        errors.append(e.message())
+    except Exception as e:
+        # Handle unexpected DB errors during the join process
+        errors.append(
+            f"An unexpected error occurred while joining the team: {e}"
+        )
+    print("errors", errors)
 
     # Re-render with errors
     return templates.TemplateResponse(
         template_name,
         {
+            "form": form,
             "request": request,
             "errors": errors,
             "search_code": search_code,

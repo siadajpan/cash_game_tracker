@@ -1,6 +1,7 @@
 from collections import defaultdict
 from multiprocessing import Value
 from select import select
+from sqlite3 import IntegrityError
 from typing import Dict, List, Type, Optional
 import random
 
@@ -9,9 +10,11 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 
 from backend.apis.v1.route_login import get_current_user
+from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.team import Team
 from backend.db.models.user import User
 from backend.db.models.game import Game
+from backend.db.models.user_team import UserTeam
 from backend.db.repository.user import create_new_user
 from backend.schemas.team import TeamCreate
 
@@ -28,13 +31,17 @@ def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
     Returns:
         The newly created Team instance.
     """
-    # 1. Create the team, set the creator as owner
     new_team = Team(
         **team.model_dump(), owner=creator
-    )  # Many-to-One owner relationship
+    ) 
+    
+    team_association = UserTeam(
+        user=creator,
+        team=new_team,
+        status=PlayerRequestStatus.APPROVED  # auto approve when creating a team
+    )
 
-    # 2. Add the creator as a player (Many-to-Many)
-    new_team.users.append(creator)
+    creator.team_associations.append(team_association)
 
     # 3. Persist
     db.add(new_team)
@@ -57,16 +64,14 @@ def join_team(team_model: Team, user, db: Session) -> Team:
     Returns:
         The updated Team model instance.
     """
-    # 1. Add the user to the team's 'users' relationship.
-    # SQLAlchemy handles the creation of the record in the 'user_team_association' table.
-    team_model.users.append(user)
+    team_association = UserTeam(
+        user=user,
+        team=team_model,
+        status=PlayerRequestStatus.REQUESTED  # team owner needs to approve it
+    )
 
-    # 2. Persist the changes.
-    # Since we modified an object already tracked by the session,
-    # we just need to commit the transaction.
+    user.team_associations.append(team_association)
     db.commit()
-
-    # 3. Refresh the team object to reflect the change, if necessary.
     db.refresh(team_model)
 
     return team_model

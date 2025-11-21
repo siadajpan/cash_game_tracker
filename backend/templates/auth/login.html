@@ -1,11 +1,7 @@
 {% extends "shared/base.html" %} {% block title %}
 <title>Login</title>
 {% endblock %} {% block page_heading %}Login{% endblock %} {% block content %}
-<div class="text-danger font-weight-bold">
-  {% for error in errors %}
-  <li>{{ error }}</li>
-  {% endfor %}
-</div>
+
 
 <div class="mb-3">
   <form method="POST">

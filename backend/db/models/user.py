@@ -2,7 +2,6 @@ from sqlalchemy import Column, Enum, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
-from backend.db.models.associations import user_team_association, user_game_association
 
 
 class User(Base):
@@ -14,14 +13,19 @@ class User(Base):
     nick = Column(String(200), nullable=False)
 
     teams_owned = relationship("Team", back_populates="owner")
+    
     # Teams a user belongs to (Many-to-Many)
-    teams = relationship(
-        "Team", secondary=user_team_association, back_populates="users"
+    team_associations = relationship(
+        "UserTeam", 
+        back_populates="user",
+        cascade="all, delete-orphan" # Recommended for Association Objects
     )
 
-    # Games a user has played in (Many-to-Many)
-    games_played = relationship(  # Renamed 'games' to 'games_played' for clarity
-        "Game", secondary=user_game_association, back_populates="players"
+    # Teams a user belongs to (Many-to-Many)
+    game_associations = relationship(
+        "UserGame", 
+        back_populates="user",
+        cascade="all, delete-orphan" # Recommended for Association Objects
     )
 
     # Games a user owns (One-to-Many: One user owns many games)
@@ -35,3 +39,14 @@ class User(Base):
     cash_outs = relationship(
         "CashOut", back_populates="user", cascade="all, delete-orphan"
     )
+    
+    @property
+    def teams(self):
+        # Retrieve the Team objects via the association objects
+        return [assoc.team for assoc in self.team_associations]
+    
+    
+    @property
+    def games_played(self):
+        # Retrieve the Team objects via the association objects
+        return [assoc.game for assoc in self.game_associations]
