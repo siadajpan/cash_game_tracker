@@ -14,8 +14,12 @@ stop:
 	sudo docker-compose down
 
 start:
-@echo "--- Starting Docker containers (sudo) ---"
+	@echo "--- Starting Docker containers (sudo) ---"
 	sudo docker-compose up -d
+
+reset_db:
+	@echo "--- Resetting database ---"
+	poetry run python backend/db/tools/reset_db.py
 
 # Default target runs both
 update: pull stop start
