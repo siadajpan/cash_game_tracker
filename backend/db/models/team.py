@@ -16,14 +16,14 @@ class Team(Base):
 
     # Players in this team (Many-to-Many)
     user_associations = relationship(
-        "UserTeam", 
+        "UserTeam",
         back_populates="team",
-        cascade="all, delete-orphan" # Recommended for Association Objects
+        cascade="all, delete-orphan",  # Recommended for Association Objects
     )
 
     games = relationship("Game", back_populates="team")
     chip_structure = relationship("ChipStructure", back_populates="team")
-    
+
     @property
     def users(self):
         # Retrieve the User objects via the association objects

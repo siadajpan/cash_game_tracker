@@ -255,7 +255,11 @@ def process_player(
             player_request = cash_out_req
             request_text = f"Cash out: {cash_out_req.amount}"
             request_href = f"/game/{game.id}/cash_out/{cash_out_req.id}"
-            [can_approve.append(p) for p in game.players if p.id != player.id]
+            [
+                can_approve.append(p)
+                for p in game.players
+                if p.id != player.id or p.id == game.owner_id
+            ]
 
     for add_on_req in add_ons_requests:
         if add_on_req.status == PlayerRequestStatus.APPROVED:
@@ -268,6 +272,7 @@ def process_player(
 
     return {
         "player": player,
+        "owner": player.id == game.owner_id,
         "money_in": money_in,
         "money_out": money_out,
         "request": player_request,

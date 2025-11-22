@@ -57,7 +57,7 @@ def add_user_to_game(user: User, game: Game, db: Session) -> None:
     game_association = UserGame(
         user=user,
         game=game,
-        status=PlayerRequestStatus.REQUESTED  # auto approve when creating a team
+        status=PlayerRequestStatus.REQUESTED,  # auto approve when creating a team
     )
 
     user.game_associations.append(game_association)

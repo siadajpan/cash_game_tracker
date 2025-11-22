@@ -1,5 +1,9 @@
-<div class="text-danger font-weight-bold">
+{% if errors %}
+<div class="text-danger fw-bold p-3">
+  <ul>
   {% for error in errors %}
-  <li mb-2>{{ error }}</li>
+    <li class="mb-2">{{ error }}</li>
   {% endfor %}
+  </ul>
 </div>
+{% endif %}

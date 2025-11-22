@@ -31,14 +31,12 @@ def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
     Returns:
         The newly created Team instance.
     """
-    new_team = Team(
-        **team.model_dump(), owner=creator
-    ) 
-    
+    new_team = Team(**team.model_dump(), owner=creator)
+
     team_association = UserTeam(
         user=creator,
         team=new_team,
-        status=PlayerRequestStatus.APPROVED  # auto approve when creating a team
+        status=PlayerRequestStatus.APPROVED,  # auto approve when creating a team
     )
 
     creator.team_associations.append(team_association)
@@ -67,7 +65,7 @@ def join_team(team_model: Team, user, db: Session) -> Team:
     team_association = UserTeam(
         user=user,
         team=team_model,
-        status=PlayerRequestStatus.REQUESTED  # team owner needs to approve it
+        status=PlayerRequestStatus.REQUESTED,  # team owner needs to approve it
     )
 
     user.team_associations.append(team_association)

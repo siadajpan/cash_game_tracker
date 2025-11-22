@@ -27,9 +27,9 @@ class Game(Base):
 
     # Players in this team (Many-to-Many)
     user_associations = relationship(
-        "UserGame", 
+        "UserGame",
         back_populates="game",
-        cascade="all, delete-orphan" # Recommended for Association Objects
+        cascade="all, delete-orphan",  # Recommended for Association Objects
     )
     buy_ins = relationship("BuyIn", back_populates="game", cascade="all, delete-orphan")
     add_ons = relationship("AddOn", back_populates="game", cascade="all, delete-orphan")

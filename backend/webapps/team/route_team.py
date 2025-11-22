@@ -60,8 +60,8 @@ async def create_team(
         team_search_code = generate_team_code(db)
         # Use all extracted variables
         new_team_data = TeamCreate(
-            **form, search_code=team_search_code
-        ) 
+            **team_create_form.model_dump(), search_code=team_search_code
+        )
         create_new_team(team=new_team_data, creator=current_user, db=db)
         return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
     except PydanticCustomError as e:
@@ -106,30 +106,29 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
         form = TeamJoinForm(**form)
 
         search_code = form.search_code
-    
+
         # 2. Find the team in the database
         team_model = get_team_by_search_code(search_code, db)
 
         if not team_model:
-            raise PydanticCustomError("team_model", f"Team with code '{search_code}' not found.")
+            raise PydanticCustomError(
+                "team_model", f"Team with code '{search_code}' not found."
+            )
 
         elif current_user in team_model.users:
-            raise PydanticCustomError("already_member",
-                f"You are already a member of team {team_model.name}#{search_code}."
+            raise PydanticCustomError(
+                "already_member",
+                f"You are already a member of team {team_model.name}#{search_code}.",
             )
-            
+
         join_team(team_model=team_model, user=current_user, db=db)
 
-        return responses.RedirectResponse(
-            "/", status_code=status.HTTP_302_FOUND
-        )
+        return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
     except PydanticCustomError as e:
         errors.append(e.message())
     except Exception as e:
         # Handle unexpected DB errors during the join process
-        errors.append(
-            f"An unexpected error occurred while joining the team: {e}"
-        )
+        errors.append(f"An unexpected error occurred while joining the team: {e}")
     print("errors", errors)
 
     # Re-render with errors

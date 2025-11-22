@@ -13,19 +13,19 @@ class User(Base):
     nick = Column(String(200), nullable=False)
 
     teams_owned = relationship("Team", back_populates="owner")
-    
+
     # Teams a user belongs to (Many-to-Many)
     team_associations = relationship(
-        "UserTeam", 
+        "UserTeam",
         back_populates="user",
-        cascade="all, delete-orphan" # Recommended for Association Objects
+        cascade="all, delete-orphan",  # Recommended for Association Objects
     )
 
     # Teams a user belongs to (Many-to-Many)
     game_associations = relationship(
-        "UserGame", 
+        "UserGame",
         back_populates="user",
-        cascade="all, delete-orphan" # Recommended for Association Objects
+        cascade="all, delete-orphan",  # Recommended for Association Objects
     )
 
     # Games a user owns (One-to-Many: One user owns many games)
@@ -39,13 +39,12 @@ class User(Base):
     cash_outs = relationship(
         "CashOut", back_populates="user", cascade="all, delete-orphan"
     )
-    
+
     @property
     def teams(self):
         # Retrieve the Team objects via the association objects
         return [assoc.team for assoc in self.team_associations]
-    
-    
+
     @property
     def games_played(self):
         # Retrieve the Team objects via the association objects

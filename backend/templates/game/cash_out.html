@@ -3,28 +3,22 @@
 {% endblock %} {% block page_heading %}Cash Out{% endblock %} {% block content
 %}
 
-<!-- Error Display -->
-<div class="text-danger font-weight-bold">
-  {% for error in errors %}
-  <li>{{ error }}</li>
-  {% endfor %}
-</div>
 
 <form method="POST" action="/game/{{ game_id }}/cash_out" id="cashOutForm">
   <div class="row mb-3">
     <table class="table align-middle">
       <thead>
         <tr>
-          <th style="width: 60px">Color</th>
-          <th style="width: 100px">Value</th>
-          <th>Count</th>
-          <th style="text-align: right; width: 100px">Total</th>
+          <th class="text-center"  style="width: 60px">Color</th>
+          <th class="text-center"  style="width: 100px">Value</th>
+          <th class="text-center" >Count</th>
+          <th class="text-center"  style="width: 100px">Total</th>
         </tr>
       </thead>
       <tbody>
         {% for chip in chip_structure %}
         <tr class="chip-row">
-          <td>
+          <td class="text-center" >
             <button
               type="button"
               class="btn btn-sm"
@@ -32,10 +26,10 @@
               disabled
             ></button>
           </td>
-          <td class="chip-value" data-value="{{ chip.value }}">
+          <td    class="text-center chip-value" data-value="{{ chip.value }}">
             {{ "%.2f"|format(chip.value) }}
           </td>
-          <td>
+          <td class="text-center" >
             <input
               type="number"
               min="0"
@@ -44,7 +38,7 @@
               name="chip_{{ loop.index }}"
             />
           </td>
-          <td class="chip-total chip-total-static" style="text-align: right">
+          <td  class="text-center chip-total chip-total-static" style="text-align: right">
             0.00
           </td>
         </tr>
