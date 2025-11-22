@@ -1,0 +1,27 @@
+{% extends "shared/base.html" %} {% block title %}
+<title>Cash Out</title>
+{% endblock %} {% block page_heading %}Cash Out{% endblock %} {% block content
+%}
+
+<form method="POST" action="/game/{{ game_id }}/cash_out_by_amount" id="cashOutForm">
+  <div class="form-floating mb-3">
+    <input
+      type="number"
+      step="0.01"
+      min="0"
+      required
+      class="form-control"
+      name="amount"
+      id="amount"
+      placeholder
+    />
+    <label>Cash out amount</label>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-4">
+    <a href="/game/{{ game_id }}/cash_out" class="btn btn-outline-secondary">Back</a>
+    <button type="submit" class="btn btn-primary">Request Cash Out</button>
+  </div>
+</form>
+
+{% endblock %}

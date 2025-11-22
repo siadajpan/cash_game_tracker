@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import List, Optional, Type, Union
 
 from fastapi import Request
+from pydantic import BaseModel, field_validator
+from pydantic_core import PydanticCustomError
 
 from backend.db.models.chip_amount import ChipAmount
 from backend.schemas.chip_amount import ChipAmountCreate
@@ -79,3 +81,16 @@ class CashOutRequest:
             self.errors.append("Cash-out total must be 0 or more.")
 
         return len(self.errors) == 0
+
+
+class CashOutByAmountRequest(BaseModel):
+    amount: float = 0.0
+
+    @field_validator("amount")
+    def amount_bigger_than_0(cls, value):
+        if value < 0:
+            print("raising custom error")
+            raise PydanticCustomError(
+                "amount_lower_than_0", "Make sure amount is bigger or equal to 0"
+            )
+        return value

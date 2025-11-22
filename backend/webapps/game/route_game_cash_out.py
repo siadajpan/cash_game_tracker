@@ -2,6 +2,7 @@ from sqlite3 import IntegrityError
 
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.templating import Jinja2Templates
+from pydantic_core import PydanticCustomError, ValidationError
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
@@ -32,6 +33,7 @@ from backend.db.repository.game import (
 )
 from backend.db.session import get_db
 from backend.webapps.game.game_forms import (
+    CashOutByAmountRequest,
     CashOutRequest,
 )
 
@@ -57,6 +59,26 @@ async def cash_out(
             "request": request,
             "game_id": game.id,
             "chip_structure": chip_structure,
+        },
+    )
+
+
+@router.get("/{game_id}/cash_out_by_amount", name="cash_out")
+async def cash_out(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+
+    return templates.TemplateResponse(
+        "game/cash_out_by_amount.html",
+        context={
+            "request": request,
+            "game_id": game.id,
         },
     )
 
@@ -108,7 +130,50 @@ async def cash_out(
             "request": request,
             "errors": errors,
             "game": game,
-            "form": {"cash_out": amount},
+            "form": form,
+        },
+    )
+
+
+@router.post("/{game_id}/cash_out_by_amount", name="cash_out_by_amount")
+async def cash_out_by_amount(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    form = await request.form()
+    game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+
+    errors = []
+
+    try:
+        cash_out_form = CashOutByAmountRequest(**form)
+        create_cash_out_request(game, cash_out_form.amount, [], db, user)
+        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+    except ValidationError as e:
+        print("catching error")
+        errors.extend([err["msg"] for err in e.errors()])
+    except PydanticCustomError as e:
+        print("catching error")
+        errors.append(e.message)
+    except IntegrityError:
+        errors.append(
+            "A database error occurred (e.g., integrity constraint violation)."
+        )
+    except Exception as e:
+        errors.append(f"An unexpected error occurred: {e}")
+
+    # Re-render template with submitted data and errors
+    return templates.TemplateResponse(
+        f"game/cash_out_by_amount.html",
+        {
+            "request": request,
+            "errors": errors,
+            "game": game,
+            "form": form,
         },
     )
 
