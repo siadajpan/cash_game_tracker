@@ -33,8 +33,7 @@ async def create_chip_structure_form(
     context = {
         "request": request,
         "user_teams": current_user.teams,
-        "form": {"name": datetime.today().date()},
-        "errors": [],
+        "form": {},
     }
 
     return templates.TemplateResponse("chip_structure/create.html", context)

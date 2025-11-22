@@ -25,7 +25,9 @@ block content %}
   <!-- Chip Rows -->
   <div class="row mb-3" id="chipRows">
     <div class="chip-row d-flex align-items-start gap-2 mb-2">
-      {% include "chip/create.html" %}
+      <div class="flex-grow-1">
+        {% include "chip/create.html" %}
+      </div>
       <button
         type="button"
         class="btn btn-outline-danger btn-sm remove-chip align-self-center"
