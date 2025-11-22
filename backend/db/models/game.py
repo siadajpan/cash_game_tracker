@@ -4,7 +4,6 @@ from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
 from backend.db.models.chip_structure import ChipStructure  # direct import for clarity
-from backend.db.models.associations import user_game_association
 
 
 class Game(Base):
@@ -26,13 +25,19 @@ class Game(Base):
     chip_structure_id = Column(Integer, ForeignKey("chip_structure.id"))
     chip_structure = relationship("ChipStructure", back_populates="games")
 
-    # Players in this game (Many-to-Many)
-    players = relationship(
-        "User", secondary=user_game_association, back_populates="games_played"
+    # Players in this team (Many-to-Many)
+    user_associations = relationship(
+        "UserGame",
+        back_populates="game",
+        cascade="all, delete-orphan",  # Recommended for Association Objects
     )
-
     buy_ins = relationship("BuyIn", back_populates="game", cascade="all, delete-orphan")
     add_ons = relationship("AddOn", back_populates="game", cascade="all, delete-orphan")
     cash_outs = relationship(
         "CashOut", back_populates="game", cascade="all, delete-orphan"
     )
+
+    @property
+    def players(self):
+        # Retrieve the User objects via the association objects
+        return [assoc.user for assoc in self.user_associations]

@@ -2,60 +2,53 @@
 <title>Create game</title>
 {% endblock %} {% block page_heading %}Create your game{% endblock %} {% block
 content %}
-<div class="container">
-  <div class="text-danger font-weight-bold">
-    {% for error in errors %}
-    <li>{{ error }}</li>
-    {% endfor %}
+<form method="POST" action="/game/create">
+  <!-- Team selector -->
+  <div class="mb-3">{% include "team/users_team_dropdown.html" %}</div>
+
+  <!-- Default buy-in -->
+  <div class="form-floating mb-3">
+    <input
+      type="number"
+      step="0.01"
+      min="0"
+      required
+      class="form-control"
+      name="default_buy_in"
+      id="default_buy_in"
+      value="{{ form.default_buy_in or 0 }}"
+      placeholder="Default buy-in"
+    />
+    <label for="default_buy_in" class="form-label">Default Buy-in</label>
   </div>
 
-  <form method="POST" action="/game/create">
-    <!-- Team selector -->
-    <div class="mb-3">{% include "team/users_team_dropdown.html" %}</div>
+  <!-- Chip structure -->
+  <div class="form-floating mb-3">
+    <select
+      name="chip_structure_id"
+      id="chip_structure_id"
+      required
+      class="form-select"
+    >
+      <option value="" disabled selected>
+        -- Choose a chip structure --
+      </option>
+    </select>
+    <label for="chip_structure_id" class="form-label">Chip Structure</label>
 
-    <!-- Default buy-in -->
-    <div class="form-floating mb-3">
-      <input
-        type="number"
-        step="0.01"
-        required
-        class="form-control"
-        name="default_buy_in"
-        id="default_buy_in"
-        value="{{ form.default_buy_in or 0 }}"
-        placeholder="Default buy-in"
-      />
-      <label for="default_buy_in" class="form-label">Default Buy-in</label>
-    </div>
-
-    <!-- Chip structure -->
-    <div class="form-floating mb-3">
-      <select
-        name="chip_structure_id"
-        id="chip_structure_id"
-        required
-        class="form-select"
+    <div class="mt-2">
+      <a href="/chip_structure/create" class="btn btn-outline-secondary"
+        >Create new chip values.</a
       >
-        <option value="" disabled selected>
-          -- Choose a chip structure --
-        </option>
-      </select>
-      <label for="chip_structure_id" class="form-label">Chip Structure</label>
-
-      <div class="mt-2">
-        <a href="/chip_structure/create" class="btn btn-outline-secondary"
-          >Create new chip values.</a
-        >
-      </div>
     </div>
+  </div>
 
-    <!-- Form buttons -->
-    <div class="d-flex justify-content-between align-items-center">
-      <a href="/" class="btn btn-outline-secondary">Back</a>
-      <button type="submit" class="btn btn-primary">Submit</button>
-    </div>
-  </form>
-</div>
+  <!-- Form buttons -->
+  <div class="d-flex justify-content-between align-items-center">
+    <a href="/" class="btn btn-outline-secondary">Back</a>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </div>
+</form>
 {% endblock %} {% block scripts %}
 <script>
   // Preload all chip structures from server

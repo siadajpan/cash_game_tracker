@@ -123,7 +123,9 @@ async def add_on_approve(
     player = add_on_request.user
     buy_in = get_player_game_total_buy_in_amount(player, game, db)
     player_game_addons = get_player_game_addons(player, game, db)
-    previous_addons = [add_on for add_on in player_game_addons if add_on.id != add_on_id]
+    previous_addons = [
+        add_on for add_on in player_game_addons if add_on.id != add_on_id
+    ]
     return templates.TemplateResponse(
         "game/add_on_decide.html",
         {

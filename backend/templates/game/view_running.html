@@ -34,8 +34,12 @@
 
         <li class="list-group-item">
             <div class="row text-center align-items-center">
-                <div class="{{ col_player }} text-start">{{ info.player.nick }}</div>
-                <div class="{{ col_in }}">
+                {% if info.owner%}
+                    <div class="{{ col_player }} text-start"><b>{{ info.player.nick }} (host)</b></div>
+                {% else %}
+                    <div class="{{ col_player }} text-start ">{{ info.player.nick }}</div>
+                {% endif %}
+                    <div class="{{ col_in }}">
                     {% if info.money_in % 1 %}
                         {{ "%.2f"|format(info.money_in) }}
                     {% else %}

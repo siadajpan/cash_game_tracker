@@ -1,35 +1,27 @@
 from typing import List, Optional, Type
 
 from fastapi import Request
+from pydantic import BaseModel, field_validator
+from pydantic_core import PydanticCustomError
 
 
-class TeamCreateForm:
-    def __init__(self, request: Request):
-        self.request: Request = request
-        self.errors: List = []
-        self.name: Optional[str] = None
+class TeamCreateForm(BaseModel):
+    name: Optional[str] = None
 
-    async def load_data(self):
-        form = await self.request.form()
-        self.name = form.get("name")
-
-    async def is_valid(self):
-        if not self.name:
-            self.errors.append("Name is required")
-        return len(self.errors) == 0
+    @field_validator("name")
+    def is_name_valid(cls, name):
+        if not name:
+            raise PydanticCustomError("name", "Name is required")
+        return name
 
 
-class TeamJoinForm:
-    def __init__(self, request: Request):
-        self.request: Request = request
-        self.errors: List = []
-        self.search_code: Optional[str] = None
+class TeamJoinForm(BaseModel):
+    search_code: Optional[str] = None
 
-    async def load_data(self):
-        form = await self.request.form()
-        self.search_code = form.get("search_code")
-
-    async def is_valid(self):
-        if not self.search_code:
-            self.errors.append("Search code is required")
-        return len(self.errors) == 0
+    @field_validator("search_code")
+    def check_search_code(cls, search_code):
+        if len(search_code) < 4:
+            raise PydanticCustomError(
+                "search_code_too_short", "Please provide at least 4 digits"
+            )
+        return search_code

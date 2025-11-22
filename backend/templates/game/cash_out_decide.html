@@ -14,22 +14,23 @@ content %}
     <div class="col-8">{{ money_in }}</div>
   </div>
 </div>
+    {% if cash_out_request.chip_amounts | length > 0 %}
 
 <!-- Cash Out Table (read-only) -->
 <div class="mb-4">
   <table class="table align-middle">
     <thead>
       <tr>
-        <th style="width: 80px">Color</th>
-        <th>Value</th>
-        <th>Count</th>
-        <th class="text-end" style="width: 80px">Total</th>
+        <th class="text-center" style="width: 80px">Color</th>
+        <th class="text-center">Value</th>
+        <th class="text-center">Count</th>
+        <th class="text-center" style="width: 80px">Total</th>
       </tr>
     </thead>
     <tbody>
       {% for chip_amount in cash_out_request.chip_amounts %}
       <tr>
-        <td>
+        <td class="text-center" >
           <button
             type="button"
             class="btn btn-sm"
@@ -37,24 +38,20 @@ content %}
             disabled
           ></button>
         </td>
-        <td>{{ "%.2f"|format(chip_amount.chip.value) }}</td>
-        <td>{{ chip_amount.amount }}</td>
-        <td class="text-end">
+        <td class="text-center">{{ "%.2f"|format(chip_amount.chip.value) }}</td>
+        <td class="text-center">{{ chip_amount.amount }}</td>
+        <td class="text-center">
           {{ "%.2f"|format(chip_amount.chip.value * chip_amount.amount) }}
         </td>
       </tr>
       {% endfor %}
     </tbody>
-
-    <tfoot>
-      <tr>
-        <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
-        <td id="totalValue" class="fw-bold fs-4">
-          {{ cash_out_request.amount }}
-        </td>
-      </tr>
-    </tfoot>
   </table>
+</div>
+    {% endif %}
+
+<div class="d-flex mt-3">
+    <h5>Requested amount: {{  cash_out_request.amount }}</h5>
 </div>
 
 <!-- Accept / Decline Buttons -->

@@ -3,11 +3,10 @@
 {% endblock %} {% block page_heading %}Cash Out{% endblock %} {% block content
 %}
 
-<!-- Error Display -->
-<div class="text-danger font-weight-bold">
-  {% for error in errors %}
-  <li>{{ error }}</li>
-  {% endfor %}
+<div class="d-flex justify-content-end mt-4">
+    <a href="/game/{{ game_id }}/cash_out_by_amount" class="btn btn-secondary">
+        Don't want to use chip values?
+    </a>
 </div>
 
 <form method="POST" action="/game/{{ game_id }}/cash_out" id="cashOutForm">
@@ -15,16 +14,16 @@
     <table class="table align-middle">
       <thead>
         <tr>
-          <th style="width: 60px">Color</th>
-          <th style="width: 100px">Value</th>
-          <th>Count</th>
-          <th style="text-align: right; width: 100px">Total</th>
+          <th class="text-center"  style="width: 60px">Color</th>
+          <th class="text-center"  style="width: 100px">Value</th>
+          <th class="text-center" >Count</th>
+          <th class="text-center"  style="width: 100px">Total</th>
         </tr>
       </thead>
       <tbody>
         {% for chip in chip_structure %}
         <tr class="chip-row">
-          <td>
+          <td class="text-center" >
             <button
               type="button"
               class="btn btn-sm"
@@ -32,19 +31,20 @@
               disabled
             ></button>
           </td>
-          <td class="chip-value" data-value="{{ chip.value }}">
+          <td    class="text-center chip-value" data-value="{{ chip.value }}">
             {{ "%.2f"|format(chip.value) }}
           </td>
-          <td>
+          <td class="text-center" >
             <input
               type="number"
               min="0"
+              step="1"
               value="0"
               class="form-control chip-count"
               name="chip_{{ loop.index }}"
             />
           </td>
-          <td class="chip-total chip-total-static" style="text-align: right">
+          <td  class="text-center chip-total chip-total-static" style="text-align: right">
             0.00
           </td>
         </tr>
@@ -59,6 +59,7 @@
     </div>
     <input type="hidden" name="totalValue" id="totalValueInput" value="0.00" />
   </div>
+
 
   <div class="d-flex justify-content-between align-items-center mt-4">
     <a href="/game/{{ game_id }}" class="btn btn-outline-secondary">Back</a>

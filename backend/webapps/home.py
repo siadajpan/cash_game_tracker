@@ -32,4 +32,3 @@ async def home(
             "running_games": running_games,
         },
     )
-

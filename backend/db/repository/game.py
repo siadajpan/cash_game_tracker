@@ -1,3 +1,4 @@
+from sqlite3 import IntegrityError
 from typing import List, Type, Optional
 
 from fastapi import Depends
@@ -7,6 +8,7 @@ from backend.apis.v1.route_login import get_current_user_from_token
 from backend.db.models.game import Game
 from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.user import User
+from backend.db.models.user_game import UserGame
 from backend.db.repository.add_on import get_player_game_addons
 from backend.db.repository.buy_in import get_player_game_buy_ins
 from backend.db.repository.cash_out import get_player_game_cash_out
@@ -22,7 +24,7 @@ def create_new_game_db(
 ):
     new_game = Game(
         owner_id=current_user.id,
-        **game.dict(),
+        **game.model_dump(),
     )
     db.add(new_game)
     db.commit()
@@ -49,11 +51,20 @@ def add_user_to_game(user: User, game: Game, db: Session) -> None:
     """
     Add a user to a game's players list if not already added.
     """
-    if not user_in_game(user, game):
-        game.players.append(user)
-        db.add(game)  # optional, usually not needed if the game is already in session
-        db.commit()
-        db.refresh(game)
+    if user_in_game(user, game):
+        raise IntegrityError("User is already part of the game")
+
+    game_association = UserGame(
+        user=user,
+        game=game,
+        status=PlayerRequestStatus.REQUESTED,  # auto approve when creating a team
+    )
+
+    user.game_associations.append(game_association)
+
+    db.add(game)  # optional, usually not needed if the game is already in session
+    db.commit()
+    db.refresh(game)
 
 
 def get_user_game_balance(player: User, game: Game, db: Session) -> float:
@@ -74,10 +85,20 @@ def get_user_game_balance(player: User, game: Game, db: Session) -> float:
 
 
 def get_game_add_on_requests(game: Game, db: Session):
-    return [add_on for add_on in game.add_ons if add_on.status == PlayerRequestStatus.REQUESTED]
+    return [
+        add_on
+        for add_on in game.add_ons
+        if add_on.status == PlayerRequestStatus.REQUESTED
+    ]
+
 
 def get_game_cash_out_requests(game: Game, db: Session):
-    return [cash_out for cash_out in game.cash_outs if cash_out.status == PlayerRequestStatus.REQUESTED]
+    return [
+        cash_out
+        for cash_out in game.cash_outs
+        if cash_out.status == PlayerRequestStatus.REQUESTED
+    ]
+
 
 def finish_the_game(user: User, game: Game, db: Session):
     """
@@ -91,7 +112,7 @@ def finish_the_game(user: User, game: Game, db: Session):
     for request in add_ons + cash_outs:
         request.status = PlayerRequestStatus.DECLINED
         db.add(request)
-        
+
     game.running = False
     db.add(game)
     db.commit()

@@ -45,6 +45,7 @@ def get_chip_structure(chip_structure_id: int, db: Session) -> Optional[ChipStru
 
     return item
 
+
 def get_user_team_chip_structures_dict(current_user):
     team_chip_structures = {}
     for team in current_user.teams:
@@ -54,6 +55,7 @@ def get_user_team_chip_structures_dict(current_user):
 
     team_chip_structures = json.dumps(team_chip_structures)
     return team_chip_structures
+
 
 def get_chip_structure_as_list(chip_structure_id: int, db: Session) -> List[dict]:
     chip_structure = get_chip_structure(chip_structure_id, db)
