@@ -6,6 +6,26 @@
 
 {% block content %}
 
+{% if current_user.id == team.owner.id and join_requests %}
+<h3 class="mb-3">Join Requests ({{ join_requests | length }})</h3>
+<div class="list-group mb-4">
+    {% for user in join_requests %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="fw-bold">{{ user.nick }}</span>
+
+        <div class="d-flex gap-2">
+            <form method="POST" action="{{ url_for('team.decide_join_request', team_id=team.id, user_id=user.id, approve='False') }}">
+                <button type="submit" class="btn btn-danger btn-sm">Decline</button>
+            </form>
+            <form method="POST" action="{{ url_for('team.decide_join_request', team_id=team.id, user_id=user.id, approve='True') }}">
+                <button type="submit" class="btn btn-success btn-sm">Accept</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <ul class="list-group list-group-flush">
     <li class="list-group-item d-flex justify-content-between fw-bold">
         <span>Player</span>

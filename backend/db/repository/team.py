@@ -65,7 +65,7 @@ def join_team(team_model: Team, user, db: Session) -> Team:
     team_association = UserTeam(
         user=user,
         team=team_model,
-        status=PlayerRequestStatus.REQUESTED,  # team owner needs to approve it
+        status=PlayerRequestStatus.APPROVED,  # team owner needs to approve it
     )
 
     user.team_associations.append(team_association)
@@ -118,6 +118,54 @@ def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
     """
     return db.query(Team).filter(Team.id == team_id).one_or_none()
 
+
+def get_team_join_requests(team: Team, db: Session) -> List[User]:
+    """
+    Retrieves a list of User objects who have requested to join the specified team.
+    """
+    return (
+        db.query(User)
+        .join(UserTeam)
+        .filter(
+            UserTeam.team_id == team.id,
+            UserTeam.status == PlayerRequestStatus.REQUESTED,
+        )
+        .all()
+    )
+
+def get_team_approved_players(team: Team, db: Session) -> List[User]:
+    """
+    Retrieves a list of User objects who have requested to join the specified team.
+    """
+    return (
+        db.query(User)
+        .join(UserTeam)
+        .filter(
+            UserTeam.team_id == team.id,
+            UserTeam.status == PlayerRequestStatus.APPROVED,
+        )
+        .all()
+    )
+
+def decide_join_team(team_id, user_id, approve: bool, db: Session):
+
+    # 2. Find and Validate the Request
+    # Locate the UserTeam entry that links the user and the team with a 'REQUESTED' status.
+    request_entry = db.query(UserTeam).filter(
+        UserTeam.team_id == team_id,
+        UserTeam.user_id == user_id,
+        UserTeam.status == PlayerRequestStatus.REQUESTED
+    ).first()
+
+    if approve:
+        # 3. Update the Status
+        request_entry.status = PlayerRequestStatus.APPROVED
+    else:
+        request_entry.status = PlayerRequestStatus.DECLINED
+
+    # 4. Commit to Database
+    db.add(request_entry)
+    db.commit()
 
 def generate_team_code(
     db: Session, min_digits: int = 4, max_digits=8, max_attempts: int = 100

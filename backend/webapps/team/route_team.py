@@ -11,13 +11,19 @@ from starlette import status
 
 from backend.apis.v1.route_login import get_current_user, get_current_user_from_token
 from backend.core.config import TEMPLATES_DIR
+from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.team import Team
 from backend.db.models.user import User
+from backend.db.models.user_team import UserTeam
 from backend.db.repository.game import get_user_games_count, get_user_total_balance
 from backend.db.repository.team import (
     create_new_user,
+    decide_join_team,
     generate_team_code,
+    get_team_approved_players,
+    get_team_by_id,
     get_team_by_search_code,
+    get_team_join_requests,
     get_user,
     create_new_team,
     join_team,
@@ -143,6 +149,34 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
     )
 
 
+@router.post(
+    "/team/{team_id}/{user_id}/{approve}",
+    status_code=status.HTTP_302_FOUND,
+    name="team.decide_join_request"
+)
+async def decide_join_request(
+    team_id: int,
+    user_id: int,
+    approve: bool,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token), 
+):
+    """
+    Handles the POST request to accept a user's join request to a team.
+    """
+        # 1. Authorization Check: Is the current user an owner/admin of this team?
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+        
+    if team.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to accept members.")
+
+    decide_join_team(team_id, user_id, approve, db)
+    redirect_url = f"/team/{team_id}" 
+    
+    return responses.RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
+
 @router.get("/{team_id}")
 async def team_view(
     request: Request,
@@ -154,8 +188,9 @@ async def team_view(
     if not team:
         return {"error": "Team not found"}
 
+    join_requests = get_team_join_requests(team, db)
     players_info = []
-    for player in team.users:
+    for player in get_team_approved_players(team, db):
         games_count = get_user_games_count(player, db)
         total_balance = get_user_total_balance(player, db)
         players_info.append(
@@ -168,111 +203,11 @@ async def team_view(
 
     return templates.TemplateResponse(
         "team/team_view.html",
-        {"request": request, "team": team, "players_info": players_info},
+        {
+            "request": request,
+            "current_user": user,
+            "team": team,
+            "join_requests": join_requests,
+            "players_info": players_info,
+        },
     )
-
-
-#
-# @router.get("/details/{doctor_id}")
-# async def doctor_details(
-#         doctor_id: int, request: Request, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
-# ):
-#     doctors_working_hours_practices = get_doctors_working_hours_and_practices(
-#         doctor_id=doctor_id, db=db
-#     )
-#     doctor = get_user(doctor_id, db)
-#     if token:
-#         current_user = get_current_user_from_token(token, db)
-#         add_working_hours_visible: bool = current_user.id == doctor.user_id
-#     else:
-#         add_working_hours_visible = False
-#
-#     return templates.TemplateResponse(
-#         "user/details.html",
-#         {
-#             "request": request,
-#             "doctor": doctor,
-#             "working_hours_practices": doctors_working_hours_practices,
-#             "add_working_hours": add_working_hours_visible,
-#             "edit_working_hours": add_working_hours_visible,
-#         },
-#     )
-#
-#
-# @router.get("/register/")
-# def register_form(request: Request):
-#     return templates.TemplateResponse(
-#         "user/create.html", {"request": request, "doctor_speciality": DoctorSpeciality}
-#     )
-#
-#
-# @router.post("/register/")
-# async def register(request: Request, db: Session = Depends(get_db)):
-#     form = UserCreateForm(request)
-#     await form.load_data()
-#     if await form.is_valid():
-#         try:
-#             new_user = UserCreate(
-#                 email=form.email,
-#                 nick=form.nick,
-#                 password=form.password,
-#             )
-#         except ValidationError as e:
-#             for error in json.loads(e.json()):
-#                 error = f"There is are some problems with {error['loc'][0]}"
-#                 form.errors.append(error)
-#             return templates.TemplateResponse("user/create.html", form.__dict__)
-#         try:
-#             create_new_user(user=new_user, db=db)
-#             return responses.RedirectResponse(
-#                 "/?msg=Successfully registered", status_code=status.HTTP_302_FOUND
-#             )  # default is post request, to use get request added status code 302
-#         except IntegrityError:
-#             form.errors.append("User with that e-mail already exists.")
-#             return templates.TemplateResponse("user/create.html", form.__dict__)
-#     return templates.TemplateResponse("user/create.html", form.__dict__)
-#
-#
-# @router.get("/create_team/")
-# def add_working_hours_form(request: Request, db: Session = Depends(get_db)):
-#     team = read_practices(db)
-#     return templates.TemplateResponse(
-#         "user/add_working_hours.html", {"request": request, "team": team, "add_working_hours": True}
-#     )
-#
-#
-# @router.get("/add_working_hours_practice/{practice_id}")
-# def add_working_hours_practice(practice_id, request: Request, db: Session = Depends(get_db)):
-#     practice = retrieve_practice(practice_id=practice_id, db=db)
-#     doctor = get_current_doctor(request, db)
-#     curr_working_hours = get_working_hours_by_doctor_and_practice(doctor.id, practice_id, db)
-#     curr_working_hours_by_day = working_hours_to_dict(curr_working_hours)
-#     return templates.TemplateResponse(
-#         "user/add_working_hours_practice.html",
-#         {"request": request, "practice": practice, "working_hours": curr_working_hours_by_day}
-#     )
-#
-#
-# @router.post("/add_working_hours_practice/{practice_id}")
-# async def add_working_hours(practice_id, request: Request, db: Session = Depends(get_db)):
-#     form = WorkingHoursCreateForm(request)
-#     await form.load_data(practice_id)
-#     current_user: User = get_current_user(request, db)
-#     current_doctor = get_doctor_by_user_id(current_user.id, db)
-#
-#     if await form.is_valid():
-#         curr_working_hours = get_working_hours_by_doctor_and_practice(doctor_id=current_doctor.id,
-#                                                                       practice_id=practice_id, db=db)
-#         for working_hours in curr_working_hours:
-#             delete_working_hours_by_id(working_hours.id, db)
-#
-#         for working_hours in form.working_hours:
-#             working_hours.practice_id = practice_id
-#             create_new_working_hours(
-#                 working_hours=working_hours, db=db, doctor_id=current_doctor.id
-#             )
-#         return responses.RedirectResponse(
-#             url=f"/user/details/{current_doctor.id}/?msg=Successfully added working hours",
-#             status_code=status.HTTP_302_FOUND
-#         )  # default is post request, to use get request added status code 302
-#     return templates.TemplateResponse("user/add_working_hours.html", form.__dict__)
