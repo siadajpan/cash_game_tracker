@@ -42,23 +42,20 @@ class ChipStructureCreateForm(BaseModel):
                 raise PydanticCustomError(
                     "chip_color_error", "Each chip must have a color and a value."
                 )
-            try:
-                chip_value_int = int(value)
-            except ValueError:
-                raise PydanticCustomError(
-                    "chip_value_format_error", "Chip value must be an integer."
-                )
+            
+            chip_value = float(value)
+            
 
             # Note: We let the NewChip sub-model validation handle the positive check,
             # or you can enforce it here again:
-            if chip_value_int <= 0:
+            if chip_value <= 0:
                 raise PydanticCustomError(
                     "chip_value_error", "Chip value must be a positive number."
                 )
 
             # Append the structured data. Pydantic will convert this dict
             # into a NewChip object during model creation.
-            chips_list.append({"color": color, "value": chip_value_int})
+            chips_list.append({"color": color, "value": chip_value})
 
         # Add the structured 'chips' list to the data dictionary
         data["chips"] = chips_list
