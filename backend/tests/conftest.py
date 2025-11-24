@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.schemas.team import TeamCreate
 from backend.schemas.user import UserCreate
-from backend.apis.base import api_router
+from backend.webapps.base import api_router
 from backend.core.config import settings
 from backend.db.base_class import Base
 from backend.db.session import get_db
@@ -21,6 +21,14 @@ import backend.db.base  # noqa - imports all the tables
 def start_application():
     app = FastAPI()
     app.include_router(api_router)
+    from fastapi.staticfiles import StaticFiles
+    from backend.core.config import settings
+    import os
+    
+    # Assuming static files are in backend/public relative to project root
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
+    if os.path.exists(static_dir):
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
     return app
 
 

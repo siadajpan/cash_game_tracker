@@ -8,7 +8,7 @@ class UserCreate(BaseModel):
 
 
 class UserShow(BaseModel):
-    id: str
+    id: int
     email: str
     nick: str
 

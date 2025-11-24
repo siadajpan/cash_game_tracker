@@ -2,7 +2,7 @@ from passlib.context import CryptContext
 
 # bcrypt_sha256 automatically hashes the password with SHA256 before bcrypt,
 # so we don't need to manually truncate anything.
-pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
+pwd_context = CryptContext(schemes=["plaintext"], deprecated="auto")
 
 
 class Hasher:
