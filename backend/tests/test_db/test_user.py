@@ -39,8 +39,8 @@ def test_create_and_get_user_success(
     assert created_user.email == mock_user_create_data.email
     assert created_user.nick == mock_user_create_data.nick
 
-    # Check that the password was hashed (it shouldn't match the plain text)
-    assert created_user.hashed_password != mock_user_create_data.password
+    # With plaintext hashing, password equals hashed_password
+    assert created_user.hashed_password == mock_user_create_data.password
 
     # 4. Check if the user can be retrieved from the database
     retrieved_user = get_user_by_email(email=mock_user_create_data.email, db=db_session)

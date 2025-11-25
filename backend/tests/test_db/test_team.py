@@ -33,7 +33,7 @@ def test_create_team_with_owner_and_users(
     db_session.refresh(owner)
 
     # --- Step 2: Create team ---
-    team = Team(name=mock_team_create_data["name"], owner=owner)
+    team = Team(name=mock_team_create_data["name"], owner=owner, search_code="123456")
     db_session.add(team)
     db_session.commit()
     db_session.refresh(team)
