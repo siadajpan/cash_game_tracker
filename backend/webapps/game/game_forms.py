@@ -10,27 +10,16 @@ from backend.db.models.chip_amount import ChipAmount
 from backend.schemas.chip_amount import ChipAmountCreate
 
 
-class AddOnRequest:
-    def __init__(self, request: Request):
-        self.request: Request = request
-        self.errors: List = []
-        self.amount: float = 0.0
+class AddOnRequest(BaseModel):
+    add_on: float = 0.0
 
-    async def load_data(self):
-        form = await self.request.form()
-
-        add_in_str = form.get("add_on")
-        try:
-            self.amount = float(add_in_str)
-        except ValueError:
-            self.errors.append("Add-on be a valid number.")
-
-    async def is_valid(self):
-        # Validation for Default Buy-In
-        if self.amount is None or self.amount <= 0:
-            self.errors.append("Add-on needs to be a positive number.")
-
-        return len(self.errors) == 0
+    @field_validator("add_on")
+    def add_on_bigger_than_0(cls, value):
+        if value < 0:
+            raise PydanticCustomError(
+                "add_on_lower_than_0", "Make sure add-on is bigger or equal to 0"
+            )
+        return value
 
 
 class CashOutRequest(BaseModel):
