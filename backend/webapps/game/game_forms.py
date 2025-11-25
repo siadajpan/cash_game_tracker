@@ -33,12 +33,25 @@ class AddOnRequest:
         return len(self.errors) == 0
 
 
-class CashOutRequest:
-    def __init__(self, request: Request):
-        self.request: Request = request
-        self.errors: List[str] = []
-        self.amount: float = 0.0
-        self.chips_amounts: List[ChipAmountCreate] = []
+class CashOutRequest(BaseModel):
+    amount: float = 0.0
+    chips_amounts: List[ChipAmountCreate] = []
+
+    @field_validator("amount")
+    def amount_bigger_than_0(cls, value):
+        if value < 0:
+            raise PydanticCustomError(
+                "amount_lower_than_0", "Make sure amount is bigger or equal to 0"
+            )
+        return value
+
+    @field_validator("chips_amounts")
+    def chips_amounts_bigger_than_0(cls, value):
+        if len(value) == 0:
+            raise PydanticCustomError(
+                "chips_amounts_lower_than_0", "Make sure amount is bigger or equal to 0"
+            )
+        return value
 
     async def load_data(self, chip_structure: List):
         """
