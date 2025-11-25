@@ -12,3 +12,6 @@ class Chip(Base):
     chip_structure_id = Column(Integer, ForeignKey("chip_structure.id"))
 
     chip_structure = relationship("ChipStructure", back_populates="chips")
+
+    def __repr__(self):
+        return f"Chip(id={self.id}, color={self.color}, value={self.value}, chip_structure_id={self.chip_structure_id})"

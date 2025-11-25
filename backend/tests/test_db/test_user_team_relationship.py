@@ -16,7 +16,7 @@ def test_user_team_association(db_session: Session):
     )
 
     # Create a new team
-    team = Team(name="Mock Team")
+    team = Team(name="Mock Team", search_code="123456")
 
     # Associate user with team (many-to-many)
     user.teams.append(team)

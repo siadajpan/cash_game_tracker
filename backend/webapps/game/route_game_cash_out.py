@@ -1,10 +1,12 @@
 from sqlite3 import IntegrityError
-
+from typing import List
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.templating import Jinja2Templates
 from pydantic_core import PydanticCustomError, ValidationError
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
+from backend.db.models.chip import Chip
+from backend.schemas.chip_amount import ChipAmountCreate
 
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
@@ -24,8 +26,8 @@ from backend.db.repository.cash_out import (
     update_cash_out_status,
 )
 from backend.db.repository.chip_structure import (
-    get_chip_structure,
     get_chip_structure_as_list,
+    get_chips_from_structure
 )
 from backend.db.repository.game import (
     get_game_by_id,
@@ -83,6 +85,33 @@ async def cash_out(
     )
 
 
+def read_chips_from_form(form_data, expected_chip_ids):
+    chip_values = []
+    print("expected chip id", expected_chip_ids)
+    for key, value in form_data.items():
+        if not key.startswith('chip_'):
+            continue
+        chip_id = key.split('_')[1]
+
+        try:
+            chip_value_int = int(value)
+        except ValueError:
+            raise ValueError(f"Value '{value}' for key '{key}' is not an integer.")
+
+        try:
+            chip_id_int = int(chip_id)
+        except ValueError:
+            raise ValueError(f"Value '{chip_id}' for key '{key}' is not an integer.")
+        
+        if chip_id_int not in expected_chip_ids:
+            raise ValueError(f"Chip ID '{chip_id}' is not in the expected list.")
+        chip_values.append(ChipAmountCreate(chip_id=chip_id_int, amount=chip_value_int))
+
+    if len(chip_values) != len(expected_chip_ids):
+        raise ValueError(f"Expected {expected_chip_ids} chip values, but got {len(chip_values)}.")
+    
+    return chip_values
+
 @router.post("/{game_id}/cash_out", name="cash_out")
 async def cash_out(
     request: Request,
@@ -90,38 +119,38 @@ async def cash_out(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
-    game = get_game_by_id(game_id, db)
-    if not user_in_game(user, game):
-        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
-
-    # Load form data
-    form = CashOutRequest(request)
-    chip_structure_list = get_chip_structure_as_list(game.chip_structure_id, db)
-    await form.load_data(chip_structure=chip_structure_list)
-    amount = form.amount
-    chip_amounts = form.chips_amounts
-
     errors = []
-    # Fetch game
+
     game = get_game_by_id(game_id, db)
     if game is None:
         errors.append("Game doesn't exist anymore. Maybe it was deleted.")
+        return RedirectResponse(url="/") 
 
-    # Validate form
-    if not await form.is_valid():
-        errors.extend(form.errors)
+    if not user_in_game(user, game):
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+    form = await request.form()
+    try:    
+        chips = get_chips_from_structure(game.chip_structure_id, db)
+        print("chips", chips)
+        chip_values = read_chips_from_form(form, expected_chip_ids = [chip.id for chip in chips])
+        cash_out_form = CashOutRequest(amount=form.get("totalValue", 0), chips_amounts=chip_values)
+        amount = cash_out_form.amount
+        chip_amounts = cash_out_form.chips_amounts
 
-    if not errors:
-        try:
-            create_cash_out_request(game, amount, chip_amounts, db, user)
-            # Redirect to the game page
-            return RedirectResponse(url=f"/game/{game.id}", status_code=303)
-        except IntegrityError:
-            errors.append(
-                "A database error occurred (e.g., integrity constraint violation)."
-            )
-        except Exception as e:
-            errors.append(f"An unexpected error occurred: {e}")
+        create_cash_out_request(game, amount, chip_amounts, db, user)
+        # Redirect to the game page
+        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+
+    except IntegrityError:
+        errors.append(
+            "A database error occurred (e.g., integrity constraint violation)."
+        )
+    except Exception as e:
+        errors.append(f"An unexpected error occurred: {e}")
+    except ValidationError as e:
+        errors.extend([err["msg"] for err in e.errors()])
+    except PydanticCustomError as e:
+        errors.append(e.message)
 
     # Re-render template with submitted data and errors
     return templates.TemplateResponse(
@@ -131,6 +160,17 @@ async def cash_out(
             "errors": errors,
             "game": game,
             "form": form,
+        },
+    )
+
+    # Re-render template with submitted data and errors
+    return templates.TemplateResponse(
+        f"game/cash_out.html",
+        {
+            "request": request,
+            "errors": errors,
+            "game": game,
+            "form": cash_out_form,
         },
     )
 

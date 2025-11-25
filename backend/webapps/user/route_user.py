@@ -27,7 +27,8 @@ def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.get("/list", response_model=List[UserShow])
 def list_users(db: Session = Depends(get_db)):
-    users = list_user_view(db)
+    from backend.db.models.user import User
+    users = db.query(User).all()
     # for doctor in user:
     #     del doctor.hashed_password
     return users
