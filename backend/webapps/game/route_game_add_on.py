@@ -66,35 +66,27 @@ async def add_on(
     user: User = Depends(get_current_user_from_token),
 ):
     game = get_game_by_id(game_id, db)
+    if game is None:
+        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
-    # Load form data
-    form = AddOnRequest(request)
-    await form.load_data()
-    amount = form.amount
-
+    form = await request.form()
+    print("form", form)
     errors = []
-    # Fetch game
-    game = get_game_by_id(game_id, db)
-    if game is None:
-        errors.append("Game doesn't exist anymore. Maybe it was deleted.")
-
-    # Validate form
-    if not await form.is_valid():
-        errors.extend(form.errors)
-
-    if not errors:
-        try:
-            create_add_on_request(game, amount, db, user)
-            # Redirect to the game page
-            return RedirectResponse(url=f"/game/{game.id}", status_code=303)
-        except IntegrityError:
-            errors.append(
-                "A database error occurred (e.g., integrity constraint violation)."
-            )
-        except Exception as e:
-            errors.append(f"An unexpected error occurred: {e}")
+    try:
+        add_on_request_form = AddOnRequest(**form)
+        create_add_on_request(game, add_on_request_form.add_on, db, user)
+        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+    except ValueError:
+        errors.append("Invalid add-on")
+    except IntegrityError:
+        errors.append(
+            "A database error occurred (e.g., integrity constraint violation)."
+        )
+    except Exception as e:
+        errors.append(f"An unexpected error occurred: {e}")
 
     # Re-render template with submitted data and errors
     return templates.TemplateResponse(
@@ -103,7 +95,7 @@ async def add_on(
             "request": request,
             "errors": errors,
             "game": game,
-            "form": {"amount": amount},
+            "form": form,
         },
     )
 

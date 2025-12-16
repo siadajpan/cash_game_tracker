@@ -1,39 +1,28 @@
 {% extends "shared/base.html" %}
 {% block title %}
-    <title>Team {{ team.name }}</title>
+<title>Team {{ team.name }}</title>
 {% endblock %}
 {% block page_heading %}{{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>{% endblock %}
 
 {% block content %}
 
 {% if current_user.id == team.owner.id and join_requests %}
-<h3 class="mb-3">Join Requests ({{ join_requests | length }})</h3>
-<div class="list-group mb-4">
-    {% for user in join_requests %}
-    <div class="list-group-item d-flex justify-content-between align-items-center">
-        <span class="fw-bold">{{ user.nick }}</span>
-
-        <div class="d-flex gap-2">
-            <form method="POST" action="{{ url_for('team.decide_join_request', team_id=team.id, user_id=user.id, approve='False') }}">
-                <button type="submit" class="btn btn-danger btn-sm">Decline</button>
-            </form>
-            <form method="POST" action="{{ url_for('team.decide_join_request', team_id=team.id, user_id=user.id, approve='True') }}">
-                <button type="submit" class="btn btn-success btn-sm">Accept</button>
-            </form>
-        </div>
-    </div>
-    {% endfor %}
-</div>
+{%with join_requests=join_requests %}
+{% include "team/component_join_request.html" %}
+{% endwith %}
 {% endif %}
-
-<ul class="list-group list-group-flush">
+<div class="list-group list-group-flush">
     <li class="list-group-item d-flex justify-content-between fw-bold">
         <span>Player</span>
         <span>Games Played</span>
         <span>Total Balance</span>
     </li>
 
-    {% for info in players_info %}
+    {# Apply the scroll styling here: max-height and overflow #}
+    <div style="max-height: 200px; overflow-y: auto;"> 
+        
+        {% for info in players_info %}
+        {# The individual list item no longer needs the style attribute #}
         <li class="list-group-item d-flex align-items-center">
 
             <div class="col-4">{{ info.player.nick }}</div>
@@ -46,8 +35,10 @@
                 {% endif %}
             </div>
         </li>
-    {% endfor %}
-</ul>
+        {% endfor %}
+
+    </div> 
+</div>
 
 
 <div class="d-flex mt-3">
