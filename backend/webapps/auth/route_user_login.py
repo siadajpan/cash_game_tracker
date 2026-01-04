@@ -20,13 +20,13 @@ from backend.db.repository.user import (
 from backend.db.session import get_db
 from backend.schemas.user import UserCreate
 from backend.webapps.auth.forms import LoginForm
-from backend.webapps.user.forms import ResetPasswordForm, UserCreateForm
-from backend.db.repository.user_verification import create_new_user_verification
+from backend.webapps.user.forms import ResetPasswordForm
 from backend.webapps.auth.route_verify import send_verification_email
 from backend.core.config import settings
 from backend.apis.v1.route_login import create_access_token
-from datetime import datetime, timedelta
-
+from datetime import timedelta
+from backend.db.repository.user import create_verification_token
+from backend.apis.v1.route_login import add_new_access_token
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
@@ -50,10 +50,8 @@ async def register(request: Request, db: Session = Depends(get_db)):
             form.errors.append("User with that e-mail doesn't exist.")
             return templates.TemplateResponse("auth/reset_password.html", form.__dict__)
         update_user_password(user, form.password, db)
-        # --- Auto-login after registration ---
         response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
 
-        # Pass minimal login info to your token helper
         class TempLoginForm:
             username = user.email
             password = form.password
@@ -80,36 +78,22 @@ async def register(
     form = await request.form()
     errors = []
     try:
-        # 1. Create User
         new_user_data = UserCreate(
             email=form.get("email"),
             nick=form.get("nick"),
             password=form.get("password"),
         )
         new_user = create_new_user(user=new_user_data, db=db)
-
-        # 2. Create the response and SET THE COOKIE
-        # This ensures the 'user' object is available in the next request
-        response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
-
-        # We reuse your existing login helper to set the JWT cookie
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": new_user.email}, expires_delta=access_token_expires
-        )
-        response.set_cookie(
-            key="access_token", value=f"Bearer {access_token}", httponly=True
-        )
-
-        # 3. Create a UNIQUE verification token (Separate from the JWT)
-        verif_token = secrets.token_urlsafe(32)
-        create_new_user_verification(new_user.id, verif_token, db)
-
-        # 4. Email the random token
+        verif_token = create_verification_token(new_user.id, db)
         background_tasks.add_task(
             send_verification_email, new_user.email, new_user.nick, verif_token
         )
 
+        response = templates.TemplateResponse(
+            "auth/verify_notice.html",
+            {"request": request, "email": new_user.email, "nick": new_user.nick},
+        )
+        response, access_token = add_new_access_token(response, new_user)
         return response
 
     except ValueError as e:

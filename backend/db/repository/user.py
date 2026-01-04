@@ -35,7 +35,7 @@ def update_user_password(user, new_password, db: Session):
     return user
 
 
-def create_verification_token(db: Session, user_id: int):
+def create_verification_token(user_id: int, db: Session):
     # 1. Generate a secure random string
     token = secrets.token_urlsafe(32)
 

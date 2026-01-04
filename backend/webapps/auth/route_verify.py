@@ -2,6 +2,7 @@ from fastapi import APIRouter, responses
 from fastapi import Depends, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from starlette import status
+from starlette.responses import RedirectResponse
 
 from backend.db.session import get_db
 from backend.db.models.user_verification import UserVerification
@@ -9,15 +10,22 @@ from datetime import datetime
 from backend.db.models.user import User
 from fastapi_mail import FastMail, MessageSchema, MessageType
 from backend.webapps.auth.email_config import conf
-from backend.db.repository.user_verification import create_new_user_verification
 import asyncio
 from backend.apis.v1.route_login import get_current_user
+from backend.db.repository.user import create_verification_token
+from backend.core.config import TEMPLATES_DIR
+from fastapi.templating import Jinja2Templates
+from datetime import timedelta
+from backend.core.config import settings
+from backend.apis.v1.route_login import create_access_token, login_for_access_token
+from backend.apis.v1.route_login import add_new_access_token
 
 router = APIRouter(include_in_schema=False)
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 
 async def send_verification_email(email_to: str, nick: str, token: str):
-    verification_url = f"http://localhost:8000/verify?token={token}"
+    verification_url = f"{settings.URL}/verify?token={token}"
     template_data = {"nick": nick, "link": verification_url}
 
     message = MessageSchema(
@@ -31,26 +39,41 @@ async def send_verification_email(email_to: str, nick: str, token: str):
     await fm.send_message(message, template_name="verify_email.html")
 
 
+@router.get("/verify-success")
+async def verify_success(request: Request, user: User = Depends(get_current_user)):
+    return templates.TemplateResponse(
+        "auth/verify_success.html", {"request": request, "user": user}
+    )
+
+
+@router.get("/verify-error")
+async def verify_error(request: Request, can_resend: bool = False, error: str = ""):
+    return templates.TemplateResponse(
+        "auth/verify_error.html",
+        {"request": request, "error": error, "can_resend": can_resend},
+    )
+
+
 @router.get("/verify")
-async def verify_email(token: str, db: Session = Depends(get_db)):
+async def verify_email(token: str, request: Request, db: Session = Depends(get_db)):
     # 1. Find the token in our new table
     verification = (
         db.query(UserVerification).filter(UserVerification.token == token).first()
     )
 
     if not verification:
-        return responses.RedirectResponse(
-            "/", status_code=status.HTTP_302_FOUND, message="Invalid token"
+        return await verify_error(
+            request,
+            can_resend=True,
+            error="This link is invalid. Probably it was already used.",
         )
 
     # 2. Check if expired
     if datetime.utcnow() > verification.expires_at:
         db.delete(verification)
         db.commit()
-        return responses.RedirectResponse(
-            "/",
-            status_code=status.HTTP_302_FOUND,
-            message="Token expired. Please request a new one.",
+        return await verify_error(
+            request, can_resend=True, error="Your verification link has expired."
         )
 
     # 3. Mark user as active
@@ -61,7 +84,10 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     db.delete(verification)
     db.commit()
 
-    return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+    response = await verify_success(request, user=user)
+    response, access_token = add_new_access_token(response, user)
+
+    return response
 
 
 @router.get("/resend-verification")
@@ -71,28 +97,27 @@ async def resend_verification(
     # This assumes the user is logged in but is_active=False
     # If not logged in, you'd need a form to ask for their email
     user = get_current_user(request, db)
-
+    print("current user", user)
     if not user:
         return RedirectResponse("/login")
 
-    # Pass minimal login info to your token helper
-    class TempLoginForm:
-        username = user.email
-        password = user.password
-
-    token = login_for_access_token(response=response, form_data=TempLoginForm(), db=db)
-    access_token = token["access_token"]
-
     if user.is_active:
-        return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+        print("user is active")
+        return RedirectResponse(
+            "/",
+            status_code=status.HTTP_302_FOUND,
+        )
 
     # 1. Delete any existing old tokens for this user
     db.query(UserVerification).filter(UserVerification.user_id == user.id).delete()
 
     # 2. Generate a brand new token
-    create_new_user_verification(user.id, access_token, db)
+    new_token = create_verification_token(user.id, db)
 
     # 3. Send the email again
     background_tasks.add_task(send_verification_email, user.email, user.nick, new_token)
 
-    return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse(
+        "auth/verify_notice.html",
+        {"request": request, "email": user.email, "nick": user.nick},
+    )
