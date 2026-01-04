@@ -70,42 +70,39 @@ async def register_form(request: Request):
 
 @router.post("/register/")
 async def register(request: Request, db: Session = Depends(get_db)):
-    form = UserCreateForm(request)
-    await form.load_data()
-    if await form.is_valid():
-        try:
-            new_user_data = UserCreate(
-                email=form.email,
-                nick=form.nick,
-                password=form.password,
-            )
-        except ValidationError as e:
-            for error in json.loads(e.json()):
-                form.errors.append(f"There is a problem with {error['loc'][0]}")
-            return templates.TemplateResponse("auth/register.html", form.__dict__)
+    form = await request.form()
+    errors = []
+    try:
+        new_user_data = UserCreate(
+            email=form.get("email"),
+            nick=form.get("nick"),
+            password=form.get("password"),
+        )
 
-        try:
-            new_user = create_new_user(user=new_user_data, db=db)
+        new_user = create_new_user(user=new_user_data, db=db)
 
-            # --- Auto-login after registration ---
-            response = responses.RedirectResponse(
-                "/", status_code=status.HTTP_302_FOUND
-            )
+        # --- Auto-login after registration ---
+        response = responses.RedirectResponse(
+            "/", status_code=status.HTTP_302_FOUND
+        )
 
-            # Pass minimal login info to your token helper
-            class TempLoginForm:
-                username = new_user.email
-                password = form.password
+        # Pass minimal login info to your token helper
+        class TempLoginForm:
+            username = new_user_data.email
+            password = new_user_data.password
 
-            login_for_access_token(response=response, form_data=TempLoginForm(), db=db)
+        login_for_access_token(response=response, form_data=TempLoginForm(), db=db)
 
-            return response
+        return response
 
-        except IntegrityError:
-            form.errors.append("User with that e-mail already exists.")
-            return templates.TemplateResponse("auth/register.html", form.__dict__)
-
-    return templates.TemplateResponse("auth/register.html", form.__dict__)
+    except ValueError as e:
+        errors.append(str(e))
+    except IntegrityError as e:
+        errors.append(f"User with that e-mail already exists.")
+    except Exception as e:
+        errors.append(f"Unexpected error: {e}")
+    
+    return templates.TemplateResponse("auth/register.html", {"request": request, "form": form, "errors": errors})
 
 
 @router.post("/login/")

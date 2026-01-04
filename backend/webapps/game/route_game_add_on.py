@@ -33,9 +33,7 @@ from backend.db.repository.game import (
     user_in_game,
 )
 from backend.db.session import get_db
-from backend.webapps.game.game_forms import (
-    AddOnRequest,
-)
+from backend.schemas.add_on import AddOnRequest
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)

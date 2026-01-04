@@ -34,7 +34,7 @@ from backend.db.repository.game import (
     user_in_game,
 )
 from backend.db.session import get_db
-from backend.webapps.game.game_forms import (
+from backend.schemas.cash_out import (
     CashOutByAmountRequest,
     CashOutRequest,
 )

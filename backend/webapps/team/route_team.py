@@ -31,7 +31,7 @@ from backend.db.repository.team import (
 )
 from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
-from backend.schemas.user import UserCreate, UserShow
+from backend.schemas.user import UserCreate
 from backend.webapps.team.forms import TeamCreateForm, TeamJoinForm
 import os
 from sqlalchemy import select

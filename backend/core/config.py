@@ -31,6 +31,7 @@ class Settings:
     TEST_USER_PASSWORD = "test_password"
 
     PASSWORD_LENGTH = 4
+    NICK_LENGTH = 1
 
 
 settings = Settings()
