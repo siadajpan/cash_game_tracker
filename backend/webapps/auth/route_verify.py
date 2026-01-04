@@ -80,11 +80,9 @@ async def resend_verification(
         username = user.email
         password = user.password
 
-    token = login_for_access_token(
-        response=response, form_data=TempLoginForm(), db=db
-    )
+    token = login_for_access_token(response=response, form_data=TempLoginForm(), db=db)
     access_token = token["access_token"]
-    
+
     if user.is_active:
         return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
 

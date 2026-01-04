@@ -330,9 +330,7 @@ async def finish_game_view(
 
 
 @router.get("/api/check_update")
-def check_update(
-    user: User = Depends(get_active_user), db: Session = Depends(get_db)
-):
+def check_update(user: User = Depends(get_active_user), db: Session = Depends(get_db)):
     # Get latest game in the user’s teams
     team_ids = [team.id for team in user.teams]
     latest_game = (

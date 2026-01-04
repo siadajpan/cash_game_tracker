@@ -80,12 +80,14 @@ def get_current_user_from_token(
         raise credentials_exception
     return user
 
+
 def get_active_user(user: User = Depends(get_current_user_from_token)):
     if not user:
         raise HTTPException(status_code=401, detail="Please log in.")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Email verification required.")
     return user
+
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("access_token")

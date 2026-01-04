@@ -72,11 +72,10 @@ async def register(request: Request, db: Session = Depends(get_db)):
 async def register_form(request: Request):
     return templates.TemplateResponse("auth/register.html", {"request": request})
 
+
 @router.post("/register/")
 async def register(
-    request: Request, 
-    background_tasks: BackgroundTasks, 
-    db: Session = Depends(get_db)
+    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
 ):
     form = await request.form()
     errors = []
@@ -92,7 +91,7 @@ async def register(
         # 2. Create the response and SET THE COOKIE
         # This ensures the 'user' object is available in the next request
         response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
-        
+
         # We reuse your existing login helper to set the JWT cookie
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
