@@ -24,9 +24,11 @@ def start_application():
     from fastapi.staticfiles import StaticFiles
     from backend.core.config import settings
     import os
-    
+
     # Assuming static files are in backend/public relative to project root
-    static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
+    static_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public"
+    )
     if os.path.exists(static_dir):
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
     return app

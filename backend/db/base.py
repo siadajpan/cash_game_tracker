@@ -12,6 +12,7 @@ from backend.db.models.chip_amount import ChipAmount  # noqa
 from backend.db.models.add_on import AddOn  # noqa
 from backend.db.models.user_team import UserTeam  # noqa
 from backend.db.models.user_game import UserGame  # noqa
+from backend.db.models.user_verification import UserVerification  # noqa
 
 # List of all models for metadata
 # models = (User, Team, Game, ChipStructure, Chip, BuyIn, CashOut, AddOn, ChipAmount)

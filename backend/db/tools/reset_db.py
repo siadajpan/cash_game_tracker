@@ -1,18 +1,3 @@
-"""Utility to drop and recreate all database tables.
-
-Usage:
-  poetry run python backend/tools/reset_db.py drop   # drop all tables
-  poetry run python backend/tools/reset_db.py create # create all tables
-  poetry run python backend/tools/reset_db.py reset  # drop then create
-
-This script uses the project's SQLALCHEMY_DATABASE_URL from
-`backend.core.config.settings` via `backend.db.session.engine` and the
-declarative `Base` in `backend.db.base_class` to operate on metadata.
-
-WARNING: Dropping all tables is destructive. Make sure you have backups
-or you understand the data loss implications before running `drop` or
-`reset`.
-"""
 import sys
 
 from backend.db.session import engine

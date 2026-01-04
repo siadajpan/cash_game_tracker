@@ -18,7 +18,9 @@ class UserCreate(BaseModel):
         if not nick:
             raise ValueError("Nick is required")
         if len(nick) < settings.NICK_LENGTH:
-            raise ValueError(f"Nick needs to be at least {settings.NICK_LENGTH} characters")
+            raise ValueError(
+                f"Nick needs to be at least {settings.NICK_LENGTH} characters"
+            )
         return nick
 
     @field_validator("email")
@@ -34,7 +36,9 @@ class UserCreate(BaseModel):
         if not password:
             raise ValueError("Password is required")
         if len(password) < settings.PASSWORD_LENGTH:
-            raise ValueError(f"Password needs to be at least {settings.PASSWORD_LENGTH} characters")
+            raise ValueError(
+                f"Password needs to be at least {settings.PASSWORD_LENGTH} characters"
+            )
         return password
 
     @field_validator("repeat_password")
@@ -45,7 +49,6 @@ class UserCreate(BaseModel):
             raise ValueError("Passwords don't match")
         return repeat_password
 
-  
 
 class UserShow(BaseModel):
     id: int

@@ -13,4 +13,3 @@ class AddOnRequest(BaseModel):
                 "add_on_lower_than_0", "Make sure add-on is bigger or equal to 0"
             )
         return value
-

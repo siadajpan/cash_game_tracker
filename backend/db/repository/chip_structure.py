@@ -45,9 +45,11 @@ def get_chip_structure(chip_structure_id: int, db: Session) -> Optional[ChipStru
 
     return item
 
+
 def get_chips_from_structure(chip_structure_id: int, db: Session) -> List[Chip]:
     items = db.query(Chip).filter(Chip.chip_structure_id == chip_structure_id).all()
-    return items    
+    return items
+
 
 def get_user_team_chip_structures_dict(current_user):
     team_chip_structures = {}

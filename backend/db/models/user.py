@@ -10,6 +10,7 @@ class User(Base):
     email = Column(String(200), nullable=False, unique=True)
     hashed_password = Column(String(200), nullable=False)
     is_superuser = Column(Boolean(), default=False)
+    is_active = Column(Boolean(), default=False)
     nick = Column(String(200), nullable=False)
 
     teams_owned = relationship("Team", back_populates="owner")
@@ -29,15 +30,17 @@ class User(Base):
     )
 
     # Games a user owns (One-to-Many: One user owns many games)
-    games_owned = relationship(
-        "Game", back_populates="owner"
-    )  # Renamed back_populates to 'owner'
+    games_owned = relationship("Game", back_populates="owner")
 
     # NEW: Buy-ins and Add-ons
     buy_ins = relationship("BuyIn", back_populates="user", cascade="all, delete-orphan")
     add_ons = relationship("AddOn", back_populates="user", cascade="all, delete-orphan")
     cash_outs = relationship(
         "CashOut", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    verification = relationship(
+        "UserVerification", back_populates="user", uselist=False
     )
 
     @property

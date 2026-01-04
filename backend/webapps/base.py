@@ -9,6 +9,7 @@ from backend.webapps.game import route_game_cash_out
 from backend.webapps.game import route_game_add_on
 from backend.webapps.team import route_team
 from backend.webapps.user import route_user
+from backend.webapps.auth import route_verify
 
 api_router = APIRouter()
 api_router.include_router(route_user.router, prefix="/user", tags=["user-webapp"])
@@ -29,3 +30,4 @@ api_router.include_router(
 
 api_router.include_router(route_login.router, prefix="", tags=["auth-webapp"])
 api_router.include_router(route_user_login.router, prefix="", tags=["auth-webapp"])
+api_router.include_router(route_verify.router, prefix="", tags=["auth-webapp"])

@@ -27,7 +27,7 @@ from backend.db.repository.cash_out import (
 )
 from backend.db.repository.chip_structure import (
     get_chip_structure_as_list,
-    get_chips_from_structure
+    get_chips_from_structure,
 )
 from backend.db.repository.game import (
     get_game_by_id,
@@ -89,9 +89,9 @@ def read_chips_from_form(form_data, expected_chip_ids):
     chip_values = []
     print("expected chip id", expected_chip_ids)
     for key, value in form_data.items():
-        if not key.startswith('chip_'):
+        if not key.startswith("chip_"):
             continue
-        chip_id = key.split('_')[1]
+        chip_id = key.split("_")[1]
 
         try:
             chip_value_int = int(value)
@@ -102,15 +102,18 @@ def read_chips_from_form(form_data, expected_chip_ids):
             chip_id_int = int(chip_id)
         except ValueError:
             raise ValueError(f"Value '{chip_id}' for key '{key}' is not an integer.")
-        
+
         if chip_id_int not in expected_chip_ids:
             raise ValueError(f"Chip ID '{chip_id}' is not in the expected list.")
         chip_values.append(ChipAmountCreate(chip_id=chip_id_int, amount=chip_value_int))
 
     if len(chip_values) != len(expected_chip_ids):
-        raise ValueError(f"Expected {expected_chip_ids} chip values, but got {len(chip_values)}.")
-    
+        raise ValueError(
+            f"Expected {expected_chip_ids} chip values, but got {len(chip_values)}."
+        )
+
     return chip_values
+
 
 @router.post("/{game_id}/cash_out", name="cash_out")
 async def cash_out(
@@ -124,16 +127,20 @@ async def cash_out(
     game = get_game_by_id(game_id, db)
     if game is None:
         errors.append("Game doesn't exist anymore. Maybe it was deleted.")
-        return RedirectResponse(url="/") 
+        return RedirectResponse(url="/")
 
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
     form = await request.form()
-    try:    
+    try:
         chips = get_chips_from_structure(game.chip_structure_id, db)
         print("chips", chips)
-        chip_values = read_chips_from_form(form, expected_chip_ids = [chip.id for chip in chips])
-        cash_out_form = CashOutRequest(amount=form.get("totalValue", 0), chips_amounts=chip_values)
+        chip_values = read_chips_from_form(
+            form, expected_chip_ids=[chip.id for chip in chips]
+        )
+        cash_out_form = CashOutRequest(
+            amount=form.get("totalValue", 0), chips_amounts=chip_values
+        )
         amount = cash_out_form.amount
         chip_amounts = cash_out_form.chips_amounts
 

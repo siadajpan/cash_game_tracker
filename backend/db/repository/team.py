@@ -133,6 +133,7 @@ def get_team_join_requests(team: Team, db: Session) -> List[User]:
         .all()
     )
 
+
 def get_team_approved_players(team: Team, db: Session) -> List[User]:
     """
     Retrieves a list of User objects who have requested to join the specified team.
@@ -147,15 +148,19 @@ def get_team_approved_players(team: Team, db: Session) -> List[User]:
         .all()
     )
 
-def decide_join_team(team_id, user_id, approve: bool, db: Session):
 
+def decide_join_team(team_id, user_id, approve: bool, db: Session):
     # 2. Find and Validate the Request
     # Locate the UserTeam entry that links the user and the team with a 'REQUESTED' status.
-    request_entry = db.query(UserTeam).filter(
-        UserTeam.team_id == team_id,
-        UserTeam.user_id == user_id,
-        UserTeam.status == PlayerRequestStatus.REQUESTED
-    ).first()
+    request_entry = (
+        db.query(UserTeam)
+        .filter(
+            UserTeam.team_id == team_id,
+            UserTeam.user_id == user_id,
+            UserTeam.status == PlayerRequestStatus.REQUESTED,
+        )
+        .first()
+    )
 
     if approve:
         # 3. Update the Status
@@ -166,6 +171,7 @@ def decide_join_team(team_id, user_id, approve: bool, db: Session):
     # 4. Commit to Database
     db.add(request_entry)
     db.commit()
+
 
 def generate_team_code(
     db: Session, min_digits: int = 4, max_digits=8, max_attempts: int = 100

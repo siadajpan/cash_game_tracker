@@ -9,12 +9,10 @@ packages = [{include = "backend"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 uvicorn = "0.22.0"
-jinja2 = "3.1.2"
 aiofile = "3.8.5"
 python-dotenv = "1.0.0"
 sqlalchemy = "2.0.13"
 passlib = ">=1.7.4"
-email-validator = "2.0.0.post2"
 python-jose = "3.3.0"
 python-multipart = "0.0.6"
 fastapi-sessions = "^0.3.2"
@@ -25,6 +23,8 @@ bcrypt = "<4.0"
 fastapi = "^0.121.1"
 pydantic = "^2.12.4"
 gunicorn = "^23.0.0"
+jinja2 = "^3.1.6"
+fastapi-mail = "^1.6.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "23.3.0"

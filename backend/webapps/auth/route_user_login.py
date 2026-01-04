@@ -1,5 +1,5 @@
 import json
-
+from fastapi import BackgroundTasks
 from fastapi import APIRouter, responses
 from fastapi import Depends
 from fastapi import HTTPException
@@ -21,6 +21,7 @@ from backend.db.session import get_db
 from backend.schemas.user import UserCreate
 from backend.webapps.auth.forms import LoginForm
 from backend.webapps.user.forms import ResetPasswordForm, UserCreateForm
+from backend.webapps.auth.route_verify import send_verification_email
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
@@ -69,7 +70,9 @@ async def register_form(request: Request):
 
 
 @router.post("/register/")
-async def register(request: Request, db: Session = Depends(get_db)):
+async def register(
+    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
     form = await request.form()
     errors = []
     try:
@@ -82,16 +85,21 @@ async def register(request: Request, db: Session = Depends(get_db)):
         new_user = create_new_user(user=new_user_data, db=db)
 
         # --- Auto-login after registration ---
-        response = responses.RedirectResponse(
-            "/", status_code=status.HTTP_302_FOUND
-        )
+        response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
 
         # Pass minimal login info to your token helper
         class TempLoginForm:
             username = new_user_data.email
             password = new_user_data.password
 
-        login_for_access_token(response=response, form_data=TempLoginForm(), db=db)
+        token = login_for_access_token(
+            response=response, form_data=TempLoginForm(), db=db
+        )
+        access_token = token["access_token"]
+        print("background task email")
+        background_tasks.add_task(
+            send_verification_email, new_user.email, new_user.nick, access_token
+        )
 
         return response
 
@@ -101,8 +109,10 @@ async def register(request: Request, db: Session = Depends(get_db)):
         errors.append(f"User with that e-mail already exists.")
     except Exception as e:
         errors.append(f"Unexpected error: {e}")
-    
-    return templates.TemplateResponse("auth/register.html", {"request": request, "form": form, "errors": errors})
+
+    return templates.TemplateResponse(
+        "auth/register.html", {"request": request, "form": form, "errors": errors}
+    )
 
 
 @router.post("/login/")
