@@ -13,6 +13,7 @@ def create_new_user(user: UserCreate, db: Session):
         email=user.email,
         hashed_password=Hasher.get_password_hash(user.password),
         nick=user.nick,
+        is_active=False,
     )
     db.add(new_user)
     db.commit()

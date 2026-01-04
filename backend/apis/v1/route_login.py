@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.security.utils import get_authorization_scheme_param
 from jose import JWTError, jwt
@@ -14,6 +14,7 @@ from backend.core.security import create_access_token
 from backend.db.session import get_db
 from backend.schemas.tokens import Token
 from backend.db.repository.user import get_user_by_email
+from backend.db.models.user import User
 
 router = APIRouter()
 
@@ -79,8 +80,14 @@ def get_current_user_from_token(
         raise credentials_exception
     return user
 
+def get_active_user(user: User = Depends(get_current_user_from_token)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Please log in.")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Email verification required.")
+    return user
 
-def get_current_user(request, db):
+def get_current_user(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("access_token")
     if token is None:
         return None

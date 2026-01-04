@@ -1,5 +1,5 @@
 from fastapi import APIRouter, responses
-from fastapi import Depends
+from fastapi import Depends, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -7,29 +7,27 @@ from backend.db.session import get_db
 from backend.db.models.user_verification import UserVerification
 from datetime import datetime
 from backend.db.models.user import User
-
-router = APIRouter(include_in_schema=False)
 from fastapi_mail import FastMail, MessageSchema, MessageType
 from backend.webapps.auth.email_config import conf
-
+from backend.db.repository.user_verification import create_new_user_verification
 import asyncio
+from backend.apis.v1.route_login import get_current_user
+
+router = APIRouter(include_in_schema=False)
 
 
 async def send_verification_email(email_to: str, nick: str, token: str):
-    verification_url = f"https://over-bet.com/auth/verify?token={token}"
-    print("sending email")
-    # Data to be injected into the HTML template
+    verification_url = f"http://localhost:8000/verify?token={token}"
     template_data = {"nick": nick, "link": verification_url}
 
     message = MessageSchema(
         subject="Verify your Over-Bet account",
         recipients=[email_to],
-        template_body=template_data,  # Use this for HTML templates
+        template_body=template_data,
         subtype=MessageType.html,
     )
 
     fm = FastMail(conf)
-    # The 'template_name' refers to the filename inside your TEMPLATE_FOLDER
     await fm.send_message(message, template_name="verify_email.html")
 
 
@@ -41,13 +39,19 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     )
 
     if not verification:
-        return {"error": "Invalid token"}
+        return responses.RedirectResponse(
+            "/", status_code=status.HTTP_302_FOUND, message="Invalid token"
+        )
 
     # 2. Check if expired
     if datetime.utcnow() > verification.expires_at:
         db.delete(verification)
         db.commit()
-        return {"error": "Token expired. Please request a new one."}
+        return responses.RedirectResponse(
+            "/",
+            status_code=status.HTTP_302_FOUND,
+            message="Token expired. Please request a new one.",
+        )
 
     # 3. Mark user as active
     user = db.query(User).filter(User.id == verification.user_id).first()
@@ -57,34 +61,40 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     db.delete(verification)
     db.commit()
 
-    return {"message": "Email verified successfully! You can now log in."}
+    return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
 
 
-async def test_send():
-    email_to = "forkarolm@gmail.com"
-    nick = "karol"
-    token = "123456"
-    verification_url = f"http://localhost:8000/auth/verify?token={token}"
+@router.get("/resend-verification")
+async def resend_verification(
+    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
+    # This assumes the user is logged in but is_active=False
+    # If not logged in, you'd need a form to ask for their email
+    user = get_current_user(request, db)
 
-    print(f"Attempting to send email to {email_to}...")
+    if not user:
+        return RedirectResponse("/login")
 
-    template_data = {"nick": nick, "link": verification_url}
+    # Pass minimal login info to your token helper
+    class TempLoginForm:
+        username = user.email
+        password = user.password
 
-    message = MessageSchema(
-        subject="Verify your Over-Bet account",
-        recipients=[email_to],
-        template_body=template_data,
-        subtype=MessageType.html,
+    token = login_for_access_token(
+        response=response, form_data=TempLoginForm(), db=db
     )
+    access_token = token["access_token"]
+    
+    if user.is_active:
+        return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
 
-    fm = FastMail(conf)
-    try:
-        await fm.send_message(message, template_name="verify_email.html")
-        print("✅ Email sent successfully!")
-    except Exception as e:
-        print(f"❌ Failed to send email: {e}")
+    # 1. Delete any existing old tokens for this user
+    db.query(UserVerification).filter(UserVerification.user_id == user.id).delete()
 
+    # 2. Generate a brand new token
+    create_new_user_verification(user.id, access_token, db)
 
-if __name__ == "__main__":
-    # This is the standard way to run an async function in a script
-    asyncio.run(test_send())
+    # 3. Send the email again
+    background_tasks.add_task(send_verification_email, user.email, user.nick, new_token)
+
+    return responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)

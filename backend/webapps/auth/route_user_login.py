@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette import status
-
+import secrets
 from backend.apis.v1.route_login import login_for_access_token
 from backend.core.config import TEMPLATES_DIR
 from backend.db.repository.user import (
@@ -21,7 +21,12 @@ from backend.db.session import get_db
 from backend.schemas.user import UserCreate
 from backend.webapps.auth.forms import LoginForm
 from backend.webapps.user.forms import ResetPasswordForm, UserCreateForm
+from backend.db.repository.user_verification import create_new_user_verification
 from backend.webapps.auth.route_verify import send_verification_email
+from backend.core.config import settings
+from backend.apis.v1.route_login import create_access_token
+from datetime import datetime, timedelta
+
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
@@ -44,7 +49,6 @@ async def register(request: Request, db: Session = Depends(get_db)):
         if user is None:
             form.errors.append("User with that e-mail doesn't exist.")
             return templates.TemplateResponse("auth/reset_password.html", form.__dict__)
-        print("user", user)
         update_user_password(user, form.password, db)
         # --- Auto-login after registration ---
         response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
@@ -68,37 +72,43 @@ async def register(request: Request, db: Session = Depends(get_db)):
 async def register_form(request: Request):
     return templates.TemplateResponse("auth/register.html", {"request": request})
 
-
 @router.post("/register/")
 async def register(
-    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+    request: Request, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_db)
 ):
     form = await request.form()
     errors = []
     try:
+        # 1. Create User
         new_user_data = UserCreate(
             email=form.get("email"),
             nick=form.get("nick"),
             password=form.get("password"),
         )
-
         new_user = create_new_user(user=new_user_data, db=db)
 
-        # --- Auto-login after registration ---
+        # 2. Create the response and SET THE COOKIE
+        # This ensures the 'user' object is available in the next request
         response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
-
-        # Pass minimal login info to your token helper
-        class TempLoginForm:
-            username = new_user_data.email
-            password = new_user_data.password
-
-        token = login_for_access_token(
-            response=response, form_data=TempLoginForm(), db=db
+        
+        # We reuse your existing login helper to set the JWT cookie
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": new_user.email}, expires_delta=access_token_expires
         )
-        access_token = token["access_token"]
-        print("background task email")
+        response.set_cookie(
+            key="access_token", value=f"Bearer {access_token}", httponly=True
+        )
+
+        # 3. Create a UNIQUE verification token (Separate from the JWT)
+        verif_token = secrets.token_urlsafe(32)
+        create_new_user_verification(new_user.id, verif_token, db)
+
+        # 4. Email the random token
         background_tasks.add_task(
-            send_verification_email, new_user.email, new_user.nick, access_token
+            send_verification_email, new_user.email, new_user.nick, verif_token
         )
 
         return response
