@@ -30,6 +30,7 @@ class Settings:
 
     TEST_USER_EMAIL = "test@example.com"
     TEST_USER_PASSWORD = "test_password"
+    RESEND_API_KEY = os.getenv("MAIL_PASSWORD")
 
     PASSWORD_LENGTH = 4
     NICK_LENGTH = 1

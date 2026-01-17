@@ -19,25 +19,28 @@ from datetime import timedelta
 from backend.core.config import settings
 from backend.apis.v1.route_login import create_access_token, login_for_access_token
 from backend.apis.v1.route_login import add_new_access_token
+import resend
 
+resend.api_key = settings.RESEND_API_KEY
 router = APIRouter(include_in_schema=False)
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-
 async def send_verification_email(email_to: str, nick: str, token: str):
     verification_url = f"{settings.URL}/verify?token={token}"
-    template_data = {"nick": nick, "link": verification_url}
+    template = templates.get_template("email/verify_email.html")
+    html_content = template.render(nick=nick, link=verification_url)
 
-    message = MessageSchema(
-        subject="Verify your Over-Bet account",
-        recipients=[email_to],
-        template_body=template_data,
-        subtype=MessageType.html,
-    )
+    params = {
+        "from": "Over-Bet <noreply@over-bet.com>",
+        "to": [email_to],
+        "subject": "Verify your Over-Bet account",
+        "html": html_content,
+    }
 
-    fm = FastMail(conf)
-    await fm.send_message(message, template_name="verify_email.html")
-
+    try:
+        resend.Emails.send(params)
+    except Exception as e:
+        print(f"Failed to send email: {e}")
 
 @router.get("/verify-success")
 async def verify_success(request: Request, user: User = Depends(get_current_user)):

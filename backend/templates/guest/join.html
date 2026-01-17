@@ -1,0 +1,36 @@
+{% extends "shared/base.html" %}
+
+{% block title %}
+<title>Join {{ owner_nick }}'s Game</title>
+{% endblock %}
+
+{% block page_heading %}Join {{ owner_nick }}'s Game{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <p class="text-secondary text-center mb-4">
+                    You are invited to join a game hosted by <strong>{{ owner_nick }}</strong>.
+                    <br>Please enter a nickname to continue.
+                </p>
+
+                <form method="POST" action="/guest/join">
+                    <input type="hidden" name="token" value="{{ token }}">
+
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="nick" name="nick" placeholder="Nickname" required
+                            autofocus>
+                        <label for="nick">Your Nickname</label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Join Game</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

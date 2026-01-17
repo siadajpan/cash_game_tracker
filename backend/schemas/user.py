@@ -42,11 +42,11 @@ class UserCreate(BaseModel):
         return password
 
     @field_validator("repeat_password")
-    def is_repeat_password_valid(cls, repeat_password):
+    def is_repeat_password_valid(cls, repeat_password, info):
         if not repeat_password:
             raise ValueError("Repeat password is required")
-        if repeat_password != cls.password:
-            raise ValueError("Passwords don't match")
+        if "password" in info.data and repeat_password != info.data["password"]:
+             raise ValueError("Passwords don't match")
         return repeat_password
 
 

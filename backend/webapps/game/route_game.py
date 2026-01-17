@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlite3 import IntegrityError
 
 from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
@@ -13,7 +13,8 @@ import math
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
 )
-from backend.core.config import TEMPLATES_DIR
+from backend.core.security import create_access_token
+from backend.core.config import TEMPLATES_DIR, settings
 from backend.db.models.game import Game
 from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.user import User
@@ -301,6 +302,21 @@ async def open_game(
         players_info.append(players_game_info)
         if players_game_info["request"] is not None:
             existing_requests = True
+    invite_link = None
+    if user.id == game.owner_id:
+        try:
+            # Generate invite token
+            # You might want a longer expiration for invites, e.g. 24 hours
+            expire_delta = timedelta(hours=24)
+            # Use team_id directly to avoid lazy loading issues
+            invite_data = {"sub": "guest_invite", "game_id": game.id, "team_id": game.team_id}
+            invite_token = create_access_token(data=invite_data, expires_delta=expire_delta)
+            base_url = settings.URL or "http://localhost:8000"
+            invite_link = f"{base_url}/guest/join?token={invite_token}"
+        except Exception as e:
+            print(f"Error generating invite link: {e}")
+            invite_link = None
+
     return templates.TemplateResponse(
         "game/view_running.html",
         {
@@ -309,6 +325,7 @@ async def open_game(
             "user": user,
             "players_info": players_info,
             "requests": existing_requests,
+            "invite_link": invite_link,
         },
     )
 
