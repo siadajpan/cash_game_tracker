@@ -12,12 +12,14 @@ from backend.db.base import Base
 from backend.db.models.player_request_status import PlayerRequestStatusEnum
 from backend.db.session import engine
 from backend.webapps.base import api_router as web_app_router
+from backend.webapps.guest.route_guest import router as guest_router
 from sqlalchemy.exc import OperationalError
 
 
 def include_router(app):
     app.include_router(api_router)
     app.include_router(web_app_router)
+    app.include_router(guest_router, prefix="/guest", tags=["Guest"])
 
 
 def configure_static(app):

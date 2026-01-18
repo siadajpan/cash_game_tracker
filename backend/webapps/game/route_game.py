@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlite3 import IntegrityError
 
 from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
@@ -13,7 +13,8 @@ import math
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
 )
-from backend.core.config import TEMPLATES_DIR
+from backend.core.security import create_access_token
+from backend.core.config import TEMPLATES_DIR, settings
 from backend.db.models.game import Game
 from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.user import User
@@ -44,6 +45,7 @@ from backend.db.repository.team import (
 )
 from backend.db.session import get_db
 from backend.schemas.games import GameCreate, GameJoin
+from backend.apis.v1.route_login import get_active_user
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
@@ -51,7 +53,7 @@ router = APIRouter(include_in_schema=False)
 
 @router.get("/create", name="create_game_form")
 async def create_game_form(
-    request: Request, current_user: User = Depends(get_current_user_from_token)
+    request: Request, current_user: User = Depends(get_active_user)
 ):
     """
     Renders the game creation form, populating team choices and default values.
@@ -75,7 +77,7 @@ async def create_game_form(
 async def create_game(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token),
+    current_user: User = Depends(get_active_user),
 ):
     form = await request.form()
     errors = []
@@ -133,7 +135,7 @@ async def create_game(
 async def view_past_games(
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_from_token),
+    user: User = Depends(get_active_user),
 ):
     if not user:
         return RedirectResponse(url="/login")
@@ -164,7 +166,7 @@ async def join_game_form(
     request: Request,
     game_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_from_token),
+    user: User = Depends(get_active_user),
 ):
     game = get_game_by_id(game_id, db)
     # TODO Add checking if user is allowed to enter that game (if he edits href)
@@ -180,7 +182,7 @@ async def join_game(
     request: Request,
     game_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_from_token),
+    user: User = Depends(get_active_user),
 ):
     template_name = "game/join.html"
     errors = []
@@ -287,7 +289,7 @@ async def open_game(
     request: Request,
     game_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_from_token),
+    user: User = Depends(get_active_user),
 ):
     game: Game = get_game_by_id(game_id, db)
     if not user_in_game(user, game):
@@ -300,6 +302,21 @@ async def open_game(
         players_info.append(players_game_info)
         if players_game_info["request"] is not None:
             existing_requests = True
+    invite_link = None
+    if user.id == game.owner_id:
+        try:
+            # Generate invite token
+            # You might want a longer expiration for invites, e.g. 24 hours
+            expire_delta = timedelta(hours=24)
+            # Use team_id directly to avoid lazy loading issues
+            invite_data = {"sub": "guest_invite", "game_id": game.id, "team_id": game.team_id}
+            invite_token = create_access_token(data=invite_data, expires_delta=expire_delta)
+            base_url = settings.URL or "http://localhost:8000"
+            invite_link = f"{base_url}/guest/join?token={invite_token}"
+        except Exception as e:
+            print(f"Error generating invite link: {e}")
+            invite_link = None
+
     return templates.TemplateResponse(
         "game/view_running.html",
         {
@@ -308,6 +325,7 @@ async def open_game(
             "user": user,
             "players_info": players_info,
             "requests": existing_requests,
+            "invite_link": invite_link,
         },
     )
 
@@ -317,7 +335,7 @@ async def finish_game_view(
     request: Request,
     game_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_from_token),
+    user: User = Depends(get_active_user),
 ):
     game = get_game_by_id(game_id, db)
     if not game:
@@ -329,9 +347,7 @@ async def finish_game_view(
 
 
 @router.get("/api/check_update")
-def check_update(
-    user: User = Depends(get_current_user_from_token), db: Session = Depends(get_db)
-):
+def check_update(user: User = Depends(get_active_user), db: Session = Depends(get_db)):
     # Get latest game in the user’s teams
     team_ids = [team.id for team in user.teams]
     latest_game = (

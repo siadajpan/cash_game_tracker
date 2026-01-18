@@ -10,18 +10,6 @@ from backend.db.models.chip_amount import ChipAmount
 from backend.schemas.chip_amount import ChipAmountCreate
 
 
-class AddOnRequest(BaseModel):
-    add_on: float = 0.0
-
-    @field_validator("add_on")
-    def add_on_bigger_than_0(cls, value):
-        if value < 0:
-            raise PydanticCustomError(
-                "add_on_lower_than_0", "Make sure add-on is bigger or equal to 0"
-            )
-        return value
-
-
 class CashOutRequest(BaseModel):
     amount: float = 0.0
     chips_amounts: List[ChipAmountCreate] = []

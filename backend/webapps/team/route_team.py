@@ -31,7 +31,7 @@ from backend.db.repository.team import (
 )
 from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
-from backend.schemas.user import UserCreate, UserShow
+from backend.schemas.user import UserCreate
 from backend.webapps.team.forms import TeamCreateForm, TeamJoinForm
 import os
 from sqlalchemy import select
@@ -152,30 +152,38 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
 @router.post(
     "/team/{team_id}/{user_id}/{approve}",
     status_code=status.HTTP_302_FOUND,
-    name="team.decide_join_request"
+    name="team.decide_join_request",
 )
 async def decide_join_request(
     team_id: int,
     user_id: int,
     approve: bool,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token), 
+    current_user: User = Depends(get_current_user_from_token),
 ):
     """
     Handles the POST request to accept a user's join request to a team.
     """
-        # 1. Authorization Check: Is the current user an owner/admin of this team?
+    # 1. Authorization Check: Is the current user an owner/admin of this team?
     team = get_team_by_id(team_id, db)
     if not team:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
-        
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
+
     if team.owner_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to accept members.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to accept members.",
+        )
 
     decide_join_team(team_id, user_id, approve, db)
-    redirect_url = f"/team/{team_id}" 
-    
-    return responses.RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
+    redirect_url = f"/team/{team_id}"
+
+    return responses.RedirectResponse(
+        url=redirect_url, status_code=status.HTTP_303_SEE_OTHER
+    )
+
 
 @router.get("/{team_id}")
 async def team_view(

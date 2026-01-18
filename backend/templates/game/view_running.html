@@ -1,20 +1,46 @@
 {% extends "shared/base.html" %}
 {% block title %}
-    <title>Game on {{ game.date }}</title>
+<title>Game on {{ game.date }}</title>
 {% endblock %}
 {% block page_heading %}Game on {{ game.date }}{% endblock %}
 
 {% block content %}
+{% if game.running and user.id == game.owner_id %}
+<div class="d-flex justify-content-end mb-3">
+    <div class="dropdown">
+        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="bi bi-gear-fill"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#qrCodeModal">
+                    <i class="bi bi-qr-code"></i> Show QR
+                </button>
+            </li>
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li>
+                <a class="dropdown-item text-danger" href="/game/{{ game.id }}/finish">
+                    <i class="bi bi-x-circle"></i> Finish Game
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endif %}
+
 <!-- Header -->
 {% if requests %}
-    {% set col_player = "col-4" %}
-    {% set col_in = "col-2" %}
-    {% set col_out = "col-2" %}
-    {% set col_requests = "col-4" %}
+{% set col_player = "col-4" %}
+{% set col_in = "col-2" %}
+{% set col_out = "col-2" %}
+{% set col_requests = "col-4" %}
 {% else %}
-    {% set col_player = "col-4" %}
-    {% set col_in = "col-4" %}
-    {% set col_out = "col-4" %}
+{% set col_player = "col-4" %}
+{% set col_in = "col-4" %}
+{% set col_out = "col-4" %}
 {% endif %}
 
 <ul class="list-group list-group-flush mb-3">
@@ -24,7 +50,7 @@
             <div class="{{ col_in }}">In</div>
             <div class="{{ col_out }}">Out</div>
             {% if requests %}
-                <div class="{{ col_requests }}">Requests</div>
+            <div class="{{ col_requests }}">Requests</div>
             {% endif %}
         </div>
     </li>
@@ -32,76 +58,129 @@
     <!-- Players -->
     {% for info in players_info %}
 
-        <li class="list-group-item">
-            <div class="row text-center align-items-center">
-                {% if info.owner%}
-                    <div class="{{ col_player }} text-start"><b>{{ info.player.nick }} (host)</b></div>
+    <li class="list-group-item">
+        <div class="row text-center align-items-center">
+            {% if info.owner%}
+            <div class="{{ col_player }} text-start"><b>{{ info.player.nick }} (host)</b></div>
+            {% else %}
+            <div class="{{ col_player }} text-start ">{{ info.player.nick }}</div>
+            {% endif %}
+            <div class="{{ col_in }}">
+                {% if info.money_in % 1 %}
+                {{ "%.2f"|format(info.money_in) }}
                 {% else %}
-                    <div class="{{ col_player }} text-start ">{{ info.player.nick }}</div>
-                {% endif %}
-                    <div class="{{ col_in }}">
-                    {% if info.money_in % 1 %}
-                        {{ "%.2f"|format(info.money_in) }}
-                    {% else %}
-                        {{ info.money_in|int }}
-                    {% endif %}
-                </div>
-                <div class="{{ col_out }}">
-                    {% if info.money_out is not none %}
-                        {% if info.money_out % 1 %}
-                            {{ "%.2f"|format(info.money_out) }}
-                        {% else %}
-                            {{ info.money_out|int }}
-                        {% endif %}
-                    {% else %}
-                        -
-                    {% endif %}
-                </div>
-
-                {% if info.request %}
-                    <!-- Requests Column -->
-                        <div class="col-4">
-                            {% if user in info.can_approve %}
-                                <a href="{{ info.request_href }}" class="btn btn-secondary">{{ info.request_text }}</a>
-                            {% else %}
-                                {{ info.request_text }}
-                            {% endif %}
-                        </div>
-
+                {{ info.money_in|int }}
                 {% endif %}
             </div>
-        </li>
+            <div class="{{ col_out }}">
+                {% if info.money_out is not none %}
+                {% if info.money_out % 1 %}
+                {{ "%.2f"|format(info.money_out) }}
+                {% else %}
+                {{ info.money_out|int }}
+                {% endif %}
+                {% else %}
+                -
+                {% endif %}
+            </div>
+
+            {% if info.request %}
+            <!-- Requests Column -->
+            <div class="col-4">
+                {% if user in info.can_approve %}
+                <a href="{{ info.request_href }}" class="btn btn-secondary">{{ info.request_text }}</a>
+                {% else %}
+                {{ info.request_text }}
+                {% endif %}
+            </div>
+
+            {% endif %}
+        </div>
+    </li>
     {% endfor %}
 </ul>
 
 {% if game.running %}
-    {% if user.id == game.owner_id %}
-        
-        <div class="d-flex justify-content-between"> 
-            <a href="/game/{{ game.id }}/finish" class="btn btn-danger">Finish game</a>
-            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
-            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
-        </div>
-        
-        <div class="d-flex mt-3"> 
-            <a href="/" class="btn btn-outline-secondary">Back</a>
-        </div>
+{% if user.id == game.owner_id %}
 
-    {% else %}
+<div class="d-flex justify-content-between align-items-center">
+    <a href="/" class="btn btn-outline-secondary">Back</a>
+    <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
+    <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
+</div>
 
-        <div class="d-flex justify-content-between">
-            
-            <a href="/" class="btn btn-outline-secondary">Back</a>
-            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
-            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
-
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrCodeModal" tabindex="-1" aria-labelledby="qrCodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="qrCodeModalLabel">Join Game QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="d-flex justify-content-center">
+                    <div id="qrcode"></div>
+                </div>
+                <p class="mt-3 text-muted">Scan to join this game as a guest</p>
+            </div>
         </div>
-        
-    {% endif %}
-{% else %}
-    <div class="d-flex "> 
-        <a href="/" class="btn btn-outline-secondary">Back</a>
     </div>
+</div>
+
+
+{% else %}
+
+<div class="d-flex justify-content-between">
+
+    <a href="/" class="btn btn-outline-secondary">Back</a>
+    <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
+    <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
+
+</div>
+
+{% endif %}
+{% else %}
+<div class="d-flex ">
+    <a href="/" class="btn btn-outline-secondary">Back</a>
+</div>
 {% endif %}
 
+{% endblock %}
+
+
+
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var inviteLink = "{{ invite_link }}";
+        console.log("Invite Link:", inviteLink);
+
+        var qrContainer = document.getElementById("qrcode");
+        var qrCodeCanvas = document.createElement("canvas");
+        qrContainer.appendChild(qrCodeCanvas);
+
+        var myModalEl = document.getElementById('qrCodeModal');
+        if (myModalEl) {
+            myModalEl.addEventListener('shown.bs.modal', function (event) {
+                if (inviteLink && inviteLink !== "None") {
+                    try {
+                        QRCode.toCanvas(qrCodeCanvas, inviteLink, { width: 256, margin: 1 }, function (error) {
+                            if (error) {
+                                console.error(error);
+                                qrContainer.innerHTML = "Error: " + error.message;
+                            } else {
+                                console.log('success!');
+                            }
+                        })
+                    } catch (e) {
+                        console.error("Error creating QRCode:", e);
+                        qrContainer.innerHTML = "Error loading QR Code: " + e.message;
+                    }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

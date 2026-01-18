@@ -1,4 +1,4 @@
-.PHONY: update stop start
+set shell := ["powershell", "-Command"]
 
 # Target: update
 # Fetches and merges the latest changes from the remote repository.
@@ -25,9 +25,6 @@ start_local:
 	@echo "--- Starting local server ---"
 	poetry run uvicorn --host 0.0.0.0 --port 8000 main:app --reload
 
-start_debug:
-	@echo "--- Starting debug server ---"
-	poetry run uvicorn --host 0.0.0.0 --port 8000 main:app --reload --debug
 
 # Default target runs both
 update: pull stop start

@@ -26,6 +26,7 @@ def client(db_session):
     # Override the dependencies to use test session and mock user
     test_app.dependency_overrides[route_team.get_db] = lambda: db_session
     from backend.apis.v1.route_login import get_current_user_from_token
+
     test_app.dependency_overrides[get_current_user_from_token] = lambda: mock_user
     test_app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
@@ -39,7 +40,7 @@ def test_create_team(client, db_session):
     data = {"name": "Team1"}
 
     response = client.post("/team/create", data=data, follow_redirects=False)
-    
+
     # Now it will see the actual redirect response
     assert response.status_code == 302
     assert response.headers["location"] == "/"

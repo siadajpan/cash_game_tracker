@@ -13,7 +13,8 @@ STATIC_DIR = BACKEND_DIR / "public"
 
 
 class Settings:
-    PROJECT_NAME: str = "No Pain"
+    URL: str = os.getenv("URL")
+    PROJECT_NAME: str = "Over-Bet Cash Game Tracker"
     PROJECT_VERSION: str = "0.1.0"
 
     POSTGRES_USER: str = os.getenv("POSTGRES_USER")
@@ -29,8 +30,10 @@ class Settings:
 
     TEST_USER_EMAIL = "test@example.com"
     TEST_USER_PASSWORD = "test_password"
+    RESEND_API_KEY = os.getenv("MAIL_PASSWORD")
 
     PASSWORD_LENGTH = 4
+    NICK_LENGTH = 1
 
 
 settings = Settings()

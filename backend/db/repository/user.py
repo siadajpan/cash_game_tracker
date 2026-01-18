@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from backend.core.hashing import Hasher
 from backend.db.models.user import User
 from backend.schemas.user import UserCreate
+import secrets
+from datetime import datetime, timedelta
+from backend.db.models.user_verification import UserVerification
 
 
 def create_new_user(user: UserCreate, db: Session):
@@ -10,6 +13,7 @@ def create_new_user(user: UserCreate, db: Session):
         email=user.email,
         hashed_password=Hasher.get_password_hash(user.password),
         nick=user.nick,
+        is_active=False,
     )
     db.add(new_user)
     db.commit()
@@ -29,3 +33,20 @@ def update_user_password(user, new_password, db: Session):
     db.commit()
     db.refresh(user)
     return user
+
+
+def create_verification_token(user_id: int, db: Session):
+    # 1. Generate a secure random string
+    token = secrets.token_urlsafe(32)
+
+    # 2. Set expiration (e.g., 24 hours from now)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+
+    # 3. Save to the new table
+    db_verification = UserVerification(
+        user_id=user_id, token=token, expires_at=expires_at
+    )
+
+    db.add(db_verification)
+    db.commit()
+    return token

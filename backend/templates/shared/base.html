@@ -23,6 +23,14 @@
     {% block title %}
     {% endblock %}
 
+    {% if user and not user.is_active %}
+    <div class="alert alert-warning text-center" style="margin-bottom: 0;">
+        <strong>Action Required:</strong> Please verify your email ({{ user.email }}). 
+        Some features are restricted until you do.
+        <a href="/resend-verification" class="alert-link">Resend link</a>
+    </div>
+    {% endif %}
+
     <div class="container">
         {% set heading_content = self.page_heading() %}
         {% if heading_content | trim | length > 0 %}

@@ -42,9 +42,8 @@ class ChipStructureCreateForm(BaseModel):
                 raise PydanticCustomError(
                     "chip_color_error", "Each chip must have a color and a value."
                 )
-            
+
             chip_value = float(value)
-            
 
             # Note: We let the NewChip sub-model validation handle the positive check,
             # or you can enforce it here again:
