@@ -2,11 +2,12 @@
 {% block title %}
 <title>Game on {{ game.date }}</title>
 {% endblock %}
-{% block page_heading %}Game on {{ game.date }}{% endblock %}
+{% block page_heading %}{% endblock %}
 
 {% block content %}
-{% if game.running and user.id == game.owner_id %}
-<div class="d-flex justify-content-end mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-title">Game on {{ game.date }}</div>
+    {% if game.running and user.id == game.owner_id %}
     <div class="dropdown">
         <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -28,8 +29,8 @@
             </li>
         </ul>
     </div>
+    {% endif %}
 </div>
-{% endif %}
 
 <!-- Header -->
 {% if requests %}
