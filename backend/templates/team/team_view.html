@@ -11,34 +11,27 @@
 {% include "team/component_join_request.html" %}
 {% endwith %}
 {% endif %}
-<div class="list-group list-group-flush">
-    <li class="list-group-item d-flex justify-content-between fw-bold">
-        <span>Player</span>
-        <span>Games Played</span>
-        <span>Total Balance</span>
+<ul class="list-group list-group-flush mb-3" style="max-height: 250px; overflow-y: auto; display: block;">
+    <li class="list-group-item d-flex justify-content-between fw-bold sticky-top bg-white">
+        <span class="col-4">Player</span>
+        <span class="col-4 text-center">Games Played</span>
+        <span class="col-4 text-end">Total Balance</span>
     </li>
 
-    {# Apply the scroll styling here: max-height and overflow #}
-    <div style="max-height: 200px; overflow-y: auto;"> 
-        
-        {% for info in players_info %}
-        {# The individual list item no longer needs the style attribute #}
-        <li class="list-group-item d-flex align-items-center">
-
-            <div class="col-4">{{ info.player.nick }}</div>
-            <div class="col-4 text-center">{{ info.games_count }}</div>
-            <div class="col-4 text-end {% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                {% if info.total_balance % 1 %}
-                    {{ "%.2f"|format(info.total_balance) }}
-                {% else %}
-                    {{ info.total_balance|int }}
-                {% endif %}
-            </div>
-        </li>
-        {% endfor %}
-
-    </div> 
-</div>
+    {% for info in players_info %}
+    <li class="list-group-item d-flex align-items-center">
+        <div class="col-4">{{ info.player.nick }}</div>
+        <div class="col-4 text-center">{{ info.games_count }}</div>
+        <div class="col-4 text-end {% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+            {% if info.total_balance % 1 %}
+            {{ "%.2f"|format(info.total_balance) }}
+            {% else %}
+            {{ info.total_balance|int }}
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
 
 
 <div class="d-flex mt-3">
