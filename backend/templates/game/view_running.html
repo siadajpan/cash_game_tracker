@@ -168,7 +168,7 @@
             </div>
             <div class="modal-footer d-flex justify-content-between">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="copyStatsToClipboard()">Copy</button>
+                <button type="button" class="btn btn-primary" onclick="copyStatsToClipboard()">Copy and Close</button>
             </div>
         </div>
     </div>
@@ -219,10 +219,46 @@
     </div>
 </div>
 
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
+    <div id="liveToast" class="toast align-items-center text-white bg-primary border-0" role="alert"
+        aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastBody">
+                Hello, world! This is a toast message.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+    function showToast(message, type = 'primary') {
+        const toastEl = document.getElementById('liveToast');
+        const toastBody = document.getElementById('toastBody');
+
+        toastBody.textContent = message;
+
+        // Remove existing color classes
+        toastEl.classList.remove('bg-primary', 'bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+
+        // Add new color class
+        let bgClass = 'bg-primary';
+        if (type === 'success') bgClass = 'bg-success';
+        if (type === 'danger') bgClass = 'bg-danger';
+        if (type === 'warning') bgClass = 'bg-warning';
+        if (type === 'info') bgClass = 'bg-info';
+
+        toastEl.classList.add(bgClass);
+
+        const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
+        toast.show();
+    }
+
     async function submitExport() {
         const format = document.querySelector('input[name="format"]:checked').value;
         const delivery = document.querySelector('input[name="delivery"]:checked').value;
@@ -242,15 +278,15 @@
                 });
                 const result = await response.json();
                 if (response.ok) {
-                    alert(result.message);
+                    showToast(result.message, 'success');
                     const modalEl = document.getElementById('exportStatsModal');
                     const modal = bootstrap.Modal.getInstance(modalEl);
                     modal.hide();
                 } else {
-                    alert('Error sending email: ' + (result.error || 'Unknown error'));
+                    showToast('Error sending email: ' + (result.error || 'Unknown error'), 'danger');
                 }
             } catch (e) {
-                alert('Network error: ' + e.message);
+                showToast('Network error: ' + e.message, 'danger');
             }
         } else if (delivery === 'view') {
             // View: Async Fetch -> Show in Modal
@@ -266,10 +302,10 @@
                     bootstrap.Modal.getInstance(document.getElementById('exportStatsModal')).hide();
                     new bootstrap.Modal(document.getElementById('statsResultModal')).show();
                 } else {
-                    alert('Error fetching stats');
+                    showToast('Error fetching stats', 'danger');
                 }
             } catch (e) {
-                alert('Network error: ' + e.message);
+                showToast('Network error: ' + e.message, 'danger');
             }
         } else {
             // Download: standard form submit
@@ -304,7 +340,11 @@
         copyText.select();
         copyText.setSelectionRange(0, 99999);
         navigator.clipboard.writeText(copyText.value).then(() => {
-            alert("Copied to clipboard!");
+            showToast("Copied to clipboard!", 'success');
+            // Close the modal
+            const modalEl = document.getElementById('statsResultModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
         });
     }
 </script>
