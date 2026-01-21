@@ -153,6 +153,10 @@ async def view_past_games(
         for game in team.games:
             if not game.running:
                 past_games.append(game)
+    
+    # Sort by date descending
+    past_games.sort(key=lambda x: x.date, reverse=True)
+
     # Prepare data for template
     games_info = []
     for game in past_games:
@@ -162,7 +166,6 @@ async def view_past_games(
             players_info.append({"player": player, "balance": balance})
         games_info.append({"game": game, "players_info": players_info})
 
-    print(past_games)
     return templates.TemplateResponse(
         "game/view_past.html", {"request": request, "games_info": games_info}
     )
