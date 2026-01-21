@@ -13,6 +13,8 @@ from starlette.background import BackgroundTasks
 import math
 import csv
 import io
+import os
+import tempfile
 from fastapi_mail import FastMail, MessageSchema
 from backend.webapps.auth.email_config import conf
 from backend.apis.v1.route_login import (
@@ -410,22 +412,31 @@ async def export_game_stats(
         if not user.email:
              return JSONResponse({"error": "User email not found"}, status_code=400)
         
-        message = MessageSchema(
-            subject=f"Game Stats Export - {game.date}",
-            recipients=[user.email],
-            body=f"Attached are the stats for the game on {game.date}.",
-            subtype="plain",
-            attachments=[{
-                "file": content.encode("utf-8"),
-                "filename": filename,
-                "mime_type": media_type,
-                "headers": {}
-            }]
-        )
-        
-        fm = FastMail(conf)
-        background_tasks.add_task(fm.send_message, message)
-        return JSONResponse({"message": f"Email sent to {user.email}"})
+        try:
+            # Create a temporary file
+            suffix = ".csv" if format == "csv" else ".json"
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=suffix, encoding='utf-8') as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+            
+            message = MessageSchema(
+                subject=f"Game Stats Export - {game.date}",
+                recipients=[user.email],
+                body=f"Attached are the stats for the game on {game.date}.",
+                subtype="plain",
+                attachments=[tmp_path]
+            )
+            
+            fm = FastMail(conf)
+            background_tasks.add_task(fm.send_message, message)
+            
+            # Clean up temp file after sending
+            background_tasks.add_task(os.remove, tmp_path)
+            
+            return JSONResponse({"message": f"Email sent to {user.email}"})
+        except Exception as e:
+            print(f"Email error: {str(e)}")
+            return JSONResponse({"error": f"Failed to send email: {str(e)}"}, status_code=500)
     
     else:  # view
         return responses.Response(content=content, media_type=media_type)
