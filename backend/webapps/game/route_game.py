@@ -8,8 +8,15 @@ from pydantic import ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy.orm import Session
 from starlette import status
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, StreamingResponse, JSONResponse
+from starlette.background import BackgroundTasks
 import math
+import csv
+import io
+import os
+import tempfile
+from fastapi_mail import FastMail, MessageSchema
+from backend.webapps.auth.email_config import conf
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
 )
@@ -303,7 +310,8 @@ async def open_game(
         if players_game_info["request"] is not None:
             existing_requests = True
     invite_link = None
-    if user.id == game.owner_id:
+    invite_link = None
+    if game.running:
         try:
             # Generate invite token
             # You might want a longer expiration for invites, e.g. 24 hours
@@ -344,6 +352,94 @@ async def finish_game_view(
         return RedirectResponse(url="/", status_code=303)
     finish_the_game(user, game, db)
     return RedirectResponse(url="/", status_code=303)
+
+
+@router.post("/{game_id}/export", name="export_game_stats")
+async def export_game_stats(
+    request: Request,
+    game_id: int,
+    background_tasks: BackgroundTasks,
+    format: str = Form("json"),
+    delivery: str = Form("view"),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    # Calculate stats
+    stats = []
+    for player in game.players:
+        buy_in = get_player_game_total_buy_in_amount(player, game, db)
+        add_ons = get_player_game_addons(player, game, db)
+        cash_outs = get_player_game_cash_out(player, game, db)
+        
+        money_in = buy_in + sum(a.amount for a in add_ons if a.status == PlayerRequestStatus.APPROVED)
+        money_out = sum(c.amount for c in cash_outs if c.status == PlayerRequestStatus.APPROVED)
+        balance = money_out - money_in
+        
+        stats.append({
+            "nick": player.nick,
+            "money_in": money_in,
+            "money_out": money_out,
+            "balance": balance
+        })
+
+    # Format data
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Nick", "Money In", "Money Out", "Balance"])
+        for row in stats:
+            writer.writerow([row["nick"], row["money_in"], row["money_out"], row["balance"]])
+        content = output.getvalue()
+        media_type = "text/csv"
+        filename = f"game_{game.date}_stats.csv"
+    else:  # json
+        content = json.dumps(stats, indent=2)
+        media_type = "application/json"
+        filename = f"game_{game.date}_stats.json"
+
+    # Delivery
+    if delivery == "download":
+        return StreamingResponse(
+            io.StringIO(content),
+            media_type=media_type,
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    elif delivery == "mail":
+        if not user.email:
+             return JSONResponse({"error": "User email not found"}, status_code=400)
+        
+        try:
+            # Create a temporary file
+            suffix = ".csv" if format == "csv" else ".json"
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=suffix, encoding='utf-8') as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+            
+            message = MessageSchema(
+                subject=f"Game Stats Export - {game.date}",
+                recipients=[user.email],
+                body=f"Attached are the stats for the game on {game.date}.",
+                subtype="plain",
+                attachments=[tmp_path]
+            )
+            
+            fm = FastMail(conf)
+            background_tasks.add_task(fm.send_message, message)
+            
+            # Clean up temp file after sending
+            background_tasks.add_task(os.remove, tmp_path)
+            
+            return JSONResponse({"message": f"Email sent to {user.email}"})
+        except Exception as e:
+            print(f"Email error: {str(e)}")
+            return JSONResponse({"error": f"Failed to send email: {str(e)}"}, status_code=500)
+    
+    else:  # view
+        return responses.Response(content=content, media_type=media_type)
 
 
 @router.get("/api/check_update")
