@@ -35,7 +35,7 @@ def verify_guest_token(token: str):
 async def guest_join_form(request: Request, token: str, db: Session = Depends(get_db)):
     payload = verify_guest_token(token)
     if not payload:
-        return templates.TemplateResponse("components/errors.html", {
+        return templates.TemplateResponse("shared/error.html", {
             "request": request,
             "errors": ["Invalid or expired invitation link."]
         })
@@ -43,9 +43,15 @@ async def guest_join_form(request: Request, token: str, db: Session = Depends(ge
     game_id = payload.get("game_id")
     game = get_game_by_id(game_id, db)
     if not game:
-         return templates.TemplateResponse("components/errors.html", {
+         return templates.TemplateResponse("shared/error.html", {
             "request": request,
             "errors": ["Game not found."]
+        })
+    
+    if not game.running:
+        return templates.TemplateResponse("shared/error.html", {
+            "request": request,
+            "errors": ["This game has already finished."]
         })
 
     return templates.TemplateResponse(
@@ -76,6 +82,9 @@ async def guest_join(
     game = get_game_by_id(game_id, db)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+        
+    if not game.running:
+        raise HTTPException(status_code=400, detail="This game has already finished")
 
     team = get_team_by_id(team_id, db)
     if not team:

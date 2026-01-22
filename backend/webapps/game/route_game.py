@@ -330,6 +330,12 @@ async def open_game(
     user: User = Depends(get_active_user),
 ):
     game: Game = get_game_by_id(game_id, db)
+    if not game:
+        return RedirectResponse(
+            url="/?msg=Game not found or deleted",
+            status_code=status.HTTP_302_FOUND
+        )
+
     if not user_in_game(user, game):
         if game.running:
             return RedirectResponse(url=f"/game/{game.id}/join")  # not in the game yet
@@ -380,6 +386,12 @@ async def get_game_table(
     user: User = Depends(get_active_user),
 ):
     game: Game = get_game_by_id(game_id, db)
+    if not game:
+        # If game is deleted during polling, redirect user to home
+        response = responses.Response()
+        response.headers["HX-Redirect"] = "/?msg=Game ended or deleted"
+        return response
+
     if not user_in_game(user, game):
         # Return empty or error if not in game, or just redirect (htmx follows redirects)
         return responses.Response("")
