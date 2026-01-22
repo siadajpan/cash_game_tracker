@@ -46,6 +46,7 @@ from backend.db.repository.game import (
     add_user_to_game,
     finish_the_game,
     get_user_game_balance,
+    delete_game_by_id,
 )
 from backend.db.repository.team import (
     get_team_by_id,
@@ -56,6 +57,28 @@ from backend.apis.v1.route_login import get_active_user
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
+
+
+@router.post("/{game_id}/delete", name="delete_game")
+async def delete_game(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    if game.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the owner can delete the game")
+
+    delete_game_by_id(game_id, db)
+    
+    return RedirectResponse(
+        url="/game/view_past?msg=Game deleted successfully",
+        status_code=status.HTTP_302_FOUND,
+    )
 
 
 @router.get("/create", name="create_game_form")
