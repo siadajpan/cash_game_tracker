@@ -32,7 +32,9 @@
     </div>
 </div>
 
-{% include "components/players_table.html" %}
+<div hx-get="/game/{{ game.id }}/table" hx-trigger="every 5s" hx-swap="innerHTML">
+    {% include "components/players_table.html" %}
+</div>
 
 {% if user.id == game.owner_id %}
 

@@ -371,6 +371,38 @@ async def open_game(
     )
 
 
+@router.get("/{game_id}/table", name="get_game_table")
+async def get_game_table(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game: Game = get_game_by_id(game_id, db)
+    if not user_in_game(user, game):
+        # Return empty or error if not in game, or just redirect (htmx follows redirects)
+        return responses.Response("")
+
+    players_info = []
+    existing_requests = False
+    for player in game.players:
+        players_game_info = process_player(game, player, db)
+        players_info.append(players_game_info)
+        if players_game_info["request"] is not None:
+            existing_requests = True
+
+    return templates.TemplateResponse(
+        "components/players_table.html",
+        {
+            "request": request,
+            "game": game,
+            "user": user,
+            "players_info": players_info,
+            "requests": existing_requests,
+        },
+    )
+
+
 @router.post("/{game_id}/finish", name="finish_game_post")
 async def finish_game_view(
     request: Request,
