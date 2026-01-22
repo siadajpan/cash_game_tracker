@@ -129,3 +129,16 @@ def get_user_total_balance(user: User, db: Session) -> float:
     for game in user.games_played:
         total += get_user_game_balance(user, game, db)
     return total
+
+
+def delete_game_by_id(game_id: int, db: Session) -> bool:
+    """
+    Deletes a game by ID. Returns True if deleted, False if not found.
+    """
+    game = get_game_by_id(game_id, db)
+    if not game:
+        return False
+    
+    db.delete(game)
+    db.commit()
+    return True

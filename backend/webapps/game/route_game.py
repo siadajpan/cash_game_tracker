@@ -46,6 +46,7 @@ from backend.db.repository.game import (
     add_user_to_game,
     finish_the_game,
     get_user_game_balance,
+    delete_game_by_id,
 )
 from backend.db.repository.team import (
     get_team_by_id,
@@ -56,6 +57,28 @@ from backend.apis.v1.route_login import get_active_user
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
+
+
+@router.post("/{game_id}/delete", name="delete_game")
+async def delete_game(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    if game.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the owner can delete the game")
+
+    delete_game_by_id(game_id, db)
+    
+    return RedirectResponse(
+        url="/game/view_past?msg=Game deleted successfully",
+        status_code=status.HTTP_302_FOUND,
+    )
 
 
 @router.get("/create", name="create_game_form")
@@ -249,6 +272,7 @@ def process_player(
     money_in = buy_in
     money_out = None
     player_request = None
+    request_type = None
     request_href = None
     request_text = None
     can_approve = []
@@ -265,6 +289,7 @@ def process_player(
 
         if cash_out_req.status == PlayerRequestStatus.REQUESTED:
             player_request = cash_out_req
+            request_type = "cash_out"
             request_text = f"Cash out: {cash_out_req.amount}"
             request_href = f"/game/{game.id}/cash_out/{cash_out_req.id}"
             [
@@ -278,6 +303,7 @@ def process_player(
             money_in += add_on_req.amount
         elif add_on_req.status == PlayerRequestStatus.REQUESTED:
             player_request = add_on_req
+            request_type = "add_on"
             request_text = f"Add on: {add_on_req.amount}"
             request_href = f"/game/{game.id}/add_on/{add_on_req.id}"
             can_approve.append(game.owner)
@@ -287,7 +313,9 @@ def process_player(
         "owner": player.id == game.owner_id,
         "money_in": money_in,
         "money_out": money_out,
+        "balance": (money_out or 0) - money_in,
         "request": player_request,
+        "request_type": request_type,
         "request_text": request_text,
         "request_href": request_href,
         "can_approve": can_approve,
@@ -302,8 +330,16 @@ async def open_game(
     user: User = Depends(get_active_user),
 ):
     game: Game = get_game_by_id(game_id, db)
+    if not game:
+        return RedirectResponse(
+            url="/?msg=Game not found or deleted",
+            status_code=status.HTTP_302_FOUND
+        )
+
     if not user_in_game(user, game):
-        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+        if game.running:
+            return RedirectResponse(url=f"/game/{game.id}/join")  # not in the game yet
+        # If game is ended, allow viewing even if not a player
 
     players_info = []
     existing_requests = False
@@ -312,7 +348,6 @@ async def open_game(
         players_info.append(players_game_info)
         if players_game_info["request"] is not None:
             existing_requests = True
-    invite_link = None
     invite_link = None
     if game.running:
         try:
@@ -328,8 +363,10 @@ async def open_game(
             print(f"Error generating invite link: {e}")
             invite_link = None
 
+    template_name = "game/view_running.html" if game.running else "game/view_ended.html"
+
     return templates.TemplateResponse(
-        "game/view_running.html",
+        template_name,
         {
             "request": request,
             "game": game,
@@ -337,6 +374,44 @@ async def open_game(
             "players_info": players_info,
             "requests": existing_requests,
             "invite_link": invite_link,
+        },
+    )
+
+
+@router.get("/{game_id}/table", name="get_game_table")
+async def get_game_table(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game: Game = get_game_by_id(game_id, db)
+    if not game:
+        # If game is deleted during polling, redirect user to home
+        response = responses.Response()
+        response.headers["HX-Redirect"] = "/?msg=Game ended or deleted"
+        return response
+
+    if not user_in_game(user, game):
+        # Return empty or error if not in game, or just redirect (htmx follows redirects)
+        return responses.Response("")
+
+    players_info = []
+    existing_requests = False
+    for player in game.players:
+        players_game_info = process_player(game, player, db)
+        players_info.append(players_game_info)
+        if players_game_info["request"] is not None:
+            existing_requests = True
+
+    return templates.TemplateResponse(
+        "components/players_table.html",
+        {
+            "request": request,
+            "game": game,
+            "user": user,
+            "players_info": players_info,
+            "requests": existing_requests,
         },
     )
 

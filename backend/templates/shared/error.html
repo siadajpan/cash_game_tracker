@@ -1,0 +1,33 @@
+{% extends "shared/base.html" %}
+
+{% block title %}
+<title>Error</title>
+{% endblock %}
+
+{% block page_heading %}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 50vh;">
+    <div class="text-center mb-4 text-warning">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size: 4rem;"></i>
+    </div>
+
+    <div class="card shadow-sm border-0" style="max-width: 500px; width: 100%;">
+        <div class="card-body text-center p-5">
+            <h3 class="card-title fw-bold mb-4">Oops!</h3>
+
+            {% if errors %}
+            {% for error in errors %}
+            <p class="card-text fs-5 text-muted mb-3">{{ error }}</p>
+            {% endfor %}
+            {% else %}
+            <p class="card-text fs-5 text-muted mb-3">Something went wrong.</p>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="/" class="btn btn-primary btn-lg px-4">Go Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

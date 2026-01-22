@@ -13,7 +13,6 @@
             <i class="bi bi-gear-fill"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-            {% if game.running %}
             <li>
                 <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#qrCodeModal">
                     <i class="bi bi-qr-code"></i> Show QR
@@ -29,87 +28,14 @@
                 </a>
             </li>
             {% endif %}
-            {% else %}
-            <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#exportStatsModal">
-                    <i class="bi bi-file-earmark-arrow-down"></i> Export Stats
-                </button>
-            </li>
-            {% endif %}
         </ul>
     </div>
 </div>
 
-<!-- Header -->
-{% if requests %}
-{% set col_player = "col-4" %}
-{% set col_in = "col-2" %}
-{% set col_out = "col-2" %}
-{% set col_requests = "col-4" %}
-{% else %}
-{% set col_player = "col-4" %}
-{% set col_in = "col-4" %}
-{% set col_out = "col-4" %}
-{% endif %}
+<div hx-get="/game/{{ game.id }}/table" hx-trigger="every 5s" hx-swap="innerHTML">
+    {% include "components/players_table.html" %}
+</div>
 
-<ul class="list-group list-group-flush mb-3">
-    <li class="list-group-item">
-        <div class="row fw-bold text-center">
-            <div class="{{ col_player }} text-start">Player</div>
-            <div class="{{ col_in }}">In</div>
-            <div class="{{ col_out }}">Out</div>
-            {% if requests %}
-            <div class="{{ col_requests }}">Requests</div>
-            {% endif %}
-        </div>
-    </li>
-
-    <!-- Players -->
-    {% for info in players_info %}
-
-    <li class="list-group-item">
-        <div class="row text-center align-items-center">
-            {% if info.owner%}
-            <div class="{{ col_player }} text-start"><b>{{ info.player.nick }} (host)</b></div>
-            {% else %}
-            <div class="{{ col_player }} text-start ">{{ info.player.nick }}</div>
-            {% endif %}
-            <div class="{{ col_in }}">
-                {% if info.money_in % 1 %}
-                {{ "%.2f"|format(info.money_in) }}
-                {% else %}
-                {{ info.money_in|int }}
-                {% endif %}
-            </div>
-            <div class="{{ col_out }}">
-                {% if info.money_out is not none %}
-                {% if info.money_out % 1 %}
-                {{ "%.2f"|format(info.money_out) }}
-                {% else %}
-                {{ info.money_out|int }}
-                {% endif %}
-                {% else %}
-                -
-                {% endif %}
-            </div>
-
-            {% if info.request %}
-            <!-- Requests Column -->
-            <div class="col-4">
-                {% if user in info.can_approve %}
-                <a href="{{ info.request_href }}" class="btn btn-secondary">{{ info.request_text }}</a>
-                {% else %}
-                {{ info.request_text }}
-                {% endif %}
-            </div>
-
-            {% endif %}
-        </div>
-    </li>
-    {% endfor %}
-</ul>
-
-{% if game.running %}
 {% if user.id == game.owner_id %}
 
 <div class="d-flex justify-content-between align-items-center">
@@ -129,11 +55,6 @@
 
 </div>
 
-{% endif %}
-{% else %}
-<div class="d-flex ">
-    <a href="/" class="btn btn-outline-secondary">Back</a>
-</div>
 {% endif %}
 
 
@@ -155,199 +76,9 @@
     </div>
 </div>
 
-<!-- Stats Result Modal -->
-<div class="modal fade" id="statsResultModal" tabindex="-1" aria-labelledby="statsResultModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="statsResultModalLabel">Game Stats</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <textarea id="statsResultText" class="form-control" rows="15" readonly></textarea>
-            </div>
-            <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="copyStatsToClipboard()">Copy and Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Export Stats Modal -->
-<div class="modal fade" id="exportStatsModal" tabindex="-1" aria-labelledby="exportStatsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exportStatsModalLabel">Export Game Stats</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="exportStatsForm">
-                    <div class="mb-3">
-                        <label class="form-label d-block fw-bold">Format:</label>
-                        <div class="btn-group w-100" role="group" aria-label="Export Format">
-                            <input type="radio" class="btn-check" name="format" id="formatJson" value="json" checked>
-                            <label class="btn btn-outline-primary" for="formatJson">JSON</label>
-
-                            <input type="radio" class="btn-check" name="format" id="formatCsv" value="csv">
-                            <label class="btn btn-outline-primary" for="formatCsv">CSV</label>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label d-block fw-bold">Delivery Method:</label>
-                        <div class="btn-group w-100" role="group" aria-label="Delivery Method">
-                            <input type="radio" class="btn-check" name="delivery" id="deliveryView" value="view"
-                                checked>
-                            <label class="btn btn-outline-primary" for="deliveryView">View</label>
-
-                            <input type="radio" class="btn-check" name="delivery" id="deliveryDownload"
-                                value="download">
-                            <label class="btn btn-outline-primary" for="deliveryDownload">Download</label>
-
-                            <input type="radio" class="btn-check" name="delivery" id="deliveryMail" value="mail">
-                            <label class="btn btn-outline-primary" for="deliveryMail">Send by Mail</label>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer d-flex justify-content-between w-100">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
-                <button type="button" class="btn btn-primary" onclick="submitExport()">Submit</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Toast Container -->
-<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
-    <div id="liveToast" class="toast align-items-center text-white bg-primary border-0" role="alert"
-        aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body" id="toastBody">
-                Hello, world! This is a toast message.
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                aria-label="Close"></button>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
 
 {% block scripts %}
-<script>
-    function showToast(message, type = 'primary') {
-        const toastEl = document.getElementById('liveToast');
-        const toastBody = document.getElementById('toastBody');
-
-        toastBody.textContent = message;
-
-        // Remove existing color classes
-        toastEl.classList.remove('bg-primary', 'bg-success', 'bg-danger', 'bg-warning', 'bg-info');
-
-        // Add new color class
-        let bgClass = 'bg-primary';
-        if (type === 'success') bgClass = 'bg-success';
-        if (type === 'danger') bgClass = 'bg-danger';
-        if (type === 'warning') bgClass = 'bg-warning';
-        if (type === 'info') bgClass = 'bg-info';
-
-        toastEl.classList.add(bgClass);
-
-        const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
-        toast.show();
-    }
-
-    async function submitExport() {
-        const format = document.querySelector('input[name="format"]:checked').value;
-        const delivery = document.querySelector('input[name="delivery"]:checked').value;
-        const gameId = "{{ game.id }}";
-        const url = `/game/${gameId}/export`;
-
-        if (delivery === 'mail') {
-            // Use Fetch for async feedback
-            const formData = new FormData();
-            formData.append('format', format);
-            formData.append('delivery', delivery);
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    showToast(result.message, 'success');
-                    const modalEl = document.getElementById('exportStatsModal');
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    modal.hide();
-                } else {
-                    showToast('Error sending email: ' + (result.error || 'Unknown error'), 'danger');
-                }
-            } catch (e) {
-                showToast('Network error: ' + e.message, 'danger');
-            }
-        } else if (delivery === 'view') {
-            // View: Async Fetch -> Show in Modal
-            const formData = new FormData();
-            formData.append('format', format);
-            formData.append('delivery', delivery);
-
-            try {
-                const response = await fetch(url, { method: 'POST', body: formData });
-                if (response.ok) {
-                    const text = await response.text();
-                    document.getElementById('statsResultText').value = text;
-                    bootstrap.Modal.getInstance(document.getElementById('exportStatsModal')).hide();
-                    new bootstrap.Modal(document.getElementById('statsResultModal')).show();
-                } else {
-                    showToast('Error fetching stats', 'danger');
-                }
-            } catch (e) {
-                showToast('Network error: ' + e.message, 'danger');
-            }
-        } else {
-            // Download: standard form submit
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-
-            const formatInput = document.createElement('input');
-            formatInput.type = 'hidden';
-            formatInput.name = 'format';
-            formatInput.value = format;
-            form.appendChild(formatInput);
-
-            const deliveryInput = document.createElement('input');
-            deliveryInput.type = 'hidden';
-            deliveryInput.name = 'delivery';
-            deliveryInput.value = delivery;
-            form.appendChild(deliveryInput);
-
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-
-            const modalEl = document.getElementById('exportStatsModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-        }
-    }
-
-    function copyStatsToClipboard() {
-        const copyText = document.getElementById("statsResultText");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(copyText.value).then(() => {
-            showToast("Copied to clipboard!", 'success');
-            // Close the modal
-            const modalEl = document.getElementById('statsResultModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-        });
-    }
-</script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
