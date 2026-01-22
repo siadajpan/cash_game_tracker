@@ -249,6 +249,7 @@ def process_player(
     money_in = buy_in
     money_out = None
     player_request = None
+    request_type = None
     request_href = None
     request_text = None
     can_approve = []
@@ -265,6 +266,7 @@ def process_player(
 
         if cash_out_req.status == PlayerRequestStatus.REQUESTED:
             player_request = cash_out_req
+            request_type = "cash_out"
             request_text = f"Cash out: {cash_out_req.amount}"
             request_href = f"/game/{game.id}/cash_out/{cash_out_req.id}"
             [
@@ -278,6 +280,7 @@ def process_player(
             money_in += add_on_req.amount
         elif add_on_req.status == PlayerRequestStatus.REQUESTED:
             player_request = add_on_req
+            request_type = "add_on"
             request_text = f"Add on: {add_on_req.amount}"
             request_href = f"/game/{game.id}/add_on/{add_on_req.id}"
             can_approve.append(game.owner)
@@ -289,6 +292,7 @@ def process_player(
         "money_out": money_out,
         "balance": (money_out or 0) - money_in,
         "request": player_request,
+        "request_type": request_type,
         "request_text": request_text,
         "request_href": request_href,
         "can_approve": can_approve,
