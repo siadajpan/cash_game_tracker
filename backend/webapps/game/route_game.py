@@ -331,7 +331,9 @@ async def open_game(
 ):
     game: Game = get_game_by_id(game_id, db)
     if not user_in_game(user, game):
-        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+        if game.running:
+            return RedirectResponse(url=f"/game/{game.id}/join")  # not in the game yet
+        # If game is ended, allow viewing even if not a player
 
     players_info = []
     existing_requests = False
@@ -340,7 +342,6 @@ async def open_game(
         players_info.append(players_game_info)
         if players_game_info["request"] is not None:
             existing_requests = True
-    invite_link = None
     invite_link = None
     if game.running:
         try:
