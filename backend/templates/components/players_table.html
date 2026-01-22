@@ -1,0 +1,83 @@
+<!-- Header -->
+{% if game.running and requests %}
+{% set col_player = "col-4" %}
+{% set col_in = "col-2" %}
+{% set col_out = "col-2" %}
+{% set col_requests = "col-4" %}
+{% elif not game.running or show_balance %}
+{% set col_player = "col-3" %}
+{% set col_in = "col-3" %}
+{% set col_out = "col-3" %}
+{% set col_balance = "col-3" %}
+{% else %}
+{% set col_player = "col-4" %}
+{% set col_in = "col-4" %}
+{% set col_out = "col-4" %}
+{% endif %}
+
+<ul class="list-group list-group-flush mb-3">
+    <li class="list-group-item">
+        <div class="row fw-bold text-center">
+            <div class="{{ col_player }} text-start">Player</div>
+            <div class="{{ col_in }}">In</div>
+            <div class="{{ col_out }}">Out</div>
+            {% if not game.running or show_balance %}
+            <div class="{{ col_balance|default('col-3') }}">Balance</div>
+            {% endif %}
+            {% if game.running and requests %}
+            <div class="{{ col_requests }}">Requests</div>
+            {% endif %}
+        </div>
+    </li>
+
+    <!-- Players -->
+    {% for info in players_info %}
+
+    <li class="list-group-item">
+        <div class="row text-center align-items-center">
+            {% if info.owner%}
+            <div class="{{ col_player }} text-start"><b>{{ info.player.nick }} (host)</b></div>
+            {% else %}
+            <div class="{{ col_player }} text-start ">{{ info.player.nick }}</div>
+            {% endif %}
+            <div class="{{ col_in }}">
+                {% if info.money_in % 1 %}
+                {{ "%.2f"|format(info.money_in) }}
+                {% else %}
+                {{ info.money_in|int }}
+                {% endif %}
+            </div>
+            <div class="{{ col_out }}">
+                {% if info.money_out is not none %}
+                {% if info.money_out % 1 %}
+                {{ "%.2f"|format(info.money_out) }}
+                {% else %}
+                {{ info.money_out|int }}
+                {% endif %}
+                {% else %}
+                -
+                {% endif %}
+            </div>
+
+            {% if not game.running or show_balance %}
+            <div
+                class="{{ col_balance|default('col-3') }} {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ "%.2f"|format(info.balance) }}
+            </div>
+            {% endif %}
+
+            {% if game.running and info.request %}
+            <!-- Requests Column -->
+            <div class="col-4">
+                {% if user in info.can_approve %}
+                <a href="{{ info.request_href }}" class="btn btn-secondary">{{ info.request_text }}</a>
+                {% else %}
+                {{ info.request_text }}
+                {% endif %}
+            </div>
+
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>

@@ -287,6 +287,7 @@ def process_player(
         "owner": player.id == game.owner_id,
         "money_in": money_in,
         "money_out": money_out,
+        "balance": (money_out or 0) - money_in,
         "request": player_request,
         "request_text": request_text,
         "request_href": request_href,
@@ -328,8 +329,10 @@ async def open_game(
             print(f"Error generating invite link: {e}")
             invite_link = None
 
+    template_name = "game/view_running.html" if game.running else "game/view_ended.html"
+
     return templates.TemplateResponse(
-        "game/view_running.html",
+        template_name,
         {
             "request": request,
             "game": game,

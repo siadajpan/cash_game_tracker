@@ -7,41 +7,25 @@
 {% block content %}
 
 <!-- Players table -->
-<ul class="list-group list-group-flush mb-3">
-    <li class="list-group-item d-flex fw-bold">
-        <div class="col-3">Player</div>
-        <div class="col-3">In</div>
-        <div class="col-3">Out</div>
-        <div class="col-3">Balance</div>
-    </li>
-    {% for info in players_info %}
-    <li class="list-group-item d-flex">
-        <div class="col-3">{{ info.player.nick }}</div>
-        <div class="col-3">{{ "%.2f"|format(info.money_in) }}</div>
-        <div class="col-3">{{ "%.2f"|format(info.cash_out) }}</div>
-        <div class="col-3 {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
-            {{ "%.2f"|format(info.balance) }}
-        </div>
-    </li>
-    {% endfor %}
-</ul>
+<!-- Players table -->
+{% include "components/players_table.html" %}
 
 <!-- Warnings -->
 {% if not all_cashed_out %}
-    <div class="alert alert-warning">
-        Not all players have cashed out yet. Players who haven't cashed out will have a cash out value of 0.
-    </div>
+<div class="alert alert-warning">
+    Not all players have cashed out yet. Players who haven't cashed out will have a cash out value of 0.
+</div>
 {% endif %}
 
 {% if sum_warning %}
-    <div class="alert alert-warning">
-        Total Buy-ins ({{ total_buy_in }}) do not equal total Cash Outs ({{ total_cash_out }}).<br>
-        {% if total_buy_in > total_cash_out %}
-            Money left: {{ total_buy_in - total_cash_out }}
-        {% else %}
-            Money missing: {{ total_cash_out - total_buy_in }}
-        {% endif %}
-    </div>
+<div class="alert alert-warning">
+    Total Buy-ins ({{ total_buy_in }}) do not equal total Cash Outs ({{ total_cash_out }}).<br>
+    {% if total_buy_in > total_cash_out %}
+    Money left: {{ total_buy_in - total_cash_out }}
+    {% else %}
+    Money missing: {{ total_cash_out - total_buy_in }}
+    {% endif %}
+</div>
 {% endif %}
 <!-- Footer buttons -->
 <div class="d-flex justify-content-between mt-3">

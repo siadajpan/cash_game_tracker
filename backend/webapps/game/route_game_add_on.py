@@ -199,7 +199,7 @@ async def finish_game_view(
             {
                 "player": player,
                 "money_in": money_in,
-                "cash_out": cash_out,
+                "money_out": cash_out,
                 "balance": balance,
             }
         )
@@ -216,5 +216,6 @@ async def finish_game_view(
             "sum_warning": sum_warning,
             "total_buy_in": total_money_in,
             "total_cash_out": total_money_out,
+            "show_balance": True,
         },
     )
