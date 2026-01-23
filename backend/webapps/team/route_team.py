@@ -73,7 +73,7 @@ async def create_team(
     except PydanticCustomError as e:
         errors.append(e.message())
     except IntegrityError:
-        errors.append("Team with that name already exists.")
+        errors.append("Group with that name already exists.")
 
     # Re-render with all submitted data
     return templates.TemplateResponse(
@@ -118,13 +118,13 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
 
         if not team_model:
             raise PydanticCustomError(
-                "team_model", f"Team with code '{search_code}' not found."
+                "team_model", f"Group with code '{search_code}' not found."
             )
 
         elif current_user in team_model.users:
             raise PydanticCustomError(
                 "already_member",
-                f"You are already a member of team {team_model.name}#{search_code}.",
+                f"You are already a member of group {team_model.name}#{search_code}.",
             )
 
         join_team(team_model=team_model, user=current_user, db=db)
@@ -134,7 +134,7 @@ async def join_team_post(  # Renamed function to avoid conflict with service fun
         errors.append(e.message())
     except Exception as e:
         # Handle unexpected DB errors during the join process
-        errors.append(f"An unexpected error occurred while joining the team: {e}")
+        errors.append(f"An unexpected error occurred while joining the group: {e}")
     print("errors", errors)
 
     # Re-render with errors
@@ -168,7 +168,7 @@ async def decide_join_request(
     team = get_team_by_id(team_id, db)
     if not team:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Group not found"
         )
 
     if team.owner_id != current_user.id:
@@ -194,7 +194,7 @@ async def team_view(
 ):
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
-        return {"error": "Team not found"}
+        return {"error": "Group not found"}
 
     join_requests = get_team_join_requests(team, db)
     players_info = []

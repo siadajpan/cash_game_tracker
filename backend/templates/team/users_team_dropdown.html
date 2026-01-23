@@ -1,33 +1,33 @@
 {% if not user_teams %}
-<div class="form-text text-danger">You are not part of any team.</div>
+<div class="form-text text-danger">You are not part of any group.</div>
 {% elif user_teams|length == 1 %}
-    {# If there's only one team, use a hidden input and show team name #}
-    <input type="hidden" name="team_id"  id="team_id" value="{{ user_teams[0].id }}">
+{# If there's only one team, use a hidden input and show team name #}
+<input type="hidden" name="team_id" id="team_id" value="{{ user_teams[0].id }}">
 
-    <div class="form-floating">
-        <select name="team_id" id="team_id" required class="form-select">
-            <option value="{{ user_teams[0].id }}" selected>
-                {{ user_teams[0].name }}
-            </option>
-        </select>
-        <label>Team</label>
-    </div>
+<div class="form-floating">
+  <select name="team_id" id="team_id" required class="form-select">
+    <option value="{{ user_teams[0].id }}" selected>
+      {{ user_teams[0].name }}
+    </option>
+  </select>
+  <label>Group</label>
+</div>
 
 {% else %}
 <div class="form-floating">
   <select name="team_id" id="team_id" required class="form-select">
     <option value="" {% if not selected_team_id %}selected{% endif %}>
-      -- Choose a team --
+      -- Choose a group --
     </option>
 
     {% for team in user_teams %}
-    <option value="{{ team.id }}" {% if team.id|string == selected_team_id|string %}selected{% endif %}>
-        {{ team.name }}
+    <option value="{{ team.id }}" {% if team.id|string==selected_team_id|string %}selected{% endif %}>
+      {{ team.name }}
     </option>
     {% endfor %}
   </select>
 
-  <label>Team</label>
+  <label>Group</label>
 </div>
 
 {% endif %}

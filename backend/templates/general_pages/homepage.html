@@ -11,79 +11,81 @@
 {% set team_count = user.teams | length %}
 
 {% if team_count > 0 %}
-    <!-- GAMES SECTION -->
-    {% set game_count = running_games | length %}
+<!-- GAMES SECTION -->
+{% set game_count = running_games | length %}
 
-    {% if game_count == 1 %}
-        <h2 class="display-6 mt-3">Running game</h2>
-    {% elif game_count > 1 %}
-        <h2 class="display-6 mt-3">Running games</h2>
-    {% endif %}
+{% if game_count == 1 %}
+<h2 class="display-6 mt-3">Running game</h2>
+{% elif game_count > 1 %}
+<h2 class="display-6 mt-3">Running games</h2>
+{% endif %}
 
-    {% if game_count > 0 %}
-    <ul class="list-group list-group-flush">
-        {% for game in running_games %}
-        <li class="list-group-item">
-            {% set is_user_in_game = user in game.players %}
-            {% with game=game %}
-            {% include "game/game_list_view.html" %}
-            {% endwith %}
-        </li>
-        {% endfor %}
-    </ul>
+{% if game_count > 0 %}
+<ul class="list-group list-group-flush">
+    {% for game in running_games %}
+    <li class="list-group-item">
+        {% set is_user_in_game = user in game.players %}
+        {% with game=game %}
+        {% include "game/game_list_view.html" %}
+        {% endwith %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="alert alert-info" role="alert">
+    <p class="mb-0 lead"> There are no running games in your groups. Click the button below to start one! </p>
+</div>
+{% endif %}
+<div class="d-flex justify-content-between align-items-center">
+    <a href="/game/view_past" class="btn btn-outline-secondary">View past games </a>
+    {% if user.is_active %}
+    <a href="/game/create" class="btn btn-primary"> Create a new game </a>
     {% else %}
-    <div class="alert alert-info" role="alert">
-        <p class="mb-0 lead"> There are no running games in your teams. Click the button below to start one! </p>
-    </div>
+    <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip"
+        title="Please verify your email to create a game">
+        <button class="btn btn-primary" type="button" disabled style="pointer-events: none;">
+            Create a game
+        </button>
+    </span>
     {% endif %}
-    <div class="d-flex justify-content-between align-items-center">
-        <a href="/game/view_past" class="btn btn-outline-secondary">View past games </a>
-        {% if user.is_active %}
-            <a href="/game/create" class="btn btn-primary"> Create a new game </a>
-        {% else %}
-            <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="Please verify your email to create a game">
-                <button class="btn btn-primary" type="button" disabled style="pointer-events: none;">
-                    Create a game
-                </button>
-            </span>
-        {% endif %}
-    </div>
+</div>
 {% endif %}
 
 
 {% if team_count == 1 %}
-    <h2 class="display-6 mt-3">My team</h2>
+<h2 class="display-6 mt-3">My group</h2>
 {% elif team_count > 1 %}
-    <h2 class="display-6 mt-3">My teams</h2>
+<h2 class="display-6 mt-3">My groups</h2>
 {% endif %}{% if team_count > 0 %}
 <div class="list-group list-group-flush mt-1">
     {% for team in user.teams %}
-        <li class="list-group-item">
-            <!-- Team info -->
-            <div>
-                {% include "team/team_list_view.html" %}
-            </div>
+    <li class="list-group-item">
+        <!-- Group info -->
+        <div>
+            {% include "team/team_list_view.html" %}
+        </div>
 
 
-        </li>
+    </li>
     {% endfor %}
 </div>
 
 {% else %}
 <div class="alert alert-info" role="alert">
-    <p class="mb-0 lead"> You are not currently part of any team. Get started by creating or joining one! </p>
+    <p class="mb-0 lead"> You are not currently part of any group. Get started by creating or joining one! </p>
 </div>
 {% endif %}
 <div class="d-flex justify-content-between align-items-center">
-    <a href="/team/join" class="btn btn-outline-secondary">Join an Existing Team </a>
+    <a href="/team/join" class="btn btn-outline-secondary">Join an Existing Group </a>
     {% if user.is_active %}
-        <a href="/team/create" class="btn btn-primary">Create a Team </a>
+    <a href="/team/create" class="btn btn-primary">Create a Group </a>
     {% else %}
-        <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="Please verify your email to create a team">
-            <button class="btn btn-primary" type="button" disabled style="pointer-events: none;">
-                Create a Team
-            </button>
-        </span>
+    <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip"
+        title="Please verify your email to create a group">
+        <button class="btn btn-primary" type="button" disabled style="pointer-events: none;">
+            Create a Group
+        </button>
+    </span>
     {% endif %}
 </div>
 
@@ -91,14 +93,14 @@
 {% endblock %}
 {% block scripts %}
 <script>
-setInterval(async () => {
-    const response = await fetch("/game/api/check_update");  // create this endpoint
-    if (response.ok) {
-        const data = await response.json();
-        if (data.new_game) {
-            location.reload();
+    setInterval(async () => {
+        const response = await fetch("/game/api/check_update");  // create this endpoint
+        if (response.ok) {
+            const data = await response.json();
+            if (data.new_game) {
+                location.reload();
+            }
         }
-    }
-}, 10000); // every 10 seconds
+    }, 10000); // every 10 seconds
 </script>
 {% endblock %}
