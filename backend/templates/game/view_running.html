@@ -39,7 +39,11 @@
 {% if user.id == game.owner_id %}
 
 <div class="d-flex justify-content-between align-items-center">
+    {% if request.query_params.return_url %}
+    <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
+    {% else %}
     <a href="/" class="btn btn-outline-secondary">Back</a>
+    {% endif %}
     <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
     <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
 </div>
@@ -49,7 +53,11 @@
 
 <div class="d-flex justify-content-between">
 
+    {% if request.query_params.return_url %}
+    <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
+    {% else %}
     <a href="/" class="btn btn-outline-secondary">Back</a>
+    {% endif %}
     <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
     <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
 

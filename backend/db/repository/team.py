@@ -75,6 +75,21 @@ def join_team(team_model: Team, user, db: Session) -> Team:
     return team_model
 
 
+def remove_user_from_team(team: Team, user: User, db: Session):
+    """
+    Removes a user from a team.
+    """
+    association = (
+        db.query(UserTeam)
+        .filter(UserTeam.team_id == team.id, UserTeam.user_id == user.id)
+        .one_or_none()
+    )
+    if association:
+        db.delete(association)
+        db.commit()
+
+
+
 def get_team_by_name(team_name, db: Session):
     return db.query(Team).filter(Team.name == team_name).one_or_none()
 
