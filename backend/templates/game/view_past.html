@@ -3,15 +3,16 @@
 {% block page_heading %}Past Games{% endblock %}
 
 {% block content %}
-<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
-{% for game_info in games_info %}
-    <div class="col">
-        <a href="/game/{{ game_info.game.id }}" class="text-decoration-none">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">{{ game_info.game.date }}</h5>
-                    <ul class="list-unstyled mb-0">
-                        {% for info in game_info.players_info %}
+<div style="max-height: calc(100vh - 215px); overflow-y: auto; overflow-x: hidden;">
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+        {% for game_info in games_info %}
+        <div class="col">
+            <a href="/game/{{ game_info.game.id }}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ game_info.game.date }}</h5>
+                        <ul class="list-unstyled mb-0">
+                            {% for info in game_info.players_info %}
                             <li class="d-flex justify-content-between">
                                 <span class="{% if info.player.id == game_info.game.owner_id %}fw-bold{% endif %}">
                                     {{ info.player.nick }}
@@ -20,13 +21,14 @@
                                     {{ info.balance }}
                                 </span>
                             </li>
-                        {% endfor %}
-                    </ul>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
-            </div>
-        </a>
+            </a>
+        </div>
+        {% endfor %}
     </div>
-{% endfor %}
 </div>
 
 <div class="d-flex mt-3">
