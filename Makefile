@@ -17,6 +17,10 @@ start:
 	@echo "--- Starting Docker containers (sudo) ---"
 	sudo docker compose up -d
 
+build:
+	@echo "--- Building Docker containers (sudo) ---"
+	sudo docker compose up -d --build
+
 reset_db:
 	@echo "--- Resetting database ---"
 	poetry run python backend/db/tools/reset_db.py
@@ -35,4 +39,4 @@ start_debug:
 
 # Default target runs both
 update: pull stop start
-rebuild: pull stop build start
+rebuild: pull stop build
