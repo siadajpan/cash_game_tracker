@@ -11,11 +11,15 @@ pull:
 # We use 'sudo' here as requested, which is necessary if the user isn't in the docker group.
 stop:
 	@echo "--- Stopping and removing Docker containers (sudo) ---"
-	sudo docker-compose down
+	sudo docker compose down
 
 start:
 	@echo "--- Starting Docker containers (sudo) ---"
-	sudo docker-compose up -d
+	sudo docker compose up -d
+
+build:
+	@echo "--- Building Docker containers (sudo) ---"
+	sudo docker compose up -d --build
 
 reset_db:
 	@echo "--- Resetting database ---"
@@ -35,4 +39,4 @@ start_debug:
 
 # Default target runs both
 update: pull stop start
-rebuild: pull stop build start
+rebuild: pull stop build
