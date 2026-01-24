@@ -25,6 +25,7 @@ resend.api_key = settings.RESEND_API_KEY
 router = APIRouter(include_in_schema=False)
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
+
 async def send_verification_email(email_to: str, nick: str, token: str):
     verification_url = f"{settings.URL}/verify?token={token}"
     template = templates.get_template("email/verify_email.html")
@@ -41,6 +42,7 @@ async def send_verification_email(email_to: str, nick: str, token: str):
         resend.Emails.send(params)
     except Exception as e:
         print(f"Failed to send email: {e}")
+
 
 @router.get("/verify-success")
 async def verify_success(request: Request, user: User = Depends(get_current_user)):

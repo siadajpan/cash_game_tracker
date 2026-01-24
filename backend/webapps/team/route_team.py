@@ -17,12 +17,12 @@ from backend.db.models.team import Team
 from backend.db.models.user import User
 from backend.db.models.user_team import UserTeam
 from backend.db.repository.game import (
-    get_user_games_count, 
+    get_user_games_count,
     get_user_total_balance,
     get_user_team_games_count,
     get_user_team_balance,
     get_user_game_balance,
-    get_user_team_games
+    get_user_team_games,
 )
 from backend.db.repository.team import (
     create_new_user,
@@ -245,7 +245,7 @@ async def player_stats(
 
     # Verify user is in team
     if user not in team.users:
-         return RedirectResponse("/")
+        return RedirectResponse("/")
 
     player = get_user(player_id, db)
     if not player:
@@ -255,13 +255,13 @@ async def player_stats(
     team_games = get_user_team_games(player, team_id, db)
     # Sort descending
     team_games.sort(key=lambda x: x.date, reverse=True)
-    
+
     games_history = []
-    
+
     for game in team_games:
         balance = get_user_game_balance(player, game, db)
         games_history.append({"game": game, "balance": balance})
-    
+
     total_balance = sum(g["balance"] for g in games_history)
 
     return templates.TemplateResponse(
@@ -273,7 +273,7 @@ async def player_stats(
             "games_history": games_history,
             "total_balance": total_balance,
             "games_count": len(games_history),
-            "is_owner": user.id == team.owner_id
+            "is_owner": user.id == team.owner_id,
         },
     )
 
@@ -289,9 +289,9 @@ async def remove_player(
     team = get_team_by_id(team_id, db)
     if not team or user.id != team.owner_id:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     player = get_user(player_id, db)
     if player:
         remove_user_from_team(team, player, db)
-    
+
     return RedirectResponse(f"/team/{team_id}", status_code=303)
