@@ -163,7 +163,7 @@ def delete_game_by_id(game_id: int, db: Session) -> bool:
     game = get_game_by_id(game_id, db)
     if not game:
         return False
-    
+
     db.delete(game)
     db.commit()
     return True

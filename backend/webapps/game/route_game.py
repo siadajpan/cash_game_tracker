@@ -69,12 +69,14 @@ async def delete_game(
     game = get_game_by_id(game_id, db)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
-    
+
     if game.owner_id != user.id:
-        raise HTTPException(status_code=403, detail="Only the owner can delete the game")
+        raise HTTPException(
+            status_code=403, detail="Only the owner can delete the game"
+        )
 
     delete_game_by_id(game_id, db)
-    
+
     return RedirectResponse(
         url="/game/view_past?msg=Game deleted successfully",
         status_code=status.HTTP_302_FOUND,
@@ -176,7 +178,7 @@ async def view_past_games(
         for game in team.games:
             if not game.running:
                 past_games.append(game)
-    
+
     # Sort by date descending
     past_games.sort(key=lambda x: x.date, reverse=True)
 
@@ -332,8 +334,7 @@ async def open_game(
     game: Game = get_game_by_id(game_id, db)
     if not game:
         return RedirectResponse(
-            url="/?msg=Game not found or deleted",
-            status_code=status.HTTP_302_FOUND
+            url="/?msg=Game not found or deleted", status_code=status.HTTP_302_FOUND
         )
 
     if not user_in_game(user, game):
@@ -355,8 +356,14 @@ async def open_game(
             # You might want a longer expiration for invites, e.g. 24 hours
             expire_delta = timedelta(hours=24)
             # Use team_id directly to avoid lazy loading issues
-            invite_data = {"sub": "guest_invite", "game_id": game.id, "team_id": game.team_id}
-            invite_token = create_access_token(data=invite_data, expires_delta=expire_delta)
+            invite_data = {
+                "sub": "guest_invite",
+                "game_id": game.id,
+                "team_id": game.team_id,
+            }
+            invite_token = create_access_token(
+                data=invite_data, expires_delta=expire_delta
+            )
             base_url = settings.URL or "http://localhost:8000"
             invite_link = f"{base_url}/guest/join?token={invite_token}"
         except Exception as e:
@@ -445,24 +452,30 @@ async def export_game_stats(
     game = get_game_by_id(game_id, db)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
-    
+
     # Calculate stats
     stats = []
     for player in game.players:
         buy_in = get_player_game_total_buy_in_amount(player, game, db)
         add_ons = get_player_game_addons(player, game, db)
         cash_outs = get_player_game_cash_out(player, game, db)
-        
-        money_in = buy_in + sum(a.amount for a in add_ons if a.status == PlayerRequestStatus.APPROVED)
-        money_out = sum(c.amount for c in cash_outs if c.status == PlayerRequestStatus.APPROVED)
+
+        money_in = buy_in + sum(
+            a.amount for a in add_ons if a.status == PlayerRequestStatus.APPROVED
+        )
+        money_out = sum(
+            c.amount for c in cash_outs if c.status == PlayerRequestStatus.APPROVED
+        )
         balance = money_out - money_in
-        
-        stats.append({
-            "nick": player.nick,
-            "money_in": money_in,
-            "money_out": money_out,
-            "balance": balance
-        })
+
+        stats.append(
+            {
+                "nick": player.nick,
+                "money_in": money_in,
+                "money_out": money_out,
+                "balance": balance,
+            }
+        )
 
     # Format data
     if format == "csv":
@@ -470,7 +483,9 @@ async def export_game_stats(
         writer = csv.writer(output)
         writer.writerow(["Nick", "Money In", "Money Out", "Balance"])
         for row in stats:
-            writer.writerow([row["nick"], row["money_in"], row["money_out"], row["balance"]])
+            writer.writerow(
+                [row["nick"], row["money_in"], row["money_out"], row["balance"]]
+            )
         content = output.getvalue()
         media_type = "text/csv"
         filename = f"game_{game.date}_stats.csv"
@@ -484,38 +499,42 @@ async def export_game_stats(
         return StreamingResponse(
             io.StringIO(content),
             media_type=media_type,
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
     elif delivery == "mail":
         if not user.email:
-             return JSONResponse({"error": "User email not found"}, status_code=400)
-        
+            return JSONResponse({"error": "User email not found"}, status_code=400)
+
         try:
             # Create a temporary file
             suffix = ".csv" if format == "csv" else ".json"
-            with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=suffix, encoding='utf-8') as tmp:
+            with tempfile.NamedTemporaryFile(
+                mode="w+", delete=False, suffix=suffix, encoding="utf-8"
+            ) as tmp:
                 tmp.write(content)
                 tmp_path = tmp.name
-            
+
             message = MessageSchema(
                 subject=f"Game Stats Export - {game.date}",
                 recipients=[user.email],
                 body=f"Attached are the stats for the game on {game.date}.",
                 subtype="plain",
-                attachments=[tmp_path]
+                attachments=[tmp_path],
             )
-            
+
             fm = FastMail(conf)
             background_tasks.add_task(fm.send_message, message)
-            
+
             # Clean up temp file after sending
             background_tasks.add_task(os.remove, tmp_path)
-            
+
             return JSONResponse({"message": f"Email sent to {user.email}"})
         except Exception as e:
             print(f"Email error: {str(e)}")
-            return JSONResponse({"error": f"Failed to send email: {str(e)}"}, status_code=500)
-    
+            return JSONResponse(
+                {"error": f"Failed to send email: {str(e)}"}, status_code=500
+            )
+
     else:  # view
         return responses.Response(content=content, media_type=media_type)
 

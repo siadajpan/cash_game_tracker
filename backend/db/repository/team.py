@@ -89,7 +89,6 @@ def remove_user_from_team(team: Team, user: User, db: Session):
         db.commit()
 
 
-
 def get_team_by_name(team_name, db: Session):
     return db.query(Team).filter(Team.name == team_name).one_or_none()
 

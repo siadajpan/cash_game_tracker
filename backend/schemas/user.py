@@ -46,7 +46,7 @@ class UserCreate(BaseModel):
         if not repeat_password:
             raise ValueError("Repeat password is required")
         if "password" in info.data and repeat_password != info.data["password"]:
-             raise ValueError("Passwords don't match")
+            raise ValueError("Passwords don't match")
         return repeat_password
 
 
