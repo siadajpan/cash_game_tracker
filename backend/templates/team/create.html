@@ -1,18 +1,11 @@
 {% extends "shared/base.html" %} {% block title %}
-<title>Create team</title>
-{% endblock %} {% block page_heading %}Create team{% endblock %} {% block
+<title>Create Group</title>
+{% endblock %} {% block page_heading %}Create Group{% endblock %} {% block
 content %}
 
 <form method="POST" action="/team/create">
   <div class="form-floating mb-3">
-    <input
-      type="text"
-      required
-      class="form-control"
-      name="name"
-      value="{{ name }}"
-      placeholder="Team name"
-    />
+    <input type="text" required class="form-control" name="name" value="{{ name }}" placeholder="Group name" />
     <label>Name</label>
   </div>
 

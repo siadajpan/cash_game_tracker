@@ -124,9 +124,34 @@ def get_user_games_count(user: User, db: Session) -> int:
     return len(user.games_played)
 
 
+def get_user_team_games(user: User, team_id: int, db: Session) -> List[Game]:
+    """
+    Returns list of games the user played in for a specific team.
+    """
+    return [game for game in user.games_played if game.team_id == team_id]
+
+
+def get_user_team_games_count(user: User, team_id: int, db: Session) -> int:
+    """
+    Returns count of games the user played in for a specific team.
+    """
+    return len(get_user_team_games(user, team_id, db))
+
+
 def get_user_total_balance(user: User, db: Session) -> float:
     total = 0.0
     for game in user.games_played:
+        total += get_user_game_balance(user, game, db)
+    return total
+
+
+def get_user_team_balance(user: User, team_id: int, db: Session) -> float:
+    """
+    Returns total balance for the user in a specific team.
+    """
+    total = 0.0
+    team_games = get_user_team_games(user, team_id, db)
+    for game in team_games:
         total += get_user_game_balance(user, game, db)
     return total
 

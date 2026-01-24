@@ -1,6 +1,6 @@
 {% extends "shared/base.html" %}
 {% block title %}
-<title>Team {{ team.name }}</title>
+<title>Group {{ team.name }}</title>
 {% endblock %}
 {% block page_heading %}{{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>{% endblock %}
 
@@ -11,7 +11,7 @@
 {% include "team/component_join_request.html" %}
 {% endwith %}
 {% endif %}
-<ul class="list-group list-group-flush mb-3" style="max-height: 250px; overflow-y: auto; display: block;">
+<ul class="list-group list-group-flush mb-3" style="max-height: calc(100vh - 215px); overflow-y: auto; display: block;">
     <li class="list-group-item d-flex justify-content-between fw-bold sticky-top bg-white">
         <span class="col-4">Player</span>
         <span class="col-4 text-center">Games Played</span>
@@ -20,14 +20,23 @@
 
     {% for info in players_info %}
     <li class="list-group-item d-flex align-items-center">
-        <div class="col-4">{{ info.player.nick }}</div>
-        <div class="col-4 text-center">{{ info.games_count }}</div>
-        <div class="col-4 text-end {% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-            {% if info.total_balance % 1 %}
-            {{ "%.2f"|format(info.total_balance) }}
-            {% else %}
-            {{ info.total_balance|int }}
+        <div class="col-4">
+            <a href="/team/{{ team.id }}/player/{{ info.player.id }}" class="text-decoration-none text-dark fw-bold">
+                {{ info.player.nick }}
+            </a>
+            {% if info.player.id == team.owner_id %}
+            <span class="badge rounded-pill text-bg-warning ms-1" style="font-size: 0.7em;">Owner</span>
             {% endif %}
+        </div>
+        <div class="col-4 text-center">{{ info.games_count }}</div>
+        <div class="col-4 d-flex justify-content-end align-items-center">
+            <span class="{% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %} me-2">
+                {% if info.total_balance % 1 %}
+                {{ "%.2f"|format(info.total_balance) }}
+                {% else %}
+                {{ info.total_balance|int }}
+                {% endif %}
+            </span>
         </div>
     </li>
     {% endfor %}
@@ -35,6 +44,6 @@
 
 
 <div class="d-flex mt-3">
-    <a href="/" class="btn btn-outline-secondary">Back</a>
+    <a href="/?tab=groups" class="btn btn-outline-secondary">Back</a>
 </div>
 {% endblock %}

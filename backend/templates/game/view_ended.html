@@ -36,7 +36,11 @@
 {% include "components/players_table.html" %}
 
 <div class="d-flex ">
+    {% if request.query_params.return_url %}
+    <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
+    {% else %}
     <a href="/game/view_past" class="btn btn-outline-secondary">Back</a>
+    {% endif %}
 </div>
 
 <!-- Stats Result Modal -->

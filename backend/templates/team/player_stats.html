@@ -1,0 +1,102 @@
+{% extends "shared/base.html" %}
+{% block title %}
+<title>{{ player.nick }} Stats - {{ team.name }}</title>
+{% endblock %}
+{% block page_heading %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-title">{{ player.nick }} <span class="text-muted">in {{ team.name }}</span></div>
+    {% if is_owner and player.id != team.owner_id %}
+    <div class="dropdown">
+        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="bi bi-gear-fill"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+                <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
+                    data-bs-target="#removePlayerModal">
+                    <i class="bi bi-person-x"></i> Remove from group
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="removePlayerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Remove Player</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p>Are you sure you want to remove <strong>{{ player.nick }}</strong> from the group?</p>
+                    <p class="text-muted small">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="/team/{{ team.id }}/player/{{ player.id }}/remove" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger">Yes, Remove</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<ul class="list-group mb-3">
+    <li class="list-group-item border-0 d-flex justify-content-between align-items-center bg-transparent px-0">
+        <div>
+            <span class="text-muted me-2">Games Played:</span>
+            <span class="fw-bold">{{ games_count }}</span>
+        </div>
+        <div>
+            <span class="text-muted me-2">Total Balance:</span>
+            <span class="fw-bold {% if total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                {% if total_balance % 1 %}
+                {{ "%.2f"|format(total_balance) }}
+                {% else %}
+                {{ total_balance|int }}
+                {% endif %}
+            </span>
+        </div>
+    </li>
+</ul>
+
+<h5 class="mb-2">Game History</h5>
+
+<div style="max-height: calc(100vh - 320px); overflow-y: auto; overflow-x: hidden;">
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2">
+        {% for info in games_history %}
+        <div class="col">
+            <a href="/game/{{ info.game.id }}?return_url=/team/{{ team.id }}/player/{{ player.id }}"
+                class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-2">
+                        <h6 class="card-title mb-1" style="font-size: 0.9rem;">{{ info.game.date }}</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="text-muted small" style="font-size: 0.8rem;">Balance:</span>
+                            <span class="fw-bold {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}"
+                                style="font-size: 0.9rem;">
+                                {% if info.balance % 1 %}
+                                {{ "%.2f"|format(info.balance) }}
+                                {% else %}
+                                {{ info.balance|int }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="d-flex mt-3">
+    <a href="/team/{{ team.id }}" class="btn btn-outline-secondary">Back to Group</a>
+</div>
+{% endblock %}

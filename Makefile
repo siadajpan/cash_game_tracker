@@ -21,6 +21,10 @@ reset_db:
 	@echo "--- Resetting database ---"
 	poetry run python backend/db/tools/reset_db.py
 
+reset_db_docker:
+	@echo "--- Resetting database (docker) ---"
+	sudo docker compose run --rm -e PYTHONPATH=. app poetry run python backend/db/tools/reset_db.py
+
 start_local:
 	@echo "--- Starting local server ---"
 	poetry run uvicorn --host 0.0.0.0 --port 8000 main:app --reload
@@ -31,3 +35,4 @@ start_debug:
 
 # Default target runs both
 update: pull stop start
+rebuild: pull stop build start
