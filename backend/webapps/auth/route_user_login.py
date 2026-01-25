@@ -1,4 +1,5 @@
 import json
+import requests
 from fastapi import BackgroundTasks
 from fastapi import APIRouter, responses
 from fastapi import Depends
@@ -160,19 +161,146 @@ async def login_google():
 
 @router.get("/auth/google/callback")
 async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
-    # Placeholder for actual OAuth token exchange and user creation/lookup
-    # This would normally involve:
-    # 1. Exchange code for token
-    # 2. Get user info from Google
-    # 3. Check if user exists in DB, if not create one
-    # 4. Login user (create access token)
-    return templates.TemplateResponse(
-        "auth/login.html",
-        {
-            "request": request,
-            "errors": ["Google Login not fully implemented yet. Missing token exchange logic."],
-        },
-    )
+    code = request.query_params.get("code")
+    if not code:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {"request": request, "errors": ["Login failed: No authorization code received"]},
+        )
+
+    try:
+        # 1. Exchange code for token
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": code,
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code",
+        }
+        res = requests.post(token_url, data=data)
+        res.raise_for_status()
+        access_token = res.json().get("access_token")
+
+        # 2. Get user info
+        user_info_res = requests.get(
+            "https://www.googleapis.com/oauth2/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        user_info_res.raise_for_status()
+        user_info = user_info_res.json()
+        
+        email = user_info.get("email")
+        if not email:
+             raise ValueError("Google did not return an email address.")
+
+        # 3. Check if user exists
+        user = get_user_by_email(email, db)
+        
+        if not user:
+            # Create a temporary token containing the email to secure the next step
+            # We can reuse create_access_token but with a short expiry and specific scope/purpose if needed
+            # For simplicity, we use the same structure but maybe a different subject prefix or just the email
+            reg_token_expires = timedelta(minutes=15)
+            reg_token = create_access_token(
+                data={"sub": f"google_reg:{email}", "email": email, "suggested_nick": user_info.get("name") or email.split("@")[0]},
+                expires_delta=reg_token_expires
+            )
+            
+            return templates.TemplateResponse(
+                "auth/finish_google_login.html",
+                {
+                    "request": request,
+                    "email": email,
+                    "suggested_nick": user_info.get("name") or email.split("@")[0],
+                    "token": reg_token
+                }
+            )
+
+        # 4. Login user (create access token)
+        response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+        
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.email}, expires_delta=access_token_expires
+        )
+        response.set_cookie(
+            key="access_token", value=f"Bearer {access_token}", httponly=True
+        )
+        
+        return response
+
+    except Exception as e:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {
+                "request": request,
+                "errors": [f"Google Login failed: {str(e)}"],
+            },
+        )
+
+
+@router.post("/register/google/finish")
+async def finish_google_registration(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    token = form.get("token")
+    nick = form.get("nick")
+    tos_agreement = form.get("tos_agreement")
+    
+    if not tos_agreement:
+         return templates.TemplateResponse(
+            "auth/finish_google_login.html",
+            {
+                "request": request,
+                "error": "You must agree to the Terms of Service.",
+                "token": token,
+                "suggested_nick": nick
+            }
+        )
+
+    try:
+        # Decode token to get email
+        # We need to import jwt and settings to decode
+        from jose import jwt, JWTError
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email = payload.get("email")
+        sub = payload.get("sub")
+        
+        if not email or not sub or not sub.startswith("google_reg:"):
+            raise ValueError("Invalid registration token")
+            
+        # Create user
+        random_password = secrets.token_urlsafe(16)
+        new_user_data = UserCreate(
+            email=email,
+            nick=nick,
+            password=random_password
+        )
+        user = create_new_user(user=new_user_data, db=db)
+        user.is_active = True
+        db.commit()
+        
+        # Login
+        response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.email}, expires_delta=access_token_expires
+        )
+        response.set_cookie(
+            key="access_token", value=f"Bearer {access_token}", httponly=True
+        )
+        return response
+
+    except Exception as e:
+         return templates.TemplateResponse(
+            "auth/finish_google_login.html",
+            {
+                "request": request,
+                "errors": [f"Registration failed: {str(e)}"],
+                "token": token,
+                 "suggested_nick": nick
+            }
+        )
 
 
 @router.get("/logout/")
