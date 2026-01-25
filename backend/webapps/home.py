@@ -32,3 +32,18 @@ async def home(
             "running_games": running_games,
         },
     )
+
+
+
+@router.get("/terms-of-service/")
+async def terms_of_service(request: Request):
+    return templates.TemplateResponse(
+        "general_pages/terms_of_service.html", {"request": request}
+    )
+
+
+@router.get("/privacy-policy/")
+async def privacy_policy(request: Request):
+    return templates.TemplateResponse(
+        "general_pages/privacy_policy.html", {"request": request}
+    )
