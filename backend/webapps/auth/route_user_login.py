@@ -83,6 +83,10 @@ async def register(
             nick=form.get("nick"),
             password=form.get("password"),
         )
+        
+        if not form.get("tos_agreement"):
+             raise ValueError("You must agree to the Terms of Service to register.")
+
         new_user = create_new_user(user=new_user_data, db=db)
         verif_token = create_verification_token(new_user.id, db)
         background_tasks.add_task(
@@ -137,6 +141,36 @@ async def login(request: Request):
         {
             "request": request,
             "form": {},
+        },
+    )
+
+
+@router.get("/login/google")
+async def login_google():
+    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_REDIRECT_URI:
+        return responses.RedirectResponse(
+            "/?msg=Google Login is not configured (missing credentials)",
+            status_code=status.HTTP_302_FOUND
+        )
+
+    return responses.RedirectResponse(
+        f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={settings.GOOGLE_CLIENT_ID}&redirect_uri={settings.GOOGLE_REDIRECT_URI}&scope=openid%20profile%20email&access_type=offline"
+    )
+
+
+@router.get("/auth/google/callback")
+async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
+    # Placeholder for actual OAuth token exchange and user creation/lookup
+    # This would normally involve:
+    # 1. Exchange code for token
+    # 2. Get user info from Google
+    # 3. Check if user exists in DB, if not create one
+    # 4. Login user (create access token)
+    return templates.TemplateResponse(
+        "auth/login.html",
+        {
+            "request": request,
+            "errors": ["Google Login not fully implemented yet. Missing token exchange logic."],
         },
     )
 
