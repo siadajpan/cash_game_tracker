@@ -28,11 +28,10 @@
     <li class="list-group-item">
         <div class="row text-center align-items-center">
             <div class="{{ col_player }} text-start">
-                {% if info.owner%}
-                <b>{{ info.player.nick }} (host)</b>
-                {% else %}
-                {{ info.player.nick }}
-                {% endif %}
+                <a href="/team/{{ game.team_id }}/player/{{ info.player.id }}" class="text-decoration-none text-dark fw-semibold">
+                    {{ info.player.nick }}
+                    {% if info.owner %} (host) {% endif %}
+                </a>
             </div>
 
             <div class="{{ col_in }}">

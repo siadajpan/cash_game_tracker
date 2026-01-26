@@ -11,8 +11,8 @@
 {% include "team/component_join_request.html" %}
 {% endwith %}
 {% endif %}
-<div class="d-flex flex-column" style="height: calc(100vh - 240px);">
-    <div class="table-responsive flex-grow-1">
+<div id="team-view-container" class="d-flex flex-column" style="max-height: 60vh;">
+    <div class="table-responsive overflow-auto" style="min-height: 0;">
         <table class="table table-hover table-hover-custom align-middle mb-0">
             <thead class="sticky-top bg-white border-bottom">
                 <tr class="text-uppercase text-secondary" style="font-size: 0.75rem; letter-spacing: 0.05em;">
@@ -52,4 +52,27 @@
         <a href="/?tab=groups" class="btn btn-outline-secondary">Back</a>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function adjustTeamViewHeight() {
+        const container = document.getElementById('team-view-container');
+        if (!container) return;
+        
+        // Calculate available height: Window height - container top position - bottom margin (20px)
+        const rect = container.getBoundingClientRect();
+        const availableHeight = window.innerHeight - rect.top - 20;
+        
+        // Ensure a reasonable minimum height
+        container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
+    }
+
+    window.addEventListener('resize', adjustTeamViewHeight);
+    window.addEventListener('load', adjustTeamViewHeight);
+    // document.addEventListener('DOMContentLoaded', adjustTeamViewHeight); // redundant with load usually but good safety
+    
+    // Initial call in case DOM is ready
+    adjustTeamViewHeight();
+</script>
 {% endblock %}
