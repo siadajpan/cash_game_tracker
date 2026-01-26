@@ -2,7 +2,7 @@ import json
 from sqlite3 import IntegrityError
 from typing import List
 
-from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
+from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form, UploadFile, File
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from pydantic_core import PydanticCustomError
@@ -372,3 +372,167 @@ async def delete_team_route(
     delete_team(team, db)
 
     return RedirectResponse("/", status_code=303)
+
+
+@router.post("/{team_id}/import")
+async def import_legacy_games(
+    request: Request,
+    team_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    import json
+    from datetime import datetime, timedelta
+    import secrets
+    from backend.db.models.game import Game
+    from backend.db.models.buy_in import BuyIn
+    from backend.db.models.cash_out import CashOut
+    from backend.db.models.user_game import UserGame
+    from backend.db.models.user_team import UserTeam
+    from backend.core.hashing import Hasher
+    from backend.db.repository.team import create_new_user
+
+    uploaded_file = file
+    
+    if not uploaded_file:
+         raise HTTPException(status_code=400, detail="No file uploaded")
+         
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Group not found")
+        
+    if team.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        content = await uploaded_file.read()
+        data = json.loads(content)
+        
+        if not isinstance(data, list):
+             raise ValueError("JSON must be a list of game objects")
+             
+        # Cache existing team users for lookup
+        # Nickname matching is case-sensitive or insensitive? Let's do sensitive for now or match closely.
+        # User defined nick might vary.
+        team_users_map = {u.nick: u for u in team.users}
+        
+        imported_count = 0
+        skipped_count = 0
+        
+        for g_data in data:
+            # 1. Parse Date/Time
+            start_str = g_data.get("start_time") # "YYYY-MM-DD HH:MM"
+            finish_str = g_data.get("finish_time") # "YYYY-MM-DD HH:MM"
+            
+            dt_start = datetime.strptime(start_str, "%Y-%m-%d %H:%M")
+            dt_finish = datetime.strptime(finish_str, "%Y-%m-%d %H:%M")
+            g_date = dt_start.date()
+                
+            # 2. Check Duplicates
+            # Check if game exists with same team, same start time (approx)
+            exists = db.query(Game).filter(
+                Game.team_id == team.id,
+                Game.start_time == dt_start
+            ).first()
+            
+            if exists:
+                skipped_count += 1
+                continue
+                
+            # 3. Create Game
+            new_game = Game(
+                date=g_date,
+                start_time=dt_start,
+                finish_time=dt_finish,
+                default_buy_in=0,
+                running=False,
+                owner_id=team.owner_id,
+                team_id=team.id
+            )
+            db.add(new_game)
+            db.commit()
+            db.refresh(new_game)
+            
+            # 4. Process Players
+            players_list = g_data.get("players", [])
+            for p_data in players_list:
+                nick = p_data.get("nick")
+                buy_in_amt = float(p_data.get("buy_in", 0))
+                cash_out_amt = float(p_data.get("cash_out", 0))
+                
+                # Find User
+                player_user = team_users_map.get(nick)
+                
+                if not player_user:
+                    # Try finding global user by nick? Risky. 
+                    # Create Guest User
+                    random_suffix = secrets.token_hex(4)
+                    new_email = f"{nick.lower().replace(' ', '_')}_{random_suffix}@imported.legacy"
+                    
+                    # Create user
+                    player_user = User(
+                        email=new_email,
+                        nick=nick,
+                        hashed_password=Hasher.get_password_hash("guest_imported"),
+                        is_active=True
+                    )
+                    db.add(player_user)
+                    db.commit()
+                    db.refresh(player_user)
+                    
+                    # Add to Team
+                    ut = UserTeam(
+                        user_id=player_user.id,
+                        team_id=team.id,
+                        status=PlayerRequestStatus.APPROVED
+                    )
+                    db.add(ut)
+                    db.commit()
+                    
+                    # Update cache
+                    team_users_map[nick] = player_user
+                
+                # Add to Game
+                ug = UserGame(user_id=player_user.id, game_id=new_game.id)
+                db.add(ug)
+                
+                # Stats
+                if buy_in_amt > 0:
+                    bi = BuyIn(
+                        amount=buy_in_amt,
+                        user_id=player_user.id,
+                        game_id=new_game.id,
+                        time=dt_start
+                    )
+                    db.add(bi)
+                    
+                if cash_out_amt > 0: # Even if 0, record it? Usually yes, if played.
+                    co = CashOut(
+                        amount=cash_out_amt,
+                        user_id=player_user.id,
+                        game_id=new_game.id,
+                        time=dt_finish,
+                        status=PlayerRequestStatus.APPROVED
+                    )
+                    db.add(co)
+                elif buy_in_amt > 0:
+                    # If they bought in but no cashout record, assuming 0 cashout (lost everything)
+                    co = CashOut(
+                        amount=0,
+                        user_id=player_user.id,
+                        game_id=new_game.id,
+                        time=dt_finish,
+                        status=PlayerRequestStatus.APPROVED
+                    )
+                    db.add(co)
+
+            db.commit()
+            imported_count += 1
+            
+        msg = f"Imported {imported_count} games. Skipped {skipped_count} duplicates."
+        return RedirectResponse(f"/team/{team_id}?msg={msg}", status_code=303)
+        
+    except Exception as e:
+        # Check if json error
+        return RedirectResponse(f"/team/{team_id}?errors=Import failed: {str(e)}", status_code=303)

@@ -31,7 +31,7 @@ def get_db():
     finally:
         db.close()
 
-def parse_legacy_file(filepath: str, max_row: int = 706):
+def parse_legacy_file(filepath: str):
     import pandas as pd
     import re
     from datetime import timedelta
@@ -76,10 +76,14 @@ def parse_legacy_file(filepath: str, max_row: int = 706):
     # e.g. B1="data", C1="", D1="Radek"...
     start_col = header_col_idx + 2
     
-    for c in range(start_col, len(header_row) - 2):  # -2 to skip "bilans" and "ilosc osob"
+    for c in range(start_col, len(header_row)):
         val = header_row[c]
         if pd.notna(val) and str(val).strip():
              nick = str(val).strip()
+             # Skip statistics columns
+             if nick.lower() in ['bilans', 'ilość osób', 'ilosc osob']:
+                 continue
+                 
              players.append(nick)
              player_indices[c] = nick
              
@@ -90,7 +94,7 @@ def parse_legacy_file(filepath: str, max_row: int = 706):
     num_rows = len(df)
     current_idx = header_row_idx + 1
     
-    while current_idx < num_rows and current_idx <= max_row:
+    while current_idx < num_rows:
         row = df.iloc[current_idx]
         
         # Check column at header_col_idx - 1 for Game Index (Number)
@@ -111,9 +115,9 @@ def parse_legacy_file(filepath: str, max_row: int = 706):
             pass
             
         if not is_game_start:
-            # Skip footer/stats rows
-            current_idx += 1
-            continue
+            # Found end of data (statistics or empty)
+            print(f"Stopping analysis at row {current_idx} (found non-numeric index '{idx_val}').")
+            break
             
         # This is a game row (Buy In row)
         # Next row should be Balance/Profit row
@@ -127,13 +131,14 @@ def parse_legacy_file(filepath: str, max_row: int = 706):
         # "Radek śr16.06.2021"
         game_info_raw = str(row_buyin[header_col_idx])
         
-        date_match = re.search(r'(\d{2}\.\d{2}\.\d{4})', game_info_raw)
+        # Date regex: allow 1 or 2 digits for day/month, and tolerate multiple dots (typo "..")
+        date_match = re.search(r'(\d{1,2}\.+\d{1,2}\.+\d{4})', game_info_raw)
         if not date_match:
             print(f"Skipping row {current_idx}, no date found in '{game_info_raw}'")
             current_idx += 1
             continue
             
-        date_str = date_match.group(1)
+        date_str = date_match.group(1).replace("..", ".")
         try:
             dt = datetime.strptime(date_str, "%d.%m.%Y")
         except ValueError:
@@ -226,7 +231,7 @@ def get_or_create_team(db: Session, user: User, team_name: str) -> Team:
     new_team = create_new_team(TeamCreate(name=team_name, search_code=code), user, db)
     return new_team
 
-def run_import(file_path: str, admin_nick: str, admin_email: str, team_name: str, max_row: int):
+def run_import(file_path: str, admin_nick: str, admin_email: str, team_name: str):
     db = SessionLocal()
     
     # 1. Get/Create Admin User
@@ -240,7 +245,7 @@ def run_import(file_path: str, admin_nick: str, admin_email: str, team_name: str
         print(f"Error: File not found at {file_path}")
         return
 
-    players_list, games_records = parse_legacy_file(file_path, max_row)
+    players_list, games_records = parse_legacy_file(file_path)
     print(f"Parsed {len(games_records)} games from file.")
 
     # 4. Map Users
@@ -358,8 +363,8 @@ if __name__ == "__main__":
     parser.add_argument("--email", required=True, help="Admin user email")
     parser.add_argument("--team", required=True, help="Team name to import games into")
     
-    parser.add_argument("--max-row", type=int, default=706, help="Stop analysis at this row number (default: 706)")
+    # parser.add_argument("--max-row", type=int, default=706, help="Stop analysis at this row number (default: 706)")
     
     args = parser.parse_args()
     
-    run_import(args.file, args.nick, args.email, args.team, args.max_row)
+    run_import(args.file, args.nick, args.email, args.team)
