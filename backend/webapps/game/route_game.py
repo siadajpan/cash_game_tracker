@@ -191,16 +191,34 @@ async def view_past_games(
     past_games.sort(key=lambda x: x.date, reverse=True)
 
     # Prepare data for template
-    games_info = []
+    games_data = []
     for game in past_games:
-        players_info = []
+        total_pot = 0.0
+        my_balance = 0.0
+        
         for player in game.players:
-            balance = get_user_game_balance(player, game, db)
-            players_info.append({"player": player, "balance": balance})
-        games_info.append({"game": game, "players_info": players_info})
+            # Calculate total money in for this player (Buy-in + Approved Add-ons)
+            p_buy_in = get_player_game_total_buy_in_amount(player, game, db)
+            p_add_ons = get_player_game_addons(player, game, db)
+            p_money_in = p_buy_in + sum(
+                a.amount for a in p_add_ons if a.status == PlayerRequestStatus.APPROVED
+            )
+            total_pot += p_money_in
+
+            # If this is the current user, get their balance
+            if player.id == user.id:
+                my_balance = get_user_game_balance(player, game, db)
+
+        games_data.append({
+            "id": game.id,
+            "date": game.date,
+            "players_count": len(game.players),
+            "total_pot": total_pot,
+            "my_balance": my_balance
+        })
 
     return templates.TemplateResponse(
-        "game/view_past.html", {"request": request, "games_info": games_info}
+        "game/view_past.html", {"request": request, "games_data": games_data}
     )
 
 

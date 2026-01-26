@@ -3,32 +3,39 @@
 {% block page_heading %}Past Games{% endblock %}
 
 {% block content %}
-<div style="max-height: calc(100vh - 215px); overflow-y: auto; overflow-x: hidden;">
-    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
-        {% for game_info in games_info %}
-        <div class="col">
-            <a href="/game/{{ game_info.game.id }}" class="text-decoration-none">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ game_info.game.date }}</h5>
-                        <ul class="list-unstyled mb-0">
-                            {% for info in game_info.players_info %}
-                            <li class="d-flex justify-content-between">
-                                <span class="{% if info.player.id == game_info.game.owner_id %}fw-bold{% endif %}">
-                                    {{ info.player.nick }}
-                                </span>
-                                <span class="{% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                                    {{ info.balance }}
-                                </span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </a>
-        </div>
-        {% endfor %}
-    </div>
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Date</th>
+                <th class="text-center">Players</th>
+                <th class="text-end">Total Pot</th>
+                <th class="text-end">My Balance</th>
+                <th></th> <!-- Action arrow or similar -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for game in games_data %}
+            <tr onclick="window.location='/game/{{ game.id }}';" style="cursor: pointer;">
+                <td>{{ game.date }}</td>
+                <td class="text-center">{{ game.players_count }}</td>
+                <td class="text-end">{{ "%.2f"|format(game.total_pot) }}</td>
+                <td class="text-end {% if game.my_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ "%.2f"|format(game.my_balance) }}
+                </td>
+                <td class="text-end">
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                    No past games found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 <div class="d-flex mt-3">
