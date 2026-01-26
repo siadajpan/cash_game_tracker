@@ -1,0 +1,4 @@
+/* Custom Blue Hover for Tables */
+.table-hover-custom tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05); /* Bootstrap primary blue with low opacity */
+}
