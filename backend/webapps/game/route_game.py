@@ -174,21 +174,20 @@ async def create_game(
 @router.get("/view_past", name="view_past")
 async def view_past_games(
     request: Request,
+    limit: int = 20,
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
+    from backend.db.repository.game import get_user_past_games, get_user_past_games_count
+    
     if not user:
         return RedirectResponse(url="/login")
 
-    # Collect all past games from all user's teams
-    past_games = []
-    for team in user.teams:
-        for game in team.games:
-            if not game.running:
-                past_games.append(game)
+    # Get total count for UI
+    total_count = get_user_past_games_count(user, db)
 
-    # Sort by date descending
-    past_games.sort(key=lambda x: x.date, reverse=True)
+    # Get limited past games
+    past_games = get_user_past_games(user, db, limit=limit)
 
     # Prepare data for template
     games_data = []
@@ -218,7 +217,14 @@ async def view_past_games(
         })
 
     return templates.TemplateResponse(
-        "game/view_past.html", {"request": request, "games_data": games_data}
+        "game/view_past.html", 
+        {
+            "request": request, 
+            "games_data": games_data,
+            "games_count": total_count,
+            "visible_count": len(games_data),
+            "limit": limit
+        }
     )
 
 

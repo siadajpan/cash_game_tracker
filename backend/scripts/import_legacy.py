@@ -76,7 +76,7 @@ def parse_legacy_file(filepath: str, max_row: int = 706):
     # e.g. B1="data", C1="", D1="Radek"...
     start_col = header_col_idx + 2
     
-    for c in range(start_col, len(header_row)):
+    for c in range(start_col, len(header_row) - 2):  # -2 to skip "bilans" and "ilosc osob"
         val = header_row[c]
         if pd.notna(val) and str(val).strip():
              nick = str(val).strip()

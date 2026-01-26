@@ -208,16 +208,22 @@ async def team_view(
     if not team:
         return {"error": "Group not found"}
 
+    from backend.db.repository.team import get_team_player_stats_bulk
+    
     join_requests = get_team_join_requests(team, db)
     players_info = []
+    
+    # helper for bulk fetch
+    bulk_stats = get_team_player_stats_bulk(team.id, db)
+    
     for player in get_team_approved_players(team, db):
-        games_count = get_user_team_games_count(player, team.id, db)
-        total_balance = get_user_team_balance(player, team.id, db)
+        p_stats = bulk_stats.get(player.id, {"games_count": 0, "total_balance": 0.0})
+        
         players_info.append(
             {
                 "player": player,
-                "games_count": games_count,
-                "total_balance": total_balance,
+                "games_count": p_stats["games_count"],
+                "total_balance": p_stats["total_balance"],
             }
         )
 
@@ -241,6 +247,8 @@ async def player_stats(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
+    from backend.db.repository.game import get_player_games_stats_bulk
+    
     team = get_team_by_id(team_id, db)
     if not team:
         return RedirectResponse("/")
@@ -253,37 +261,27 @@ async def player_stats(
     if not player:
         return RedirectResponse(f"/team/{team_id}")
 
-    # Get games for this player IN THIS TEAM
-    team_games = get_user_team_games(player, team_id, db)
-    # Sort descending
-    team_games.sort(key=lambda x: x.date, reverse=True)
+    # Get games for this player IN THIS TEAM, ALL of them
+    team_games = get_user_team_games(player, team_id, db, limit=None)
+    
+    # Bulk fetch stats
+    bulk_stats = get_player_games_stats_bulk(player.id, team.id, db)
 
     games_history = []
     total_seconds_played = 0
 
     for game in team_games:
-        balance = get_user_game_balance(player, game, db)
+        stats = bulk_stats.get(game.id, {"balance": 0.0, "total_pot": 0.0, "players_count": 0})
         
-        # Calculate Total Pot
-        total_pot = 0.0
-        for p in game.players:
-            p_buy_in = get_player_game_total_buy_in_amount(p, game, db)
-            p_add_ons = get_player_game_addons(p, game, db)
-            p_money_in = p_buy_in + sum(
-                a.amount for a in p_add_ons if a.status == PlayerRequestStatus.APPROVED
-            )
-            total_pot += p_money_in
-
         games_history.append({
             "game": game, 
-            "balance": balance,
-            "total_pot": total_pot,
-            "players_count": len(game.players)
+            "balance": stats["balance"],
+            "total_pot": stats["total_pot"],
+            "players_count": stats["players_count"]
         })
         
         # Calculate duration if times are available
         if game.start_time and game.finish_time:
-             # Make sure to handle potential negative durations if data is bad, though unlikely
             duration = (game.finish_time - game.start_time).total_seconds()
             if duration > 0:
                 total_seconds_played += duration
@@ -305,6 +303,7 @@ async def player_stats(
             "games_history": games_history,
             "total_balance": total_balance,
             "games_count": len(games_history),
+            "visible_count": len(games_history),
             "winrate": winrate,
             "is_owner": user.id == team.owner_id,
         },

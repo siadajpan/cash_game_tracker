@@ -77,8 +77,15 @@ def join_team(team_model: Team, user, db: Session) -> Team:
 
 def remove_user_from_team(team: Team, user: User, db: Session):
     """
-    Removes a user from a team.
+    Removes a user from a team and removes their history (games, buyins) from that team's games.
     """
+    from backend.db.models.user_game import UserGame
+    from backend.db.models.buy_in import BuyIn
+    from backend.db.models.add_on import AddOn
+    from backend.db.models.cash_out import CashOut
+    from backend.db.models.game import Game
+
+    # 1. Remove UserTeam association (Member of team)
     association = (
         db.query(UserTeam)
         .filter(UserTeam.team_id == team.id, UserTeam.user_id == user.id)
@@ -86,7 +93,34 @@ def remove_user_from_team(team: Team, user: User, db: Session):
     )
     if association:
         db.delete(association)
-        db.commit()
+
+    # 2. Get IDs of games belonging to this team
+    # (We can do bulk delete with WHERE IN subquery or similar)
+    team_game_ids = db.query(Game.id).filter(Game.team_id == team.id)
+    
+    # 3. Remove UserGame associations (Player in specific games)
+    db.query(UserGame).filter(
+        UserGame.user_id == user.id, 
+        UserGame.game_id.in_(team_game_ids)
+    ).delete(synchronize_session=False)
+
+    # 4. Remove Financials (BuyIn, AddOn, CashOut)
+    db.query(BuyIn).filter(
+        BuyIn.user_id == user.id,
+        BuyIn.game_id.in_(team_game_ids)
+    ).delete(synchronize_session=False)
+    
+    db.query(AddOn).filter(
+        AddOn.user_id == user.id,
+        AddOn.game_id.in_(team_game_ids)
+    ).delete(synchronize_session=False)
+
+    db.query(CashOut).filter(
+        CashOut.user_id == user.id,
+        CashOut.game_id.in_(team_game_ids)
+    ).delete(synchronize_session=False)
+
+    db.commit()
 
 
 def get_team_by_name(team_name, db: Session):
@@ -238,3 +272,83 @@ def delete_team(team: Team, db: Session):
     """
     db.delete(team)
     db.commit()
+
+
+from sqlalchemy import func
+from backend.db.models.buy_in import BuyIn
+from backend.db.models.cash_out import CashOut
+from backend.db.models.add_on import AddOn
+from backend.db.models.user_game import UserGame
+
+
+def get_team_player_stats_bulk(team_id: int, db: Session) -> Dict[int, Dict]:
+    """
+    Returns a dictionary mapping user_id to their stats in the team:
+    {
+        user_id: {
+            "games_count": int,
+            "total_balance": float
+        }
+    }
+    Optimized to use aggregation queries instead of N+1 loops.
+    """
+    stats = defaultdict(lambda: {"games_count": 0, "total_balance": 0.0})
+    
+    # 1. Games Count
+    # SELECT user_id, count(*) FROM user_game JOIN game ON ... WHERE team_id = ? GROUP BY user_id
+    games_counts = (
+        db.query(UserGame.user_id, func.count(UserGame.game_id))
+        .join(Game, UserGame.game_id == Game.id)
+        .filter(Game.team_id == team_id)
+        .group_by(UserGame.user_id)
+        .all()
+    )
+    for uid, count in games_counts:
+        stats[uid]["games_count"] = count
+
+    # 2. Buy Ins Sum
+    buy_ins = (
+        db.query(BuyIn.user_id, func.sum(BuyIn.amount))
+        .join(Game, BuyIn.game_id == Game.id)
+        .filter(Game.team_id == team_id)
+        .group_by(BuyIn.user_id)
+        .all()
+    )
+    money_in = defaultdict(float)
+    for uid, total in buy_ins:
+        if total:
+            money_in[uid] += total
+
+    # 3. Add Ons Sum (Approved only)
+    add_ons = (
+        db.query(AddOn.user_id, func.sum(AddOn.amount))
+        .join(Game, AddOn.game_id == Game.id)
+        .filter(Game.team_id == team_id, AddOn.status == PlayerRequestStatus.APPROVED)
+        .group_by(AddOn.user_id)
+        .all()
+    )
+    for uid, total in add_ons:
+        if total:
+            money_in[uid] += total
+
+    # 4. Cash Outs Sum (Approved only)
+    cash_outs = (
+        db.query(CashOut.user_id, func.sum(CashOut.amount))
+        .join(Game, CashOut.game_id == Game.id)
+        .filter(Game.team_id == team_id, CashOut.status == PlayerRequestStatus.APPROVED)
+        .group_by(CashOut.user_id)
+        .all()
+    )
+    money_out = defaultdict(float)
+    for uid, total in cash_outs:
+        if total:
+            money_out[uid] += total
+            
+    # Calculate Balance
+    # We iterate over all keys found in any result to ensure coverage
+    all_users = set(stats.keys()) | set(money_in.keys()) | set(money_out.keys())
+    
+    for uid in all_users:
+        stats[uid]["total_balance"] = money_out[uid] - money_in[uid]
+        
+    return stats
