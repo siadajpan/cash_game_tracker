@@ -8,10 +8,38 @@
         <table class="table table-hover table-hover-custom align-middle mb-0">
             <thead class="sticky-top bg-white border-bottom">
                 <tr>
-                    <th scope="col" class="py-2 border-0">Date</th>
-                    <th scope="col" class="py-2 text-center border-0">Players</th>
-                    <th scope="col" class="py-2 text-end border-0">Total Pot</th>
-                    <th scope="col" class="py-2 text-end border-0">My Balance</th>
+                    <th scope="col" class="py-2 border-0">
+                        <a href="?sort=date&order={% if sort_by == 'date' and order == 'desc' %}asc{% else %}desc{% endif %}&limit={{ limit }}" class="text-dark text-decoration-none">
+                            Date
+                            {% if sort_by == 'date' %}
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill small"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th scope="col" class="py-2 text-center border-0">
+                        <a href="?sort=players&order={% if sort_by == 'players' and order == 'desc' %}asc{% else %}desc{% endif %}&limit={{ limit }}" class="text-dark text-decoration-none">
+                            Players
+                            {% if sort_by == 'players' %}
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill small"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th scope="col" class="py-2 text-end border-0">
+                        <a href="?sort=pot&order={% if sort_by == 'pot' and order == 'desc' %}asc{% else %}desc{% endif %}&limit={{ limit }}" class="text-dark text-decoration-none">
+                            Total Pot
+                            {% if sort_by == 'pot' %}
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill small"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th scope="col" class="py-2 text-end border-0">
+                        <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}&limit={{ limit }}" class="text-dark text-decoration-none">
+                            My Balance
+                            {% if sort_by == 'balance' %}
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill small"></i>
+                            {% endif %}
+                        </a>
+                    </th>
                     <th scope="col" class="py-2 border-0"></th>
                 </tr>
             </thead>
@@ -46,7 +74,7 @@
         {% if visible_count < games_count %}
         <div>
             <span class="text-muted me-2 small">Showing {{ visible_count }} of {{ games_count }} games</span>
-            <a href="?limit=10000" class="btn btn-link pe-0">Show All</a>
+            <a href="?limit=10000&sort={{ sort_by }}&order={{ order }}" class="btn btn-link pe-0">Show All</a>
         </div>
         {% endif %}
     </div>

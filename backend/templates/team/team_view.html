@@ -116,9 +116,30 @@
         <table class="table table-hover table-hover-custom align-middle mb-0">
             <thead class="sticky-top bg-white border-bottom">
                 <tr class="text-uppercase text-secondary" style="font-size: 0.75rem; letter-spacing: 0.05em;">
-                    <th scope="col" class="py-2 ps-3 fw-normal border-0">Player</th>
-                    <th scope="col" class="py-2 text-center fw-normal border-0">Games</th>
-                    <th scope="col" class="py-2 text-end pe-3 fw-normal border-0">Balance</th>
+                    <th scope="col" class="py-2 ps-3 fw-normal border-0">
+                        <a href="?sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}" class="text-secondary text-decoration-none d-block">
+                            Player
+                            {% if sort_by == 'player' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th scope="col" class="py-2 text-center fw-normal border-0">
+                        <a href="?sort=games_count&order={% if sort_by == 'games_count' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
+                            Games
+                            {% if sort_by == 'games_count' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th scope="col" class="py-2 text-end pe-3 fw-normal border-0">
+                        <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
+                            Balance
+                            {% if sort_by == 'balance' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
                     <th scope="col" class="py-2 border-0"></th>
                 </tr>
             </thead>

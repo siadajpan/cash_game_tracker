@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from sqlite3 import IntegrityError
 from typing import List
 
@@ -225,6 +226,8 @@ async def accept_all_join_requests(
 async def team_view(
     request: Request,
     team_id: int,
+    sort: str = "games_count",
+    order: str = "desc",
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -251,6 +254,19 @@ async def team_view(
             }
         )
 
+    # Sorting
+    reverse_order = (order == "desc")
+    
+    if sort == "player":
+        players_info.sort(key=lambda x: x["player"].nick.lower(), reverse=reverse_order)
+    elif sort == "games_count":
+        players_info.sort(key=lambda x: x["games_count"], reverse=reverse_order)
+    elif sort == "balance":
+        players_info.sort(key=lambda x: x["total_balance"], reverse=reverse_order)
+    else:
+        # Default
+        players_info.sort(key=lambda x: x["games_count"], reverse=True)
+
     return templates.TemplateResponse(
         "team/team_view.html",
         {
@@ -259,6 +275,8 @@ async def team_view(
             "team": team,
             "join_requests": join_requests,
             "players_info": players_info,
+            "sort_by": sort,
+            "order": order,
         },
     )
 
@@ -268,6 +286,8 @@ async def player_stats(
     request: Request,
     team_id: int,
     player_id: int,
+    sort: str = "date",
+    order: str = "desc",
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -318,6 +338,20 @@ async def player_stats(
     if hours_played > 0:
         winrate = total_balance / hours_played
 
+    today = datetime.now().date() 
+    # Sorting
+    reverse_order = (order == "desc")
+    
+    if sort == "date":
+        games_history.sort(key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()), reverse=reverse_order)
+    elif sort == "balance":
+        games_history.sort(key=lambda x: x["balance"], reverse=reverse_order)
+    elif sort == "pot":
+        games_history.sort(key=lambda x: x["total_pot"], reverse=reverse_order)
+    else:
+        # Default
+        games_history.sort(key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()), reverse=True)
+
     return templates.TemplateResponse(
         "team/player_stats.html",
         {
@@ -330,6 +364,8 @@ async def player_stats(
             "visible_count": len(games_history),
             "winrate": winrate,
             "is_owner": user.id == team.owner_id,
+            "sort_by": sort,
+            "order": order,
         },
     )
 

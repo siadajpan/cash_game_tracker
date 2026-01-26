@@ -174,56 +174,62 @@ async def create_game(
 @router.get("/view_past", name="view_past")
 async def view_past_games(
     request: Request,
-    limit: int = 20,
+    limit: int = 10000,
+    sort: str = "date",
+    order: str = "desc",
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    from backend.db.repository.game import get_user_past_games, get_user_past_games_count
+    from backend.db.repository.game import get_user_past_games, get_user_past_games_stats_bulk
     
     if not user:
         return RedirectResponse(url="/login")
 
-    # Get total count for UI
-    total_count = get_user_past_games_count(user, db)
+    # Get all games to allow sorting by computed fields
+    past_games = get_user_past_games(user, db, limit=None) 
+    total_count = len(past_games)
+    
+    game_ids = [g.id for g in past_games]
+    bulk_stats = get_user_past_games_stats_bulk(user.id, game_ids, db)
 
-    # Get limited past games
-    past_games = get_user_past_games(user, db, limit=limit)
-
-    # Prepare data for template
     games_data = []
     for game in past_games:
-        total_pot = 0.0
-        my_balance = 0.0
-        
-        for player in game.players:
-            # Calculate total money in for this player (Buy-in + Approved Add-ons)
-            p_buy_in = get_player_game_total_buy_in_amount(player, game, db)
-            p_add_ons = get_player_game_addons(player, game, db)
-            p_money_in = p_buy_in + sum(
-                a.amount for a in p_add_ons if a.status == PlayerRequestStatus.APPROVED
-            )
-            total_pot += p_money_in
-
-            # If this is the current user, get their balance
-            if player.id == user.id:
-                my_balance = get_user_game_balance(player, game, db)
-
+        s = bulk_stats.get(game.id, {"total_pot": 0.0, "my_balance": 0.0, "players_count": 0})
         games_data.append({
             "id": game.id,
             "date": game.date,
-            "players_count": len(game.players),
-            "total_pot": total_pot,
-            "my_balance": my_balance
+            "start_time": game.start_time,
+            "players_count": s["players_count"],
+            "total_pot": s["total_pot"],
+            "my_balance": s["my_balance"]
         })
+
+    # Sorting
+    reverse = (order == "desc")
+    if sort == "date":
+         games_data.sort(key=lambda x: (x["date"], x["start_time"] or datetime.min.time()), reverse=reverse)
+    elif sort == "players":
+         games_data.sort(key=lambda x: x["players_count"], reverse=reverse)
+    elif sort == "pot":
+         games_data.sort(key=lambda x: x["total_pot"], reverse=reverse)
+    elif sort == "balance":
+         games_data.sort(key=lambda x: x["my_balance"], reverse=reverse)
+    else:
+         games_data.sort(key=lambda x: (x["date"], x["start_time"] or datetime.min.time()), reverse=True)
+
+    # Slicing
+    visible_games = games_data[:limit]
 
     return templates.TemplateResponse(
         "game/view_past.html", 
         {
             "request": request, 
-            "games_data": games_data,
+            "games_data": visible_games,
             "games_count": total_count,
-            "visible_count": len(games_data),
-            "limit": limit
+            "visible_count": len(visible_games),
+            "limit": limit,
+            "sort_by": sort,
+            "order": order,
         }
     )
 
@@ -356,10 +362,25 @@ def process_player(
     }
 
 
+def sort_players_game_info(players_info, sort, order):
+    reverse = (order == "desc")
+    if sort == "player":
+        players_info.sort(key=lambda x: x["player"].nick.lower(), reverse=reverse)
+    elif sort == "buy_in":
+        players_info.sort(key=lambda x: x["money_in"], reverse=reverse)
+    elif sort == "cash_out":
+        players_info.sort(key=lambda x: (x["money_out"] or 0), reverse=reverse)
+    # Default is balance
+    else:
+        players_info.sort(key=lambda x: x["balance"], reverse=reverse)
+
+
 @router.get("/{game_id}", name="open_game")
 async def open_game(
     request: Request,
     game_id: int,
+    sort: str = "balance",
+    order: str = "desc",
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
@@ -381,6 +402,9 @@ async def open_game(
         players_info.append(players_game_info)
         if players_game_info["request"] is not None:
             existing_requests = True
+            
+    sort_players_game_info(players_info, sort, order)
+            
     invite_link = None
     if game.running:
         try:
@@ -413,6 +437,8 @@ async def open_game(
             "players_info": players_info,
             "requests": existing_requests,
             "invite_link": invite_link,
+            "sort_by": sort,
+            "order": order,
         },
     )
 
@@ -421,6 +447,8 @@ async def open_game(
 async def get_game_table(
     request: Request,
     game_id: int,
+    sort: str = "balance",
+    order: str = "desc",
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
@@ -442,6 +470,8 @@ async def get_game_table(
         players_info.append(players_game_info)
         if players_game_info["request"] is not None:
             existing_requests = True
+            
+    sort_players_game_info(players_info, sort, order)
 
     return templates.TemplateResponse(
         "components/players_table.html",
@@ -451,6 +481,8 @@ async def get_game_table(
             "user": user,
             "players_info": players_info,
             "requests": existing_requests,
+            "sort_by": sort,
+            "order": order,
         },
     )
 

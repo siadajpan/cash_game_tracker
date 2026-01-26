@@ -82,10 +82,31 @@
         <table class="table table-hover table-hover-custom align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-3 border-bottom-0 py-2">Date</th>
+                    <th class="ps-3 border-bottom-0 py-2">
+                        <a href="?sort=date&order={% if sort_by == 'date' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                            Date
+                            {% if sort_by == 'date' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
                     <th class="text-center border-bottom-0 py-2">Players</th>
-                    <th class="text-end border-bottom-0 py-2">Total Pot</th>
-                    <th class="text-end pe-3 border-bottom-0 py-2">Balance</th>
+                    <th class="text-end border-bottom-0 py-2">
+                        <a href="?sort=pot&order={% if sort_by == 'pot' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                            Total Pot
+                            {% if sort_by == 'pot' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="text-end pe-3 border-bottom-0 py-2">
+                        <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                            Balance
+                            {% if sort_by == 'balance' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
                     <th class="border-bottom-0 py-2"></th>
                 </tr>
             </thead>
