@@ -27,12 +27,131 @@
     {% endif %}
 </div>
 {% endif %}
-<!-- Footer buttons -->
-<div class="d-flex justify-content-between mt-3">
-    <a href="/game/{{ game.id }}" class="btn btn-outline-secondary px-4">Back</a>
-
     <form method="POST" action="/game/{{ game.id }}/finish">
+        <!-- Finish Time (Split) -->
+        <div class="row mb-3">
+            <div class="col-6">
+                <input
+                    type="text"
+                    required
+                    class="form-control"
+                    id="date_part"
+                    placeholder="dd/mm/yyyy"
+                />
+                <label for="date_part">Finish Date</label>
+            </div>
+            <div class="col-6">
+                <div class="form-floating">
+                    <select id="time_part" class="form-select" required aria-label="Finish Time">
+                    <!-- Options populated by JS -->
+                    </select>
+                    <label for="time_part">Finish Time</label>
+                </div>
+            </div>
+        </div>
+
+        <input
+            type="hidden"
+            name="finish_time"
+            id="final_finish_time"
+        />
+    <div class="d-flex justify-content-between mt-3">
+        <a href="/game/{{ game.id }}" class="btn btn-outline-secondary px-4">Back</a>
         <button type="submit" class="btn btn-primary px-5">Finish Game</button>
+    </div>
     </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Time Picker Logic ---
+    const datePart = document.getElementById('date_part');
+    const timePart = document.getElementById('time_part');
+    const finalInput = document.getElementById('final_finish_time');
+    
+    // Init Gijgo Datepicker
+    let datePicker;
+    $(document).ready(function() {
+         datePicker = $('#date_part').datepicker({
+            format: 'dd/mm/yyyy',
+            uiLibrary: 'bootstrap5'
+         });
+         
+         // Fix for floating label with Gijgo
+         const $wrapper = $('#date_part').closest('.gj-datepicker');
+         if ($wrapper.length) {
+             $wrapper.addClass('form-floating');
+             $('label[for="date_part"]').insertAfter('#date_part');
+         }
+
+         // Gijgo changes triggers
+         datePicker.on('change', updateFinalInput);
+         
+         // Init Logic
+         if (datePart && timePart && finalInput) {
+             initDateTime();
+             timePart.addEventListener('change', updateFinalInput);
+         }
+    });
+
+    function populateTimeDropdown() {
+        timePart.innerHTML = '';
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 15) {
+                const hour = h.toString().padStart(2, '0');
+                const minute = m.toString().padStart(2, '0');
+                const timeVal = `${hour}:${minute}`;
+                
+                const option = document.createElement('option');
+                option.value = timeVal;
+                option.textContent = timeVal;
+                timePart.appendChild(option);
+            }
+        }
+    }
+
+    function initDateTime() {
+        populateTimeDropdown();
+        
+        // Default to now
+        const now = new Date();
+        
+        // Date part
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        
+        // Set Gijgo value dd/mm/yyyy
+        if (datePicker) {
+            datePicker.value(`${day}/${month}/${year}`);
+        }
+
+        // Time part - round to nearest 15 mins
+        let m = now.getMinutes();
+        m = Math.floor(m / 15) * 15;
+        const h = now.getHours().toString().padStart(2, '0');
+        const mStr = m.toString().padStart(2, '0');
+        timePart.value = `${h}:${mStr}`;
+        
+        updateFinalInput();
+    }
+
+    function updateFinalInput() {
+        // datePart value is dd/mm/yyyy
+        const dateVal = $('#date_part').val();
+        const timeVal = timePart.value;
+        
+        if (dateVal && timeVal) {
+             const parts = dateVal.split('/');
+             if (parts.length === 3) {
+                  // Reconstruct to YYYY-MM-DD
+                  const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                  finalInput.value = `${isoDate}T${timeVal}`;
+             }
+        }
+    }
+});
+</script>
 {% endblock %}

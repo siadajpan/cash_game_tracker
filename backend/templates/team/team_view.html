@@ -11,39 +11,68 @@
 {% include "team/component_join_request.html" %}
 {% endwith %}
 {% endif %}
-<ul class="list-group list-group-flush mb-3" style="max-height: calc(100vh - 215px); overflow-y: auto; display: block;">
-    <li class="list-group-item d-flex justify-content-between fw-bold sticky-top bg-white">
-        <span class="col-4">Player</span>
-        <span class="col-4 text-center">Games Played</span>
-        <span class="col-4 text-end">Total Balance</span>
-    </li>
+<div id="team-view-container" class="d-flex flex-column" style="max-height: 60vh;">
+    <div class="table-responsive overflow-auto" style="min-height: 0;">
+        <table class="table table-hover table-hover-custom align-middle mb-0">
+            <thead class="sticky-top bg-white border-bottom">
+                <tr class="text-uppercase text-secondary" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                    <th scope="col" class="py-2 ps-3 fw-normal border-0">Player</th>
+                    <th scope="col" class="py-2 text-center fw-normal border-0">Games</th>
+                    <th scope="col" class="py-2 text-end pe-3 fw-normal border-0">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for info in players_info %}
+                <tr class="position-relative">
+                    <td class="ps-3 border-bottom-0 py-2">
+                        <a href="/team/{{ team.id }}/player/{{ info.player.id }}" class="text-decoration-none text-dark fw-semibold stretched-link">
+                            {{ info.player.nick }}
+                        </a>
+                        {% if info.player.id == team.owner_id %}
+                        <span class="badge rounded-pill bg-warning text-dark ms-1 border border-warning bg-opacity-25" style="font-size: 0.6em; vertical-align: text-top;">OWNER</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center border-bottom-0 py-2 text-secondary">{{ info.games_count }}</td>
+                    <td class="text-end pe-3 border-bottom-0 py-2">
+                        <span class="fw-medium {% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                            {% if info.total_balance % 1 %}
+                            {{ "%.2f"|format(info.total_balance) }}
+                            {% else %}
+                            {{ info.total_balance|int }}
+                            {% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-    {% for info in players_info %}
-    <li class="list-group-item d-flex align-items-center">
-        <div class="col-4">
-            <a href="/team/{{ team.id }}/player/{{ info.player.id }}" class="text-decoration-none text-dark fw-bold">
-                {{ info.player.nick }}
-            </a>
-            {% if info.player.id == team.owner_id %}
-            <span class="badge rounded-pill text-bg-warning ms-1" style="font-size: 0.7em;">Owner</span>
-            {% endif %}
-        </div>
-        <div class="col-4 text-center">{{ info.games_count }}</div>
-        <div class="col-4 d-flex justify-content-end align-items-center">
-            <span class="{% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %} me-2">
-                {% if info.total_balance % 1 %}
-                {{ "%.2f"|format(info.total_balance) }}
-                {% else %}
-                {{ info.total_balance|int }}
-                {% endif %}
-            </span>
-        </div>
-    </li>
-    {% endfor %}
-</ul>
-
-
-<div class="d-flex mt-3">
-    <a href="/?tab=groups" class="btn btn-outline-secondary">Back</a>
+    <div class="mt-3 flex-shrink-0 bg-white pt-2">
+        <a href="/?tab=groups" class="btn btn-outline-secondary">Back</a>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function adjustTeamViewHeight() {
+        const container = document.getElementById('team-view-container');
+        if (!container) return;
+        
+        // Calculate available height: Window height - container top position - bottom margin (20px)
+        const rect = container.getBoundingClientRect();
+        const availableHeight = window.innerHeight - rect.top - 20;
+        
+        // Ensure a reasonable minimum height
+        container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
+    }
+
+    window.addEventListener('resize', adjustTeamViewHeight);
+    window.addEventListener('load', adjustTeamViewHeight);
+    // document.addEventListener('DOMContentLoaded', adjustTeamViewHeight); // redundant with load usually but good safety
+    
+    // Initial call in case DOM is ready
+    adjustTeamViewHeight();
+</script>
 {% endblock %}

@@ -100,7 +100,7 @@ def get_game_cash_out_requests(game: Game, db: Session):
     ]
 
 
-def finish_the_game(user: User, game: Game, db: Session):
+def finish_the_game(user: User, game: Game, db: Session, finish_time: Optional[str] = None):
     """
     Mark a game as finished (running = False). Only the owner can finish the game.
     """
@@ -114,6 +114,17 @@ def finish_the_game(user: User, game: Game, db: Session):
         db.add(request)
 
     game.running = False
+    
+    if finish_time:
+        try:
+             # Expect isoformat or similar
+             from datetime import datetime
+             # Assuming input is like "YYYY-MM-DDTHH:MM"
+             dt_obj = datetime.strptime(finish_time, "%Y-%m-%dT%H:%M")
+             game.finish_time = dt_obj
+        except ValueError:
+            pass # ignore invalid time formats, keep default (or none)
+
     db.add(game)
     db.commit()
     db.refresh(game)

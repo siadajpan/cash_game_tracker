@@ -1,5 +1,5 @@
 from ecdsa.curves import Curve
-from sqlalchemy import Column, ForeignKey, Integer, String, Float, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, String, Float, Boolean, DateTime
 from sqlalchemy.orm import relationship
 
 from backend.db.base_class import Base
@@ -12,6 +12,8 @@ class Game(Base):
     date = Column(
         String, nullable=False
     )  # Consider using Date or DateTime type instead of String
+    start_time = Column(DateTime, nullable=True)
+    finish_time = Column(DateTime, nullable=True)
     default_buy_in = Column(Float, nullable=False)
     running = Column(Boolean, nullable=False)
 
