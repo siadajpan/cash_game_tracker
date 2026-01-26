@@ -15,6 +15,7 @@ from backend.apis.v1.route_login import get_current_user, get_current_user_from_
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.team import Team
+from backend.db.models.game import Game
 from backend.db.models.user import User
 from backend.db.models.user_team import UserTeam
 from backend.db.repository.add_on import get_player_game_addons
@@ -228,12 +229,28 @@ async def team_view(
     team_id: int,
     sort: str = "games_count",
     order: str = "desc",
+    year: str = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
         return {"error": "Group not found"}
+        
+    # Get available years
+    team_games = db.query(Game).filter(Game.team_id == team_id).all()
+    print(f"DEBUG: Found {len(team_games)} games for team {team_id}")
+    all_years = set()
+    for g in team_games:
+        if g.date:
+             all_years.add(int(str(g.date)[:4]))
+    available_years = sorted(list(all_years), reverse=True)
+    print(f"DEBUG: Available years: {available_years}")
+    
+    target_year = None
+    if year and year != "all":
+         try: target_year = int(year)
+         except: pass
 
     from backend.db.repository.team import get_team_player_stats_bulk
     
@@ -241,11 +258,15 @@ async def team_view(
     players_info = []
     
     # helper for bulk fetch
-    bulk_stats = get_team_player_stats_bulk(team.id, db)
+    bulk_stats = get_team_player_stats_bulk(team.id, db, year=target_year)
     
     for player in get_team_approved_players(team, db):
         p_stats = bulk_stats.get(player.id, {"games_count": 0, "total_balance": 0.0})
         
+        # Filter inactive players if Year filter is active
+        if target_year and p_stats["games_count"] == 0:
+            continue
+
         players_info.append(
             {
                 "player": player,
@@ -277,6 +298,8 @@ async def team_view(
             "players_info": players_info,
             "sort_by": sort,
             "order": order,
+            "available_years": available_years,
+            "selected_year": year if year else "all",
         },
     )
 
