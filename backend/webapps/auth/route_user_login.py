@@ -34,37 +34,120 @@ router = APIRouter(include_in_schema=False)
 
 
 @router.get("/forgot-password/")
-async def register_form(request: Request):
-    return templates.TemplateResponse("auth/reset_password.html", {"request": request})
+async def forgot_password_form(request: Request):
+    return templates.TemplateResponse("auth/forgot_password.html", {"request": request})
 
 
 @router.post("/forgot-password/")
-async def register(request: Request, db: Session = Depends(get_db)):
-    form = ResetPasswordForm(request)
-    await form.load_data()
-    if not await form.is_valid():
-        return templates.TemplateResponse("auth/reset_password.html", form.__dict__)
+async def forgot_password(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    form = await request.form()
+    email = form.get("email")
+    
+    user = get_user_by_email(email, db=db)
+    if user:
+        # Generate reset token (15 mins)
+        reset_token_expires = timedelta(minutes=15)
+        reset_token = create_access_token(
+            data={"sub": user.email, "type": "password_reset"},
+            expires_delta=reset_token_expires
+        )
+        
+        from backend.webapps.auth.route_verify import send_reset_password_email
+        background_tasks.add_task(
+            send_reset_password_email, user.email, user.nick, reset_token
+        )
+    
+    # Always return success to prevent email enumeration
+    return templates.TemplateResponse(
+        "auth/forgot_password.html", 
+        {
+            "request": request, 
+            "message": "If an account exists with that email, we have sent a password reset link."
+        }
+    )
 
+
+@router.get("/reset-password")
+async def reset_password_form(request: Request, token: str):
+    from jose import jwt
+    
     try:
-        user = get_user_by_email(form.email, db=db)
-        if user is None:
-            form.errors.append("User with that e-mail doesn't exist.")
-            return templates.TemplateResponse("auth/reset_password.html", form.__dict__)
-        update_user_password(user, form.password, db)
-        response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email = payload.get("sub")
+        type_ = payload.get("type")
+        
+        if not email or type_ != "password_reset":
+             raise ValueError("Invalid token")
+             
+        return templates.TemplateResponse(
+            "auth/reset_password.html", 
+            {"request": request, "email": email, "token": token}
+        )
+        
+    except Exception:
+        return templates.TemplateResponse(
+            "auth/verify_error.html",
+            {
+                "request": request, 
+                "error": "This password reset link is invalid or has expired."
+            }
+        )
 
-        class TempLoginForm:
-            username = user.email
-            password = form.password
 
-        login_for_access_token(response=response, form_data=TempLoginForm(), db=db)
+@router.post("/reset-password")
+async def reset_password(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    token = form.get("token")
+    password = form.get("password")
+    repeat_password = form.get("repeat_password")
+    
+    errors = []
+    
+    try:
+        # Validate token
+        from jose import jwt
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email = payload.get("sub")
+        type_ = payload.get("type")
+        
+        if not email or type_ != "password_reset":
+            raise ValueError("Invalid or expired token")
+            
+        if password != repeat_password:
+             raise ValueError("Passwords do not match")
+             
+        if len(password) < settings.PASSWORD_LENGTH:
+             raise ValueError(f"Password must be at least {settings.PASSWORD_LENGTH} characters.")
 
-        return response
+        # Update password
+        user = get_user_by_email(email, db=db)
+        if not user:
+            raise ValueError("User not found")
+            
+        update_user_password(user, password, db)
+        
+        return responses.RedirectResponse(
+            "/?msg=Password reset successfully", 
+            status_code=status.HTTP_302_FOUND
+        )
 
-    except IntegrityError:
-        form.errors.append("Unknown error")
-
-    return templates.TemplateResponse("auth/reset_password.html", form.__dict__)
+    except Exception as e:
+        # Ideally handle specific JWT errors differently
+        msg = str(e) if "token" not in str(e).lower() else "Link expired or invalid."
+        return templates.TemplateResponse(
+            "auth/reset_password.html",
+            {
+                "request": request,
+                "token": token,
+                "password": password,
+                "repeat_password": repeat_password,
+                "errors": [msg]
+            }
+        )
 
 
 @router.get("/register/")
