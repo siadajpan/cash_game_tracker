@@ -203,43 +203,59 @@
                                  <span>Team Games <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Total sessions organized by the group"></i></span> 
                                  <strong>{{ adv_stats.team_total_games }}</strong>
                              </li>
-                             <li class="list-group-item">
-                                 <div class="d-flex justify-content-between">
-                                     <span>Attendance % <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Participation rate"></i></span> 
-                                     <strong>{{ "%.1f"|format(adv_stats.attendance_pct) }}%</strong>
-                                 </div>
+                             <li class="list-group-item d-flex justify-content-between">
+                                 <span>Attendance % <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Participation rate"></i></span> 
+                                 <strong>{{ "%.1f"|format(adv_stats.attendance_pct) }}%</strong>
                              </li>
                          </ul>
                      </div>
                      <!-- Financials -->
                      <div class="col-md-6">
                          <h6 class="border-bottom pb-2">Financials</h6>
-                         <ul class="list-group list-group-flush">
+                          <ul class="list-group list-group-flush">
                              <li class="list-group-item d-flex justify-content-between">
                                  <span>Total Invested <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Sum of all Buy-ins and Add-ons"></i></span> 
                                  <strong>{{ "%.2f"|format(adv_stats.total_investment) }}</strong>
                              </li>
-                             <li class="list-group-item">
-                                 <div class="d-flex justify-content-between">
-                                     <span>Avg Buy-in <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Average amount spent per session"></i></span> 
+                             <li class="list-group-item d-flex justify-content-between">
+                                 <span>Avg Buy-in <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Average amount spent per session"></i></span> 
+                                 <div>
                                      <strong>{{ "%.2f"|format(adv_stats.avg_buyin) }}</strong>
-                                 </div>
-                             </li>
-                             <li class="list-group-item">
-                                 <div class="d-flex justify-content-between">
-                                     <span>Avg Profit/Game <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Average net result per session"></i></span> 
-                                     <strong class="{% if adv_stats.avg_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{ "%.2f"|format(adv_stats.avg_balance) }}</strong>
-                                 </div>
-                             </li>
-                             <li class="list-group-item">
-                                 <div class="d-flex justify-content-between">
-                                     <span>Return on Investment <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="(Total Profit / Total Invested) * 100"></i></span> 
-                                     <strong class="{% if adv_stats.roi < 0 %}text-danger{% else %}text-success{% endif %}">{{ "%.1f"|format(adv_stats.roi) }}%</strong>
+                                     {% if adv_stats.ranks.avg_buyin %}
+                                       {% set tier = adv_stats.ranks.avg_buyin.tier %}
+                                       <span class="badge ms-1 {% if tier == 'Low' %}bg-success{% elif tier == 'Average' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ tier }}</span>
+                                     {% endif %}
                                  </div>
                              </li>
                              <li class="list-group-item d-flex justify-content-between">
-                                 <span>Pot Share <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Your share of the total money in play"></i></span> 
-                                 <strong>{{ "%.1f"|format(adv_stats.pot_share_pct) }}%</strong>
+                                 <span>Avg Profit/Game <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Average net result per session"></i></span> 
+                                 <div>
+                                     <strong class="{% if adv_stats.avg_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{ "%.2f"|format(adv_stats.avg_balance) }}</strong>
+                                     {% if adv_stats.ranks.avg_profit %}
+                                       {% set pct = adv_stats.ranks.avg_profit.top_pct %}
+                                       <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
+                                     {% endif %}
+                                 </div>
+                             </li>
+                             <li class="list-group-item d-flex justify-content-between">
+                                 <span>Return on Investment <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="(Total Profit / Total Invested) * 100"></i></span> 
+                                 <div>
+                                    <strong class="{% if adv_stats.roi < 0 %}text-danger{% else %}text-success{% endif %}">{{ "%.1f"|format(adv_stats.roi) }}%</strong>
+                                    {% if adv_stats.ranks.roi %}
+                                       {% set pct = adv_stats.ranks.roi.top_pct %}
+                                       <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
+                                    {% endif %}
+                                 </div>
+                             </li>
+                             <li class="list-group-item d-flex justify-content-between">
+                                 <span>Pot Share <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Total Balance / Total Pot of games played"></i></span> 
+                                 <div>
+                                     <strong>{{ "%.1f"|format(adv_stats.pot_share_pct) }}%</strong>
+                                     {% if adv_stats.ranks.pot_share %}
+                                       {% set pct = adv_stats.ranks.pot_share.top_pct %}
+                                       <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
+                                     {% endif %}
+                                 </div>
                              </li>
                          </ul>
                      </div>
@@ -256,23 +272,18 @@
                                  <strong>{{ "%.1f"|format(adv_stats.win_pct) }}%</strong>
                              </li>
                              <li class="list-group-item d-flex justify-content-between">
-                                 <span>Standard Deviation <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Typical swing +/- from your average result."></i></span> 
+                                 <span>Standard Deviation <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Typical swing +/- from your average result. Team Mean SD: {{ '%.2f'|format(adv_stats.avg_team_std_dev) }}"></i></span> 
                                  <div>
                                      <strong>{{ "%.2f"|format(adv_stats.std_dev) }}</strong>
                                      {% if adv_stats.ranks.std_dev %}
-                                     <span class="badge bg-light text-dark border ms-1">{{ adv_stats.ranks.std_dev.tier }}</span>
+                                       {% set tier = adv_stats.ranks.std_dev.tier %}
+                                       <span class="badge ms-1 {% if tier == 'Low' %}bg-success{% elif tier == 'Average' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ tier }}</span>
                                      {% endif %}
                                  </div>
                              </li>
                              <li class="list-group-item d-flex justify-content-between">
                                  <span>Typical Result <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Estimated range for most (68%) of your sessions (Avg +/- StdDev)"></i></span> 
                                  <strong class="text-muted small">{{ "%.0f"|format(adv_stats.typical_range_low) }} to {{ "%.0f"|format(adv_stats.typical_range_high) }}</strong>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Game Swings <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Measures how much your results swing relative to the buy-in. Calculated as (Standard Deviation / Avg Buy-in). Your Score: {{ '%.2f'|format(adv_stats.volatility_index) }}. Team Average Score: {{ '%.2f'|format(adv_stats.avg_team_vol_idx) }}."></i></span> 
-                                 <strong class="{% if 'High' in adv_stats.volatility_label %}text-danger{% elif 'Low' in adv_stats.volatility_label %}text-success{% else %}text-warning{% endif %}">
-                                     {{ adv_stats.volatility_label }}
-                                 </strong>
                              </li>
                              <li class="list-group-item d-flex justify-content-between"><span>Best Result</span> 
                                  {% if adv_stats.best_result %}

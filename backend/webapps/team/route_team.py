@@ -509,6 +509,8 @@ async def player_stats(
         }
         
     avg_team_vol_idx = sum(team_vols) / len(team_vols) if team_vols else 0
+    team_sds = [m["std_dev"] for m in player_metrics.values()]
+    avg_team_std_dev = sum(team_sds) / len(team_sds) if team_sds else 0
     
     def get_rank_tier(metric, my_uid, lower_is_better=False, tier_labels=("Low", "Average", "High")):
         if my_uid not in player_metrics: return None
@@ -608,6 +610,7 @@ async def player_stats(
         "volatility_index": volatility_index,
         "volatility_label": volatility_label,
         "avg_team_vol_idx": avg_team_vol_idx,
+        "avg_team_std_dev": avg_team_std_dev,
         "ranks": ranks,
         "team_avgs": adv_stats_team,
         "monthly_balances": sorted_months
