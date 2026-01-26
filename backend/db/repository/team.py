@@ -371,5 +371,6 @@ def get_team_player_stats_bulk(team_id: int, db: Session, year: int = None) -> D
     
     for uid in all_users:
         stats[uid]["total_balance"] = money_out[uid] - money_in[uid]
+        stats[uid]["total_investment"] = money_in[uid]
         
     return stats
