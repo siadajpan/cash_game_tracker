@@ -50,17 +50,27 @@
 <div id="stats-view-container" class="d-flex flex-column" style="max-height: 60vh;">
     <!-- Summary Section -->
     <div class="d-flex justify-content-between mb-3 px-2">
-        <div>
+        <div class="text-center" style="flex: 1;">
             <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Games Played</small>
             <span class="fs-5 fw-normal">{{ games_count }}</span>
         </div>
-        <div class="text-end">
+        <div class="text-center" style="flex: 1;">
             <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Total Balance</small>
             <span class="fs-5 fw-medium {% if total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
                 {% if total_balance % 1 %}
                 {{ "%.2f"|format(total_balance) }}
                 {% else %}
                 {{ total_balance|int }}
+                {% endif %}
+            </span>
+        </div>
+        <div class="text-center" style="flex: 1;">
+            <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Hourly Winrate</small>
+            <span class="fs-5 fw-medium {% if winrate < 0 %}text-danger{% else %}text-success{% endif %}">
+                {% if winrate % 1 %}
+                {{ "%.2f"|format(winrate) }}
+                {% else %}
+                {{ winrate|int }}
                 {% endif %}
             </span>
         </div>

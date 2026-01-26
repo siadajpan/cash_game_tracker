@@ -91,6 +91,12 @@ async def create_game_form(
     Renders the game creation form, populating team choices and default values.
     """
     team_chip_structures = get_user_team_chip_structures_dict(current_user)
+    # Round time to nearest 15 minutes
+    now = datetime.now()
+    minute = now.minute
+    minute = (minute // 15) * 15
+    start_time = now.replace(minute=minute, second=0, microsecond=0)
+
     context = {
         "request": request,
         "errors": [],
@@ -99,6 +105,7 @@ async def create_game_form(
         "form": {
             "default_buy_in": 0.0,
             "date": datetime.today().date().isoformat(),  # Format as YYYY-MM-DD
+            "start_time": start_time.strftime("%Y-%m-%dT%H:%M"),
         },
     }
 
@@ -121,6 +128,7 @@ async def create_game(
             running=True,
             team_id=form.get("team_id"),
             chip_structure_id=form.get("chip_structure_id"),
+            start_time=form.get("start_time"),
         )
 
         # Check if the team exists separately
@@ -435,7 +443,11 @@ async def finish_game_view(
         return RedirectResponse(url="/", status_code=303)
     if not user:
         return RedirectResponse(url="/", status_code=303)
-    finish_the_game(user, game, db)
+        
+    form = await request.form()
+    finish_time = form.get("finish_time")
+    
+    finish_the_game(user, game, db, finish_time=finish_time)
     return RedirectResponse(url="/", status_code=303)
 
 

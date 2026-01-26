@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
 
@@ -9,6 +10,7 @@ class GameCreate(BaseModel):
     running: bool
     team_id: str
     chip_structure_id: Optional[str]
+    start_time: Optional[datetime] = None
 
     @field_validator("default_buy_in")
     def ensure_correct_buyin(cls, value):

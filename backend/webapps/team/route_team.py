@@ -257,12 +257,29 @@ async def player_stats(
     team_games.sort(key=lambda x: x.date, reverse=True)
 
     games_history = []
+    total_seconds_played = 0
 
     for game in team_games:
         balance = get_user_game_balance(player, game, db)
         games_history.append({"game": game, "balance": balance})
+        
+        # Calculate duration if times are available
+        if game.start_time and game.finish_time:
+             # Make sure to handle potential negative durations if data is bad, though unlikely
+            duration = (game.finish_time - game.start_time).total_seconds()
+            if duration > 0:
+                total_seconds_played += duration
+        
+            print("total seconds played",game.start_time, game.finish_time, duration)
 
     total_balance = sum(g["balance"] for g in games_history)
+    print("total seconds played",total_seconds_played)
+    
+    # Calculate Winrate (Won / Hour)
+    hours_played = total_seconds_played / 3600
+    winrate = 0
+    if hours_played > 0:
+        winrate = total_balance / hours_played
 
     return templates.TemplateResponse(
         "team/player_stats.html",
@@ -273,6 +290,7 @@ async def player_stats(
             "games_history": games_history,
             "total_balance": total_balance,
             "games_count": len(games_history),
+            "winrate": winrate,
             "is_owner": user.id == team.owner_id,
         },
     )

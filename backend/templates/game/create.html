@@ -6,6 +6,21 @@ content %}
   <!-- Team selector -->
   <div class="mb-3">{% include "team/users_team_dropdown.html" %}</div>
 
+  <!-- Chip structure -->
+  <div class="form-floating mb-3">
+    <select
+      name="chip_structure_id"
+      id="chip_structure_id"
+      required
+      class="form-select"
+    >
+      <option value="" disabled selected>
+        -- Choose a chip structure --
+      </option>
+    </select>
+    <label for="chip_structure_id" class="form-label">Chip Structure</label>
+  </div>
+
   <!-- Default buy-in -->
   <div class="form-floating mb-3">
     <input
@@ -22,26 +37,35 @@ content %}
     <label for="default_buy_in" class="form-label">Default Buy-in</label>
   </div>
 
-  <!-- Chip structure -->
-  <div class="form-floating mb-3">
-    <select
-      name="chip_structure_id"
-      id="chip_structure_id"
-      required
-      class="form-select"
-    >
-      <option value="" disabled selected>
-        -- Choose a chip structure --
-      </option>
-    </select>
-    <label for="chip_structure_id" class="form-label">Chip Structure</label>
-
-    <div class="mt-2">
-      <a href="/chip_structure/create" class="btn btn-outline-secondary"
-        >Create new chip values.</a
-      >
+  <!-- Start Time (Split) -->
+  <div class="row mb-3">
+    <div class="col-6">
+      <input
+        type="text"
+        required
+        class="form-control"
+        id="date_part"
+        placeholder="dd/mm/yyyy"
+      />
+      <label for="date_part">Start Date</label>
+    </div>
+    <div class="col-6">
+      <div class="form-floating">
+        <select id="time_part" class="form-select" required aria-label="Start Time">
+          <!-- Options populated by JS -->
+        </select>
+        <label for="time_part">Start Time</label>
+      </div>
     </div>
   </div>
+  
+  <!-- Hidden input for the actual submission -->
+  <input
+    type="hidden"
+    name="start_time"
+    id="final_start_time"
+    value="{{ form.start_time }}"
+  />
 
   <!-- Form buttons -->
   <div class="d-flex justify-content-between align-items-center">
@@ -56,6 +80,101 @@ content %}
   console.log("Loaded teamChipStructures:", teamChipStructures);
 
   document.addEventListener('DOMContentLoaded', function() {
+      // --- Time Picker Logic ---
+      const datePart = document.getElementById('date_part');
+      const timePart = document.getElementById('time_part');
+      const finalInput = document.getElementById('final_start_time');
+      
+      let datePicker;
+      $(document).ready(function() {
+         // 1. Init Gijgo
+         datePicker = $('#date_part').datepicker({
+            format: 'dd/mm/yyyy',
+            uiLibrary: 'bootstrap5'
+         });
+         
+         // Fix for floating label with Gijgo
+         const $wrapper = $('#date_part').closest('.gj-datepicker');
+         if ($wrapper.length) {
+             $wrapper.addClass('form-floating');
+             $('label[for="date_part"]').insertAfter('#date_part');
+         }
+
+         // Gijgo changes triggers
+         datePicker.on('change', updateFinalInput);
+
+         // 2. Populate Dropdown & Set Initial Values
+         if (datePart && timePart && finalInput) {
+             initDateTime();
+             timePart.addEventListener('change', updateFinalInput);
+         }
+      });
+
+      function populateTimeDropdown() {
+          timePart.innerHTML = '';
+          for (let h = 0; h < 24; h++) {
+              for (let m = 0; m < 60; m += 15) {
+                  const hour = h.toString().padStart(2, '0');
+                  const minute = m.toString().padStart(2, '0');
+                  const timeVal = `${hour}:${minute}`;
+                  
+                  const option = document.createElement('option');
+                  option.value = timeVal;
+                  option.textContent = timeVal;
+                  timePart.appendChild(option);
+              }
+          }
+      }
+
+      function initDateTime() {
+          populateTimeDropdown();
+          
+          let initialValue = finalInput.value; // YYYY-MM-DDTHH:MM
+          
+          if (!initialValue) {
+               const now = new Date();
+               // Round minutes
+               const m = Math.floor(now.getMinutes() / 15) * 15;
+               now.setMinutes(m);
+               now.setSeconds(0);
+               
+               // Construct default ISO for internal logic if needed
+               // But usually backend provides it. 
+               // If completely missing, we could set now.
+          }
+
+          if (initialValue) {
+              const [d, t] = initialValue.split('T');
+              // d is YYYY-MM-DD
+              const [y, m, day] = d.split('-');
+              
+              // Set Gijgo value (dd/mm/yyyy) using library method to ensure UI update
+              if (datePicker) {
+                  datePicker.value(`${day}/${m}/${y}`);
+              }
+              
+              // Ensure t is HH:MM
+              timePart.value = t.substring(0, 5); 
+          }
+      }
+
+      function updateFinalInput() {
+          // datePart value is dd/mm/yyyy
+          const dateVal = $('#date_part').val(); // use jQuery val to be safe with Gijgo
+          const timeVal = timePart.value;
+          
+          if (dateVal && timeVal) {
+              const parts = dateVal.split('/');
+              if (parts.length === 3) {
+                  // Reconstruct to YYYY-MM-DD
+                  const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                  finalInput.value = `${isoDate}T${timeVal}`;
+              }
+          }
+      }
+
+      // --- End Time Picker Logic ---
+
       const teamSelect = document.getElementById('team_id');  // select or hidden input
       const chipSelect = document.getElementById('chip_structure_id');
 
@@ -68,11 +187,9 @@ content %}
 
           chipSelect.innerHTML = '';
 
-          if (chipStructures.length === 0) {
-              chipSelect.innerHTML = `<option disabled selected>No chip structures available</option>`;
-              return;
-          }
+          chipSelect.innerHTML = '';
 
+          // If more than 1 option, add the placeholder
           if (chipStructures.length > 1) {
               chipSelect.innerHTML = `<option value="" disabled selected>-- Choose a chip structure --</option>`;
           }
@@ -81,9 +198,35 @@ content %}
               const option = document.createElement('option');
               option.value = cs.id;
               option.textContent = cs.name;
+              // Auto-select if it's the only one
+              if (chipStructures.length === 1) {
+                  option.selected = true;
+              }
               chipSelect.appendChild(option);
           });
+
+          // Add separator and 'Create New' option
+          if (chipStructures.length > 0) {
+              const separator = document.createElement('option');
+              separator.disabled = true;
+              separator.textContent = '────────────────';
+              chipSelect.appendChild(separator);
+          }
+          
+          const createOption = document.createElement('option');
+          createOption.value = "create_new";
+          createOption.textContent = "➕ Create new chip values...";
+          chipSelect.appendChild(createOption);
       }
+
+      // Handle chip structure selection (for "Create new..." redirection)
+      chipSelect.addEventListener('change', function() {
+          if (this.value === 'create_new') {
+              window.location.href = '/chip_structure/create';
+              // Reset selection to avoid stuck state if they come back
+              this.value = ""; 
+          }
+      });
 
       // Multi-team: listen to select change
       if (teamSelect.tagName === 'SELECT') {
