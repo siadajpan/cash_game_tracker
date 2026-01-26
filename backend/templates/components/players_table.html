@@ -3,14 +3,16 @@
 {% set col_player = "col-4" %}
 {% set col_in = "col-2" %}
 {% set col_out = "col-2" %}
-{% set col_balance = "col-4" %}
+{% set col_balance = "col-3" %}
+{% set col_arrow = "col-1" %}
 {% else %}
-{% set col_player = "col-4" %}
-{% set col_in = "col-4" %}
-{% set col_out = "col-4" %}
+{% set col_player = "col-5" %}
+{% set col_in = "col-3" %}
+{% set col_out = "col-3" %}
+{% set col_arrow = "col-1" %}
 {% endif %}
 
-<ul class="list-group list-group-flush mb-3">
+<ul class="list-group list-group-flush mb-3 list-group-hover">
     <li class="list-group-item">
         <div class="row fw-bold text-center">
             <div class="{{ col_player }} text-start">Player</div>
@@ -19,16 +21,17 @@
             {% if not game.running or show_balance %}
             <div class="{{ col_balance }}">Balance</div>
             {% endif %}
+            <div class="{{ col_arrow }}"></div>
         </div>
     </li>
 
     <!-- Players -->
     {% for info in players_info %}
 
-    <li class="list-group-item">
+    <li class="list-group-item position-relative">
         <div class="row text-center align-items-center">
             <div class="{{ col_player }} text-start">
-                <a href="/team/{{ game.team_id }}/player/{{ info.player.id }}" class="text-decoration-none text-dark fw-semibold">
+                <a href="/team/{{ game.team_id }}/player/{{ info.player.id }}" class="text-decoration-none text-dark fw-semibold stretched-link">
                     {{ info.player.nick }}
                     {% if info.owner %} (host) {% endif %}
                 </a>
@@ -37,7 +40,8 @@
             <div class="{{ col_in }}">
                 {% if game.running and info.request_type == 'add_on' %}
                 {% if user in info.can_approve %}
-                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger" title="{{ info.request_text }}">
+                <!-- z-index needed to click button on top of stretched link -->
+                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative" style="z-index: 2;" title="{{ info.request_text }}">
                     <i class="bi bi-exclamation-circle-fill"></i> Add-on
                 </a>
                 {% else %}
@@ -56,7 +60,7 @@
             <div class="{{ col_out }}">
                 {% if game.running and info.request_type == 'cash_out' %}
                 {% if user in info.can_approve %}
-                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger" title="{{ info.request_text }}">
+                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative" style="z-index: 2;" title="{{ info.request_text }}">
                     <i class="bi bi-exclamation-circle-fill"></i> Cash-out
                 </a>
                 {% else %}
@@ -82,6 +86,10 @@
                 {{ "%.2f"|format(info.balance) }}
             </div>
             {% endif %}
+            
+            <div class="{{ col_arrow }} text-end text-muted">
+                <i class="bi bi-chevron-right" style="font-size: 0.8rem;"></i>
+            </div>
 
         </div>
     </li>

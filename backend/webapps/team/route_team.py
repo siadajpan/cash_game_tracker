@@ -16,6 +16,8 @@ from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.team import Team
 from backend.db.models.user import User
 from backend.db.models.user_team import UserTeam
+from backend.db.repository.add_on import get_player_game_addons
+from backend.db.repository.buy_in import get_player_game_total_buy_in_amount
 from backend.db.repository.game import (
     get_user_games_count,
     get_user_total_balance,
@@ -261,7 +263,23 @@ async def player_stats(
 
     for game in team_games:
         balance = get_user_game_balance(player, game, db)
-        games_history.append({"game": game, "balance": balance})
+        
+        # Calculate Total Pot
+        total_pot = 0.0
+        for p in game.players:
+            p_buy_in = get_player_game_total_buy_in_amount(p, game, db)
+            p_add_ons = get_player_game_addons(p, game, db)
+            p_money_in = p_buy_in + sum(
+                a.amount for a in p_add_ons if a.status == PlayerRequestStatus.APPROVED
+            )
+            total_pot += p_money_in
+
+        games_history.append({
+            "game": game, 
+            "balance": balance,
+            "total_pot": total_pot,
+            "players_count": len(game.players)
+        })
         
         # Calculate duration if times are available
         if game.start_time and game.finish_time:
@@ -270,10 +288,7 @@ async def player_stats(
             if duration > 0:
                 total_seconds_played += duration
         
-            print("total seconds played",game.start_time, game.finish_time, duration)
-
     total_balance = sum(g["balance"] for g in games_history)
-    print("total seconds played",total_seconds_played)
     
     # Calculate Winrate (Won / Hour)
     hours_played = total_seconds_played / 3600

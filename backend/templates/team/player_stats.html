@@ -80,6 +80,15 @@
     <h6 class="text-uppercase text-secondary mb-2 px-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Game History</h6>
     <div class="table-responsive overflow-auto border-top" style="min-height: 0;">
         <table class="table table-hover table-hover-custom align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3 border-bottom-0 py-2">Date</th>
+                    <th class="text-center border-bottom-0 py-2">Players</th>
+                    <th class="text-end border-bottom-0 py-2">Total Pot</th>
+                    <th class="text-end pe-3 border-bottom-0 py-2">Balance</th>
+                    <th class="border-bottom-0 py-2"></th>
+                </tr>
+            </thead>
             <tbody>
                 {% for info in games_history %}
                 <tr class="position-relative">
@@ -87,6 +96,12 @@
                         <a href="/game/{{ info.game.id }}?return_url=/team/{{ team.id }}/player/{{ player.id }}" class="text-decoration-none text-dark fw-normal stretched-link">
                             {{ info.game.date }}
                         </a>
+                    </td>
+                    <td class="text-center border-bottom-0 py-2">
+                        {{ info.players_count }}
+                    </td>
+                    <td class="text-end border-bottom-0 py-2">
+                        {{ "%.2f"|format(info.total_pot) }}
                     </td>
                     <td class="text-end pe-3 border-bottom-0 py-2">
                         <span class="fw-medium {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
