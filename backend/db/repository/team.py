@@ -220,6 +220,20 @@ def decide_join_team(team_id, user_id, approve: bool, db: Session):
     db.commit()
 
 
+def approve_all_join_requests(team_id: int, db: Session):
+    """
+    Approves all pending join requests for a team.
+    """
+    db.query(UserTeam).filter(
+        UserTeam.team_id == team_id,
+        UserTeam.status == PlayerRequestStatus.REQUESTED
+    ).update(
+        {UserTeam.status: PlayerRequestStatus.APPROVED},
+        synchronize_session=False
+    )
+    db.commit()
+
+
 def generate_team_code(
     db: Session, min_digits: int = 4, max_digits=8, max_attempts: int = 100
 ) -> str:

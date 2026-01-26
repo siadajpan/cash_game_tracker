@@ -197,6 +197,30 @@ async def decide_join_request(
     )
 
 
+@router.post(
+    "/{team_id}/join_requests/accept_all",
+    status_code=status.HTTP_302_FOUND,
+)
+async def accept_all_join_requests(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    if team.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    from backend.db.repository.team import approve_all_join_requests
+    approve_all_join_requests(team.id, db)
+    
+    return responses.RedirectResponse(
+        url=f"/team/{team_id}", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
 @router.get("/{team_id}")
 async def team_view(
     request: Request,

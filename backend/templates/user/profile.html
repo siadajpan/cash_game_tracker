@@ -1,0 +1,76 @@
+{% extends "shared/base.html" %} 
+{% block title %}
+<title>User Profile</title>
+{% endblock %} 
+{% block page_heading %}Profile{% endblock %} 
+{% block content %}
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST">
+      <!-- Nickname -->
+      <div class="form-floating mb-3">
+        <input
+          type="text"
+          required
+          placeholder="Nickname"
+          name="nick"
+          value="{{ form.nick or user.nick }}"
+          class="form-control"
+        />
+        <label>Nickname</label>
+      </div>
+
+      <!-- Email -->
+      <div class="form-floating mb-3">
+        <input
+          type="email"
+          required
+          placeholder="Email address"
+          name="email"
+          value="{{ form.email or user.email }}"
+          class="form-control"
+        />
+        <label>Email address</label>
+      </div>
+
+      <hr class="my-4">
+      <h5 class="mb-3 text-muted">Change Password (Optional)</h5>
+
+      <!-- Password -->
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <div class="form-floating">
+                <input
+                  type="password"
+                  placeholder="New Password"
+                  name="password"
+                  value="{{ form.password or '' }}"
+                  class="form-control"
+                />
+                <label>New Password</label>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-floating">
+                <input
+                  type="password"
+                  placeholder="Confirm Password"
+                  name="repeat_password"
+                  value="{{ form.repeat_password or '' }}"
+                  class="form-control"
+                />
+                <label>Confirm Password</label>
+            </div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="d-flex justify-content-between mt-4">
+        <a href="/" class="btn btn-outline-secondary">Back</a>
+        <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
