@@ -487,6 +487,36 @@ async def import_legacy_games(
         # Nickname matching is case-sensitive or insensitive? Let's do sensitive for now or match closely.
         # User defined nick might vary.
         team_users_map = {u.nick: u for u in team.users}
+
+        def get_or_create_team_user(nick_name):
+            if not nick_name: return None
+            if nick_name in team_users_map:
+                return team_users_map[nick_name]
+            
+            # Create Guest User
+            random_suffix = secrets.token_hex(4)
+            new_email = f"{nick_name.lower().replace(' ', '_')}_{random_suffix}@imported.legacy"
+            
+            player_user = User(
+                email=new_email,
+                nick=nick_name,
+                hashed_password=Hasher.get_password_hash("guest_imported"),
+                is_active=True
+            )
+            db.add(player_user)
+            db.commit()
+            db.refresh(player_user)
+            
+            ut = UserTeam(
+                user_id=player_user.id,
+                team_id=team.id,
+                status=PlayerRequestStatus.APPROVED
+            )
+            db.add(ut)
+            db.commit()
+            
+            team_users_map[nick_name] = player_user
+            return player_user
         
         imported_count = 0
         skipped_count = 0
@@ -501,7 +531,6 @@ async def import_legacy_games(
             g_date = dt_start.date()
                 
             # 2. Check Duplicates
-            # Check if game exists with same team, same start time (approx)
             exists = db.query(Game).filter(
                 Game.team_id == team.id,
                 Game.start_time == dt_start
@@ -510,59 +539,37 @@ async def import_legacy_games(
             if exists:
                 skipped_count += 1
                 continue
+
+            # 3. Determine Owner (Host)
+            host_nick = g_data.get("host")
+            game_owner_id = team.owner_id
+            if host_nick:
+                host_user = get_or_create_team_user(host_nick)
+                if host_user:
+                    game_owner_id = host_user.id
                 
-            # 3. Create Game
+            # 4. Create Game
             new_game = Game(
                 date=g_date,
                 start_time=dt_start,
                 finish_time=dt_finish,
                 default_buy_in=0,
                 running=False,
-                owner_id=team.owner_id,
+                owner_id=game_owner_id,
                 team_id=team.id
             )
             db.add(new_game)
             db.commit()
             db.refresh(new_game)
             
-            # 4. Process Players
+            # 5. Process Players
             players_list = g_data.get("players", [])
             for p_data in players_list:
                 nick = p_data.get("nick")
                 buy_in_amt = float(p_data.get("buy_in", 0))
                 cash_out_amt = float(p_data.get("cash_out", 0))
                 
-                # Find User
-                player_user = team_users_map.get(nick)
-                
-                if not player_user:
-                    # Try finding global user by nick? Risky. 
-                    # Create Guest User
-                    random_suffix = secrets.token_hex(4)
-                    new_email = f"{nick.lower().replace(' ', '_')}_{random_suffix}@imported.legacy"
-                    
-                    # Create user
-                    player_user = User(
-                        email=new_email,
-                        nick=nick,
-                        hashed_password=Hasher.get_password_hash("guest_imported"),
-                        is_active=True
-                    )
-                    db.add(player_user)
-                    db.commit()
-                    db.refresh(player_user)
-                    
-                    # Add to Team
-                    ut = UserTeam(
-                        user_id=player_user.id,
-                        team_id=team.id,
-                        status=PlayerRequestStatus.APPROVED
-                    )
-                    db.add(ut)
-                    db.commit()
-                    
-                    # Update cache
-                    team_users_map[nick] = player_user
+                player_user = get_or_create_team_user(nick)
                 
                 # Add to Game
                 ug = UserGame(user_id=player_user.id, game_id=new_game.id)
@@ -578,7 +585,7 @@ async def import_legacy_games(
                     )
                     db.add(bi)
                     
-                if cash_out_amt > 0: # Even if 0, record it? Usually yes, if played.
+                if cash_out_amt > 0: 
                     co = CashOut(
                         amount=cash_out_amt,
                         user_id=player_user.id,
@@ -588,7 +595,6 @@ async def import_legacy_games(
                     )
                     db.add(co)
                 elif buy_in_amt > 0:
-                    # If they bought in but no cashout record, assuming 0 cashout (lost everything)
                     co = CashOut(
                         amount=0,
                         user_id=player_user.id,

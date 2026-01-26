@@ -192,6 +192,24 @@ def parse_legacy_file(filepath: str):
                     "cash_out": cash_out
                 })
         
+        # Determine Host
+        # Logic: compare first 3 letters of game_info_raw with player nicks
+        raw_prefix = game_info_raw[:3].lower()
+        host_nick = None
+        
+        # 1. Try to find match among players in this game
+        for p_stat in game_record["player_stats"]:
+            p_nick = p_stat["nick"]
+            if p_nick.lower().startswith(raw_prefix):
+                host_nick = p_nick
+                break
+        
+        # 2. Fallback: first player on the list
+        if not host_nick and game_record["player_stats"]:
+            host_nick = game_record["player_stats"][0]["nick"]
+            
+        game_record["host"] = host_nick
+
         games_data.append(game_record)
         current_idx += 2 
         
