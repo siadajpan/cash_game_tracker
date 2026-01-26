@@ -7,22 +7,43 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="page-title">{{ player.nick }} <span class="text-muted">in {{ team.name }}</span></div>
-    {% if is_owner and player.id != team.owner_id %}
-    <div class="dropdown">
-        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            <i class="bi bi-gear-fill"></i>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-            <li>
-                <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
-                    data-bs-target="#removePlayerModal">
-                    <i class="bi bi-person-x"></i> Remove from group
-                </button>
-            </li>
-        </ul>
+    
+    <div class="d-flex gap-2">
+        <!-- Year Filter -->
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}" href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
+                {% if available_years %}
+                <li><hr class="dropdown-divider"></li>
+                {% for y in available_years %}
+                <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}" href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
+                {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+
+        {% if is_owner and player.id != team.owner_id %}
+        <div class="dropdown">
+            <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="bi bi-gear-fill"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
+                        data-bs-target="#removePlayerModal">
+                        <i class="bi bi-person-x"></i> Remove from group
+                    </button>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
     </div>
 
+    {% if is_owner and player.id != team.owner_id %}
     <!-- Modal -->
     <div class="modal fade" id="removePlayerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -74,6 +95,11 @@
                 {% endif %}
             </span>
         </div>
+    </div>
+
+    <!-- Balance Chart -->
+    <div class="mb-4 px-2" style="height: 250px;">
+        <canvas id="balanceChart"></canvas>
     </div>
 
     <!-- Game History Table -->
@@ -158,7 +184,87 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartData = {{ chart_points | tojson }};
+        if (chartData && chartData.length > 0) {
+            const ctx = document.getElementById('balanceChart').getContext('2d');
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, 'rgba(13, 110, 253, 0.2)');
+            gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)');
+
+            const balances = chartData.map(d => d.balance);
+            const minBalance = Math.min(...balances);
+            const maxBalance = Math.max(...balances);
+            
+            // Add slight padding (5%) so points aren't cut off at the edges
+            const range = maxBalance - minBalance;
+            const padding = range === 0 ? 10 : range * 0.05;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(d => d.date),
+                    datasets: [{
+                        label: 'Balance',
+                        data: balances,
+                        borderColor: '#0d6efd',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#0d6efd',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y).replace('$', '');
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: minBalance - padding,
+                            max: maxBalance + padding,
+                            beginAtZero: false,
+                            grid: { borderDash: [2, 4], color: '#e9ecef' },
+                            ticks: { callback: function(value) { return value; } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { maxTicksLimit: 8 }
+                        }
+                    }
+                }
+            });
+        }
+    });
+
     function adjustStatsViewHeight() {
         const container = document.getElementById('stats-view-container');
         if (!container) return;

@@ -288,6 +288,7 @@ async def player_stats(
     player_id: int,
     sort: str = "date",
     order: str = "desc",
+    year: str = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -307,6 +308,15 @@ async def player_stats(
 
     # Get games for this player IN THIS TEAM, ALL of them
     team_games = get_user_team_games(player, team_id, db, limit=None)
+    
+    # Extract years and Filter
+    available_years = sorted(list(set([int(str(g.date)[:4]) for g in team_games])), reverse=True)
+    if year and year != "all":
+        try:
+            target_year = int(year)
+            team_games = [g for g in team_games if int(str(g.date)[:4]) == target_year]
+        except ValueError:
+            pass
     
     # Bulk fetch stats
     bulk_stats = get_player_games_stats_bulk(player.id, team.id, db)
@@ -338,6 +348,26 @@ async def player_stats(
     if hours_played > 0:
         winrate = total_balance / hours_played
 
+    # Prepare Chart Data (Chronological)
+    chronological_games = sorted(games_history, key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()))
+    cumulative_balance = 0.0
+    chart_points = []
+    for g in chronological_games:
+        cumulative_balance += g["balance"]
+        chart_points.append({
+            "date": str(g["game"].date),
+            "balance": round(cumulative_balance, 2),
+            "game_id": g["game"].id
+        })
+
+    # Add initial zero point to start graph from 0
+    if chart_points:
+        chart_points.insert(0, {
+            "date": "Start",
+            "balance": 0.0,
+            "game_id": -1
+        })
+
     today = datetime.now().date() 
     # Sorting
     reverse_order = (order == "desc")
@@ -366,6 +396,11 @@ async def player_stats(
             "is_owner": user.id == team.owner_id,
             "sort_by": sort,
             "order": order,
+            "sort_by": sort,
+            "order": order,
+            "chart_points": chart_points,
+            "available_years": available_years,
+            "selected_year": year if year else "all",
         },
     )
 
