@@ -2,7 +2,52 @@
 {% block title %}
 <title>Group {{ team.name }}</title>
 {% endblock %}
-{% block page_heading %}{{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>{% endblock %}
+{% block page_heading %}
+<div class="d-flex justify-content-between align-items-center w-100">
+    <div>
+        {{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>
+    </div>
+    {% if current_user.id == team.owner.id %}
+    <div class="dropdown">
+        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="bi bi-gear-fill"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+            <li>
+                <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
+                    data-bs-target="#deleteTeamModal">
+                    <i class="bi bi-trash"></i> Remove Group
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="deleteTeamModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Remove Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="fs-5">Are you sure you want to delete <strong>{{ team.name }}</strong>?</p>
+                    <p class="text-danger fw-bold mb-1">Warning: This action cannot be undone.</p>
+                    <p class="text-muted small">All games, history, and members associated with this group will be permanently removed.</p>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="/team/{{ team.id }}/delete" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger">Yes, Delete Group</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
 
 {% block content %}
 

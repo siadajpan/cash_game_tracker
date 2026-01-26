@@ -328,3 +328,24 @@ async def remove_player(
         remove_user_from_team(team, player, db)
 
     return RedirectResponse(f"/team/{team_id}", status_code=303)
+
+
+@router.post("/{team_id}/delete")
+async def delete_team_route(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    from backend.db.repository.team import delete_team
+    
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Group not found")
+        
+    if user.id != team.owner_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    delete_team(team, db)
+
+    return RedirectResponse("/", status_code=303)

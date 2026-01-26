@@ -133,13 +133,12 @@ def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
     return db.query(Team).filter(Team.id == team_id).one_or_none()
 
 
-def get_team_join_requests(team: Team, db: Session) -> List[User]:
+def get_team_join_requests(team: Team, db: Session) -> List[UserTeam]:
     """
-    Retrieves a list of User objects who have requested to join the specified team.
+    Retrieves a list of UserTeam objects who have requested to join the specified team.
     """
     return (
-        db.query(User)
-        .join(UserTeam)
+        db.query(UserTeam)
         .filter(
             UserTeam.team_id == team.id,
             UserTeam.status == PlayerRequestStatus.REQUESTED,
@@ -231,3 +230,11 @@ def list_all_users(db):
     users = db.query(User).all()
 
     return users
+
+
+def delete_team(team: Team, db: Session):
+    """
+    Deletes a team and all its associated data (games, user mappings) via cascade.
+    """
+    db.delete(team)
+    db.commit()
