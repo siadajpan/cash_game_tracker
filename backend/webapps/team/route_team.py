@@ -15,6 +15,7 @@ from backend.apis.v1.route_login import get_current_user, get_current_user_from_
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.team import Team
+from backend.db.models.game import Game
 from backend.db.models.user import User
 from backend.db.models.user_team import UserTeam
 from backend.db.repository.add_on import get_player_game_addons
@@ -228,12 +229,28 @@ async def team_view(
     team_id: int,
     sort: str = "games_count",
     order: str = "desc",
+    year: str = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
         return {"error": "Group not found"}
+        
+    # Get available years
+    team_games = db.query(Game).filter(Game.team_id == team_id).all()
+    print(f"DEBUG: Found {len(team_games)} games for team {team_id}")
+    all_years = set()
+    for g in team_games:
+        if g.date:
+             all_years.add(int(str(g.date)[:4]))
+    available_years = sorted(list(all_years), reverse=True)
+    print(f"DEBUG: Available years: {available_years}")
+    
+    target_year = None
+    if year and year != "all":
+         try: target_year = int(year)
+         except: pass
 
     from backend.db.repository.team import get_team_player_stats_bulk
     
@@ -241,11 +258,15 @@ async def team_view(
     players_info = []
     
     # helper for bulk fetch
-    bulk_stats = get_team_player_stats_bulk(team.id, db)
+    bulk_stats = get_team_player_stats_bulk(team.id, db, year=target_year)
     
     for player in get_team_approved_players(team, db):
         p_stats = bulk_stats.get(player.id, {"games_count": 0, "total_balance": 0.0})
         
+        # Filter inactive players if Year filter is active
+        if target_year and p_stats["games_count"] == 0:
+            continue
+
         players_info.append(
             {
                 "player": player,
@@ -277,6 +298,8 @@ async def team_view(
             "players_info": players_info,
             "sort_by": sort,
             "order": order,
+            "available_years": available_years,
+            "selected_year": year if year else "all",
         },
     )
 
@@ -288,6 +311,7 @@ async def player_stats(
     player_id: int,
     sort: str = "date",
     order: str = "desc",
+    year: str = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -307,6 +331,15 @@ async def player_stats(
 
     # Get games for this player IN THIS TEAM, ALL of them
     team_games = get_user_team_games(player, team_id, db, limit=None)
+    
+    # Extract years and Filter
+    available_years = sorted(list(set([int(str(g.date)[:4]) for g in team_games])), reverse=True)
+    if year and year != "all":
+        try:
+            target_year = int(year)
+            team_games = [g for g in team_games if int(str(g.date)[:4]) == target_year]
+        except ValueError:
+            pass
     
     # Bulk fetch stats
     bulk_stats = get_player_games_stats_bulk(player.id, team.id, db)
@@ -338,6 +371,26 @@ async def player_stats(
     if hours_played > 0:
         winrate = total_balance / hours_played
 
+    # Prepare Chart Data (Chronological)
+    chronological_games = sorted(games_history, key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()))
+    cumulative_balance = 0.0
+    chart_points = []
+    for g in chronological_games:
+        cumulative_balance += g["balance"]
+        chart_points.append({
+            "date": str(g["game"].date),
+            "balance": round(cumulative_balance, 2),
+            "game_id": g["game"].id
+        })
+
+    # Add initial zero point to start graph from 0
+    if chart_points:
+        chart_points.insert(0, {
+            "date": "Start",
+            "balance": 0.0,
+            "game_id": -1
+        })
+
     today = datetime.now().date() 
     # Sorting
     reverse_order = (order == "desc")
@@ -366,6 +419,11 @@ async def player_stats(
             "is_owner": user.id == team.owner_id,
             "sort_by": sort,
             "order": order,
+            "sort_by": sort,
+            "order": order,
+            "chart_points": chart_points,
+            "available_years": available_years,
+            "selected_year": year if year else "all",
         },
     )
 
@@ -452,6 +510,36 @@ async def import_legacy_games(
         # Nickname matching is case-sensitive or insensitive? Let's do sensitive for now or match closely.
         # User defined nick might vary.
         team_users_map = {u.nick: u for u in team.users}
+
+        def get_or_create_team_user(nick_name):
+            if not nick_name: return None
+            if nick_name in team_users_map:
+                return team_users_map[nick_name]
+            
+            # Create Guest User
+            random_suffix = secrets.token_hex(4)
+            new_email = f"{nick_name.lower().replace(' ', '_')}_{random_suffix}@imported.legacy"
+            
+            player_user = User(
+                email=new_email,
+                nick=nick_name,
+                hashed_password=Hasher.get_password_hash("guest_imported"),
+                is_active=True
+            )
+            db.add(player_user)
+            db.commit()
+            db.refresh(player_user)
+            
+            ut = UserTeam(
+                user_id=player_user.id,
+                team_id=team.id,
+                status=PlayerRequestStatus.APPROVED
+            )
+            db.add(ut)
+            db.commit()
+            
+            team_users_map[nick_name] = player_user
+            return player_user
         
         imported_count = 0
         skipped_count = 0
@@ -466,7 +554,6 @@ async def import_legacy_games(
             g_date = dt_start.date()
                 
             # 2. Check Duplicates
-            # Check if game exists with same team, same start time (approx)
             exists = db.query(Game).filter(
                 Game.team_id == team.id,
                 Game.start_time == dt_start
@@ -475,59 +562,37 @@ async def import_legacy_games(
             if exists:
                 skipped_count += 1
                 continue
+
+            # 3. Determine Owner (Host)
+            host_nick = g_data.get("host")
+            game_owner_id = team.owner_id
+            if host_nick:
+                host_user = get_or_create_team_user(host_nick)
+                if host_user:
+                    game_owner_id = host_user.id
                 
-            # 3. Create Game
+            # 4. Create Game
             new_game = Game(
                 date=g_date,
                 start_time=dt_start,
                 finish_time=dt_finish,
                 default_buy_in=0,
                 running=False,
-                owner_id=team.owner_id,
+                owner_id=game_owner_id,
                 team_id=team.id
             )
             db.add(new_game)
             db.commit()
             db.refresh(new_game)
             
-            # 4. Process Players
+            # 5. Process Players
             players_list = g_data.get("players", [])
             for p_data in players_list:
                 nick = p_data.get("nick")
                 buy_in_amt = float(p_data.get("buy_in", 0))
                 cash_out_amt = float(p_data.get("cash_out", 0))
                 
-                # Find User
-                player_user = team_users_map.get(nick)
-                
-                if not player_user:
-                    # Try finding global user by nick? Risky. 
-                    # Create Guest User
-                    random_suffix = secrets.token_hex(4)
-                    new_email = f"{nick.lower().replace(' ', '_')}_{random_suffix}@imported.legacy"
-                    
-                    # Create user
-                    player_user = User(
-                        email=new_email,
-                        nick=nick,
-                        hashed_password=Hasher.get_password_hash("guest_imported"),
-                        is_active=True
-                    )
-                    db.add(player_user)
-                    db.commit()
-                    db.refresh(player_user)
-                    
-                    # Add to Team
-                    ut = UserTeam(
-                        user_id=player_user.id,
-                        team_id=team.id,
-                        status=PlayerRequestStatus.APPROVED
-                    )
-                    db.add(ut)
-                    db.commit()
-                    
-                    # Update cache
-                    team_users_map[nick] = player_user
+                player_user = get_or_create_team_user(nick)
                 
                 # Add to Game
                 ug = UserGame(user_id=player_user.id, game_id=new_game.id)
@@ -543,7 +608,7 @@ async def import_legacy_games(
                     )
                     db.add(bi)
                     
-                if cash_out_amt > 0: # Even if 0, record it? Usually yes, if played.
+                if cash_out_amt > 0: 
                     co = CashOut(
                         amount=cash_out_amt,
                         user_id=player_user.id,
@@ -553,7 +618,6 @@ async def import_legacy_games(
                     )
                     db.add(co)
                 elif buy_in_amt > 0:
-                    # If they bought in but no cashout record, assuming 0 cashout (lost everything)
                     co = CashOut(
                         amount=0,
                         user_id=player_user.id,

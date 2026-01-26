@@ -7,27 +7,46 @@
     <div>
         {{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>
     </div>
-    {% if current_user.id == team.owner.id %}
-    <div class="dropdown">
-        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            <i class="bi bi-gear-fill"></i>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
-            <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal"
-                    data-bs-target="#importGamesModal">
-                    <i class="bi bi-file-earmark-arrow-up"></i> Import Games
-                </button>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-                <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
-                    data-bs-target="#deleteTeamModal">
-                    <i class="bi bi-trash"></i> Remove Group
-                </button>
-            </li>
-        </ul>
+    
+    <div class="d-flex gap-2">
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+                <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}" href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
+                {% if available_years %}
+                <li><hr class="dropdown-divider"></li>
+                {% for y in available_years %}
+                <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}" href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
+                {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+
+        {% if current_user.id == team.owner.id %}
+        <div class="dropdown">
+            <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="bi bi-gear-fill"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+                <li>
+                    <button class="dropdown-item" type="button" data-bs-toggle="modal"
+                        data-bs-target="#importGamesModal">
+                        <i class="bi bi-file-earmark-arrow-up"></i> Import Games
+                    </button>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
+                        data-bs-target="#deleteTeamModal">
+                        <i class="bi bi-trash"></i> Remove Group
+                    </button>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Import Modal -->
@@ -47,6 +66,7 @@
   {
     "start_time": "YYYY-MM-DD HH:MM",
     "finish_time": "YYYY-MM-DD HH:MM",
+    "host": "OptionalHostNick",
     "players": [
       {
         "nick": "PlayerNick",
@@ -100,7 +120,7 @@
             </div>
         </div>
     </div>
-    {% endif %}
+
 </div>
 {% endblock %}
 
@@ -117,7 +137,7 @@
             <thead class="sticky-top bg-white border-bottom">
                 <tr class="text-uppercase text-secondary" style="font-size: 0.75rem; letter-spacing: 0.05em;">
                     <th scope="col" class="py-2 ps-3 fw-normal border-0">
-                        <a href="?sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}" class="text-secondary text-decoration-none d-block">
+                        <a href="?year={{ selected_year }}&sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}" class="text-secondary text-decoration-none d-block">
                             Player
                             {% if sort_by == 'player' %}
                                 <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
@@ -125,7 +145,7 @@
                         </a>
                     </th>
                     <th scope="col" class="py-2 text-center fw-normal border-0">
-                        <a href="?sort=games_count&order={% if sort_by == 'games_count' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
+                        <a href="?year={{ selected_year }}&sort=games_count&order={% if sort_by == 'games_count' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
                             Games
                             {% if sort_by == 'games_count' %}
                                 <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
@@ -133,7 +153,7 @@
                         </a>
                     </th>
                     <th scope="col" class="py-2 text-end pe-3 fw-normal border-0">
-                        <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
+                        <a href="?year={{ selected_year }}&sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
                             Balance
                             {% if sort_by == 'balance' %}
                                 <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
@@ -147,7 +167,7 @@
                 {% for info in players_info %}
                 <tr class="position-relative">
                     <td class="ps-3 border-bottom-0 py-2">
-                        <a href="/team/{{ team.id }}/player/{{ info.player.id }}" class="text-decoration-none text-dark fw-semibold stretched-link">
+                        <a href="/team/{{ team.id }}/player/{{ info.player.id }}?year={{ selected_year }}" class="text-decoration-none text-dark fw-semibold stretched-link">
                             {{ info.player.nick }}
                         </a>
                         {% if info.player.id == team.owner_id %}

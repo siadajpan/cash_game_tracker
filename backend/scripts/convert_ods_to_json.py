@@ -55,6 +55,7 @@ def convert_to_json(ods_path, json_output_path):
         game_obj = {
             "start_time": start_dt.strftime("%Y-%m-%d %H:%M"),
             "finish_time": finish_dt.strftime("%Y-%m-%d %H:%M"),
+            "host": g_rec.get("host"),
             "players": []
         }
         

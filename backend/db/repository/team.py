@@ -295,7 +295,7 @@ from backend.db.models.add_on import AddOn
 from backend.db.models.user_game import UserGame
 
 
-def get_team_player_stats_bulk(team_id: int, db: Session) -> Dict[int, Dict]:
+def get_team_player_stats_bulk(team_id: int, db: Session, year: int = None) -> Dict[int, Dict]:
     """
     Returns a dictionary mapping user_id to their stats in the team:
     {
@@ -309,50 +309,57 @@ def get_team_player_stats_bulk(team_id: int, db: Session) -> Dict[int, Dict]:
     stats = defaultdict(lambda: {"games_count": 0, "total_balance": 0.0})
     
     # 1. Games Count
-    # SELECT user_id, count(*) FROM user_game JOIN game ON ... WHERE team_id = ? GROUP BY user_id
-    games_counts = (
+    q1 = (
         db.query(UserGame.user_id, func.count(UserGame.game_id))
         .join(Game, UserGame.game_id == Game.id)
         .filter(Game.team_id == team_id)
-        .group_by(UserGame.user_id)
-        .all()
     )
+    if year:
+        q1 = q1.filter(Game.date.like(f"{year}%"))
+    games_counts = q1.group_by(UserGame.user_id).all()
+
     for uid, count in games_counts:
         stats[uid]["games_count"] = count
 
     # 2. Buy Ins Sum
-    buy_ins = (
+    q2 = (
         db.query(BuyIn.user_id, func.sum(BuyIn.amount))
         .join(Game, BuyIn.game_id == Game.id)
         .filter(Game.team_id == team_id)
-        .group_by(BuyIn.user_id)
-        .all()
     )
+    if year:
+        q2 = q2.filter(Game.date.like(f"{year}%"))
+    buy_ins = q2.group_by(BuyIn.user_id).all()
+
     money_in = defaultdict(float)
     for uid, total in buy_ins:
         if total:
             money_in[uid] += total
 
     # 3. Add Ons Sum (Approved only)
-    add_ons = (
+    q3 = (
         db.query(AddOn.user_id, func.sum(AddOn.amount))
         .join(Game, AddOn.game_id == Game.id)
         .filter(Game.team_id == team_id, AddOn.status == PlayerRequestStatus.APPROVED)
-        .group_by(AddOn.user_id)
-        .all()
     )
+    if year:
+        q3 = q3.filter(Game.date.like(f"{year}%"))
+    add_ons = q3.group_by(AddOn.user_id).all()
+
     for uid, total in add_ons:
         if total:
             money_in[uid] += total
 
     # 4. Cash Outs Sum (Approved only)
-    cash_outs = (
+    q4 = (
         db.query(CashOut.user_id, func.sum(CashOut.amount))
         .join(Game, CashOut.game_id == Game.id)
         .filter(Game.team_id == team_id, CashOut.status == PlayerRequestStatus.APPROVED)
-        .group_by(CashOut.user_id)
-        .all()
     )
+    if year:
+        q4 = q4.filter(Game.date.like(f"{year}%"))
+    cash_outs = q4.group_by(CashOut.user_id).all()
+
     money_out = defaultdict(float)
     for uid, total in cash_outs:
         if total:

@@ -1,7 +1,41 @@
 .page-title {
-  margin-top: 0.5rem;   /* same as mt-2 */
-  padding: 1.5rem;      /* same as p-4 */
-  font-size: 2rem;      /* same as display-5 */
+  margin-top: 0.5rem;
+  /* same as mt-2 */
+  padding: 1.5rem;
+  /* same as p-4 */
+  font-size: 2rem;
+  /* same as display-5 */
   font-weight: 300;
   line-height: 1.2;
+}
+
+.nav-custom-tab {
+  color: #6c757d;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.nav-custom-tab:hover {
+  color: #212529;
+}
+
+.nav-custom-tab.active {
+  color: #000;
+  border-bottom-color: #0d6efd;
+}
+
+/* Responsive borders for tabs layout */
+.border-bottom-mobile {
+  border-bottom: 1px solid #dee2e6;
+}
+
+@media (min-width: 768px) {
+  .border-bottom-mobile {
+    border-bottom: none;
+  }
+
+  .border-bottom-desktop {
+    border-bottom: 1px solid #dee2e6;
+  }
 }

@@ -189,19 +189,13 @@ content %}
 
           chipSelect.innerHTML = '';
 
-          // If more than 1 option, add the placeholder
-          if (chipStructures.length > 1) {
-              chipSelect.innerHTML = `<option value="" disabled selected>-- Choose a chip structure --</option>`;
-          }
+          // Always add placeholder as default
+          chipSelect.innerHTML = `<option value="" disabled selected>Select a chip values</option>`;
 
           chipStructures.forEach(cs => {
               const option = document.createElement('option');
               option.value = cs.id;
               option.textContent = cs.name;
-              // Auto-select if it's the only one
-              if (chipStructures.length === 1) {
-                  option.selected = true;
-              }
               chipSelect.appendChild(option);
           });
 
