@@ -44,6 +44,24 @@ async def send_verification_email(email_to: str, nick: str, token: str):
         print(f"Failed to send email: {e}")
 
 
+async def send_reset_password_email(email_to: str, nick: str, token: str):
+    reset_url = f"{settings.URL}/reset-password?token={token}"
+    template = templates.get_template("email/reset_password.html")
+    html_content = template.render(nick=nick, link=reset_url)
+
+    params = {
+        "from": "Over-Bet <noreply@over-bet.com>",
+        "to": [email_to],
+        "subject": "Reset your Over-Bet password",
+        "html": html_content,
+    }
+
+    try:
+        resend.Emails.send(params)
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+
+
 @router.get("/verify-success")
 async def verify_success(request: Request, user: User = Depends(get_current_user)):
     return templates.TemplateResponse(

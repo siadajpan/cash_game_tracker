@@ -21,7 +21,7 @@ class Team(Base):
         cascade="all, delete-orphan",  # Recommended for Association Objects
     )
 
-    games = relationship("Game", back_populates="team")
+    games = relationship("Game", back_populates="team", cascade="all, delete-orphan")
     chip_structure = relationship("ChipStructure", back_populates="team")
 
     @property

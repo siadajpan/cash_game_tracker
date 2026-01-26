@@ -135,18 +135,33 @@ def get_user_games_count(user: User, db: Session) -> int:
     return len(user.games_played)
 
 
-def get_user_team_games(user: User, team_id: int, db: Session) -> List[Game]:
+def get_user_team_games(user: User, team_id: int, db: Session, limit: int = None) -> List[Game]:
     """
     Returns list of games the user played in for a specific team.
     """
-    return [game for game in user.games_played if game.team_id == team_id]
+    query = (
+        db.query(Game)
+        .join(UserGame)
+        .filter(UserGame.user_id == user.id, Game.team_id == team_id)
+        .order_by(Game.date.desc())
+    )
+    
+    if limit:
+        query = query.limit(limit)
+        
+    return query.all()
 
 
 def get_user_team_games_count(user: User, team_id: int, db: Session) -> int:
     """
     Returns count of games the user played in for a specific team.
     """
-    return len(get_user_team_games(user, team_id, db))
+    return (
+        db.query(Game)
+        .join(UserGame)
+        .filter(UserGame.user_id == user.id, Game.team_id == team_id)
+        .count()
+    )
 
 
 def get_user_total_balance(user: User, db: Session) -> float:
@@ -178,3 +193,231 @@ def delete_game_by_id(game_id: int, db: Session) -> bool:
     db.delete(game)
     db.commit()
     return True
+
+
+def get_user_past_games(user: User, db: Session, limit: int = None) -> List[Game]:
+    """
+    Returns list of past (not running) games for all teams the user belongs to.
+    """
+    team_ids = [team.id for team in user.teams]
+    if not team_ids:
+        return []
+        
+    query = (
+        db.query(Game)
+        .join(UserGame)
+        .filter(Game.team_id.in_(team_ids))
+        .filter(UserGame.user_id == user.id)
+        .filter(Game.running == False)
+        .order_by(Game.date.desc())
+    )
+    
+    if limit:
+        query = query.limit(limit)
+        
+    return query.all()
+
+
+def get_user_past_games_count(user: User, db: Session) -> int:
+    """
+    Returns count of past (not running) games for all teams the user belongs to.
+    """
+    team_ids = [team.id for team in user.teams]
+    if not team_ids:
+        return 0
+        
+    return (
+        db.query(Game)
+        .filter(Game.team_id.in_(team_ids))
+        .filter(Game.running == False)
+        .count()
+    )
+
+
+from sqlalchemy import func
+from collections import defaultdict
+from typing import Dict, Any
+from backend.db.models.buy_in import BuyIn
+from backend.db.models.cash_out import CashOut
+from backend.db.models.add_on import AddOn
+
+def get_player_games_stats_bulk(user_id: int, team_id: int, db: Session) -> Dict[int, Dict[str, Any]]:
+    """
+    Returns aggregated stats for all games in a team for a specific user.
+    Key: game_id
+    Value: { "balance": float, "total_pot": float, "players_count": int }
+    """
+    stats = defaultdict(lambda: {"balance": 0.0, "total_pot": 0.0, "players_count": 0})
+
+    # 1. Total Pot per Game (Sum of all buyins + approved addons for ALL players in team games)
+    # Note: This is global for the game, not specific to user, but we filter by team games.
+    # Group by game_id
+    
+    # BuyIns Sum (All players)
+    buy_ins_pot = (
+        db.query(BuyIn.game_id, func.sum(BuyIn.amount))
+        .join(Game, BuyIn.game_id == Game.id)
+        .filter(Game.team_id == team_id)
+        .group_by(BuyIn.game_id)
+        .all()
+    )
+    for gid, total in buy_ins_pot:
+        if total:
+            stats[gid]["total_pot"] += total
+
+    # AddOns Sum (All players, Approved only)
+    add_ons_pot = (
+        db.query(AddOn.game_id, func.sum(AddOn.amount))
+        .join(Game, AddOn.game_id == Game.id)
+        .filter(Game.team_id == team_id, AddOn.status == PlayerRequestStatus.APPROVED)
+        .group_by(AddOn.game_id)
+        .all()
+    )
+    for gid, total in add_ons_pot:
+        if total:
+            stats[gid]["total_pot"] += total
+
+    # 2. Players Count per Game
+    players_counts = (
+        db.query(UserGame.game_id, func.count(UserGame.user_id))
+        .join(Game, UserGame.game_id == Game.id)
+        .filter(Game.team_id == team_id)
+        .group_by(UserGame.game_id)
+        .all()
+    )
+    for gid, count in players_counts:
+        stats[gid]["players_count"] = count
+
+    # 3. User Balance per Game
+    # Balance = CashOut (Approved) - (BuyIn + AddOn (Approved))
+    
+    money_in = defaultdict(float)
+    money_out = defaultdict(float)
+
+    # User BuyIns
+    user_buy_ins = (
+        db.query(BuyIn.game_id, func.sum(BuyIn.amount))
+        .join(Game, BuyIn.game_id == Game.id)
+        .filter(Game.team_id == team_id, BuyIn.user_id == user_id)
+        .group_by(BuyIn.game_id)
+        .all()
+    )
+    for gid, total in user_buy_ins:
+        if total:
+            money_in[gid] += total
+
+    # User AddOns
+    user_add_ons = (
+        db.query(AddOn.game_id, func.sum(AddOn.amount))
+        .join(Game, AddOn.game_id == Game.id)
+        .filter(Game.team_id == team_id, AddOn.user_id == user_id, AddOn.status == PlayerRequestStatus.APPROVED)
+        .group_by(AddOn.game_id)
+        .all()
+    )
+    for gid, total in user_add_ons:
+        if total:
+            money_in[gid] += total
+
+    # User CashOuts
+    user_cash_outs = (
+        db.query(CashOut.game_id, func.sum(CashOut.amount))
+        .join(Game, CashOut.game_id == Game.id)
+        .filter(Game.team_id == team_id, CashOut.user_id == user_id, CashOut.status == PlayerRequestStatus.APPROVED)
+        .group_by(CashOut.game_id)
+        .all()
+    )
+    for gid, total in user_cash_outs:
+        if total:
+            money_out[gid] += total
+
+    # Combine Balance
+    # Iterate known games for this user (from buyins/addons/matches)
+    # Or just iterate stats keys, which cover all games in team. 
+    # But wait, user might not play in ALL team games.
+    # We should only calculate balance for games the user is actually IN (UserGame).
+    # But money_in/money_out are strictly filtered by user_id so they are safe.
+    # The stats dict has keys for ALL games in team.
+    # We can just iterate the money_in/money_out keys to update balance.
+    
+    involved_games = set(money_in.keys()) | set(money_out.keys())
+    for gid in involved_games:
+        stats[gid]["balance"] = money_out[gid] - money_in[gid]
+
+    return stats
+
+
+def get_user_past_games_stats_bulk(user_id: int, game_ids: List[int], db: Session) -> Dict[int, Dict[str, Any]]:
+    """
+    Returns aggregated stats for a specific list of games (past games view).
+    Key: game_id
+    Value: { "my_balance": float, "total_pot": float, "players_count": int }
+    """
+    stats = defaultdict(lambda: {"my_balance": 0.0, "total_pot": 0.0, "players_count": 0})
+    if not game_ids:
+        return stats
+
+    # 1. Total Pot per Game
+    buy_ins_pot = (
+        db.query(BuyIn.game_id, func.sum(BuyIn.amount))
+        .filter(BuyIn.game_id.in_(game_ids))
+        .group_by(BuyIn.game_id)
+        .all()
+    )
+    for gid, total in buy_ins_pot:
+        if total: stats[gid]["total_pot"] += total
+
+    add_ons_pot = (
+        db.query(AddOn.game_id, func.sum(AddOn.amount))
+        .filter(AddOn.game_id.in_(game_ids), AddOn.status == PlayerRequestStatus.APPROVED)
+        .group_by(AddOn.game_id)
+        .all()
+    )
+    for gid, total in add_ons_pot:
+        if total: stats[gid]["total_pot"] += total
+
+    # 2. Players Count
+    players_counts = (
+        db.query(UserGame.game_id, func.count(UserGame.user_id))
+        .filter(UserGame.game_id.in_(game_ids))
+        .group_by(UserGame.game_id)
+        .all()
+    )
+    for gid, count in players_counts:
+        stats[gid]["players_count"] = count
+
+    # 3. My Balance
+    money_in = defaultdict(float)
+    money_out = defaultdict(float)
+
+    user_buy_ins = (
+        db.query(BuyIn.game_id, func.sum(BuyIn.amount))
+        .filter(BuyIn.game_id.in_(game_ids), BuyIn.user_id == user_id)
+        .group_by(BuyIn.game_id)
+        .all()
+    )
+    for gid, total in user_buy_ins:
+        if total: money_in[gid] += total
+
+    user_add_ons = (
+        db.query(AddOn.game_id, func.sum(AddOn.amount))
+        .filter(AddOn.game_id.in_(game_ids), AddOn.user_id == user_id, AddOn.status == PlayerRequestStatus.APPROVED)
+        .group_by(AddOn.game_id)
+        .all()
+    )
+    for gid, total in user_add_ons:
+        if total: money_in[gid] += total
+
+    user_cash_outs = (
+        db.query(CashOut.game_id, func.sum(CashOut.amount))
+        .filter(CashOut.game_id.in_(game_ids), CashOut.user_id == user_id, CashOut.status == PlayerRequestStatus.APPROVED)
+        .group_by(CashOut.game_id)
+        .all()
+    )
+    for gid, total in user_cash_outs:
+        if total: money_out[gid] += total
+
+    for gid in game_ids:
+        # Defaults to 0 if not in dict
+        stats[gid]["my_balance"] = money_out[gid] - money_in[gid]
+
+    return stats

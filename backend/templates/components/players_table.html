@@ -15,11 +15,39 @@
 <ul class="list-group list-group-flush mb-3 list-group-hover">
     <li class="list-group-item">
         <div class="row fw-bold text-center">
-            <div class="{{ col_player }} text-start">Player</div>
-            <div class="{{ col_in }}">In</div>
-            <div class="{{ col_out }}">Out</div>
+            <div class="{{ col_player }} text-start">
+                <a href="?sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}" class="text-dark text-decoration-none">
+                    Player
+                    {% if sort_by == 'player' %}
+                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="{{ col_in }}">
+                <a href="?sort=buy_in&order={% if sort_by == 'buy_in' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                    In
+                    {% if sort_by == 'buy_in' %}
+                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="{{ col_out }}">
+                <a href="?sort=cash_out&order={% if sort_by == 'cash_out' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                    Out
+                    {% if sort_by == 'cash_out' %}
+                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                    {% endif %}
+                </a>
+            </div>
             {% if not game.running or show_balance %}
-            <div class="{{ col_balance }}">Balance</div>
+            <div class="{{ col_balance }}">
+                <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                    Balance
+                    {% if sort_by == 'balance' %}
+                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                    {% endif %}
+                </a>
+            </div>
             {% endif %}
             <div class="{{ col_arrow }}"></div>
         </div>

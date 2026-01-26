@@ -2,7 +2,107 @@
 {% block title %}
 <title>Group {{ team.name }}</title>
 {% endblock %}
-{% block page_heading %}{{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>{% endblock %}
+{% block page_heading %}
+<div class="d-flex justify-content-between align-items-center w-100">
+    <div>
+        {{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>
+    </div>
+    {% if current_user.id == team.owner.id %}
+    <div class="dropdown">
+        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="bi bi-gear-fill"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+            <li>
+                <button class="dropdown-item" type="button" data-bs-toggle="modal"
+                    data-bs-target="#importGamesModal">
+                    <i class="bi bi-file-earmark-arrow-up"></i> Import Games
+                </button>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
+                    data-bs-target="#deleteTeamModal">
+                    <i class="bi bi-trash"></i> Remove Group
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importGamesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Legacy Games</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="importGamesForm" action="/team/{{ team.id }}/import" method="post" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <p class="mb-3" style="font-size: 0.8rem;">Upload a JSON file containing your game history. The data should be formatted as follows:</p>
+                        <div class="bg-light p-3 rounded mb-3 border overflow-auto" style="max-height: 150px;">
+<pre class="mb-0" style="font-size: 0.75rem;">
+[
+  {
+    "start_time": "YYYY-MM-DD HH:MM",
+    "finish_time": "YYYY-MM-DD HH:MM",
+    "players": [
+      {
+        "nick": "PlayerNick",
+        "buy_in": 100.0,
+        "cash_out": 150.0
+      }
+    ]
+  }
+]
+</pre>
+                        </div>
+                        <div class="mb-3">
+                            <label for="importFile" class="form-label" style="font-size: 0.8rem;">Select JSON File</label>
+                            <input class="form-control form-control-sm" type="file" id="importFile" name="file" accept=".json" required>
+                        </div>
+                        <div class="alert alert-info py-2" style="font-size: 0.65rem;">
+                            <i class="bi bi-info-circle me-1"></i> Existing games will be skipped. New players will be added as guests.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="importSubmitBtn">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="importSpinner"></span>
+                            <span id="importBtnText">Import Games</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="deleteTeamModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Remove Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="fs-5">Are you sure you want to delete <strong>{{ team.name }}</strong>?</p>
+                    <p class="text-danger fw-bold mb-1">Warning: This action cannot be undone.</p>
+                    <p class="text-muted small">All games, history, and members associated with this group will be permanently removed.</p>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="/team/{{ team.id }}/delete" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger">Yes, Delete Group</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
 
 {% block content %}
 
@@ -16,9 +116,30 @@
         <table class="table table-hover table-hover-custom align-middle mb-0">
             <thead class="sticky-top bg-white border-bottom">
                 <tr class="text-uppercase text-secondary" style="font-size: 0.75rem; letter-spacing: 0.05em;">
-                    <th scope="col" class="py-2 ps-3 fw-normal border-0">Player</th>
-                    <th scope="col" class="py-2 text-center fw-normal border-0">Games</th>
-                    <th scope="col" class="py-2 text-end pe-3 fw-normal border-0">Balance</th>
+                    <th scope="col" class="py-2 ps-3 fw-normal border-0">
+                        <a href="?sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}" class="text-secondary text-decoration-none d-block">
+                            Player
+                            {% if sort_by == 'player' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th scope="col" class="py-2 text-center fw-normal border-0">
+                        <a href="?sort=games_count&order={% if sort_by == 'games_count' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
+                            Games
+                            {% if sort_by == 'games_count' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th scope="col" class="py-2 text-end pe-3 fw-normal border-0">
+                        <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
+                            Balance
+                            {% if sort_by == 'balance' %}
+                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            {% endif %}
+                        </a>
+                    </th>
                     <th scope="col" class="py-2 border-0"></th>
                 </tr>
             </thead>
@@ -78,5 +199,20 @@
     
     // Initial call in case DOM is ready
     adjustTeamViewHeight();
+
+    const importForm = document.getElementById('importGamesForm');
+    if (importForm) {
+        importForm.addEventListener('submit', function() {
+            const btn = document.getElementById('importSubmitBtn');
+            const spinner = document.getElementById('importSpinner');
+            const text = document.getElementById('importBtnText');
+            
+            if (btn && spinner && text) {
+                btn.disabled = true;
+                spinner.classList.remove('d-none');
+                text.textContent = ' Importing...';
+            }
+        });
+    }
 </script>
 {% endblock %}

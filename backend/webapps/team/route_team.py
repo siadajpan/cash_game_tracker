@@ -1,8 +1,9 @@
 import json
+from datetime import datetime
 from sqlite3 import IntegrityError
 from typing import List
 
-from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
+from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form, UploadFile, File
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from pydantic_core import PydanticCustomError
@@ -197,10 +198,36 @@ async def decide_join_request(
     )
 
 
+@router.post(
+    "/{team_id}/join_requests/accept_all",
+    status_code=status.HTTP_302_FOUND,
+)
+async def accept_all_join_requests(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    if team.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    from backend.db.repository.team import approve_all_join_requests
+    approve_all_join_requests(team.id, db)
+    
+    return responses.RedirectResponse(
+        url=f"/team/{team_id}", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
 @router.get("/{team_id}")
 async def team_view(
     request: Request,
     team_id: int,
+    sort: str = "games_count",
+    order: str = "desc",
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -208,18 +235,37 @@ async def team_view(
     if not team:
         return {"error": "Group not found"}
 
+    from backend.db.repository.team import get_team_player_stats_bulk
+    
     join_requests = get_team_join_requests(team, db)
     players_info = []
+    
+    # helper for bulk fetch
+    bulk_stats = get_team_player_stats_bulk(team.id, db)
+    
     for player in get_team_approved_players(team, db):
-        games_count = get_user_team_games_count(player, team.id, db)
-        total_balance = get_user_team_balance(player, team.id, db)
+        p_stats = bulk_stats.get(player.id, {"games_count": 0, "total_balance": 0.0})
+        
         players_info.append(
             {
                 "player": player,
-                "games_count": games_count,
-                "total_balance": total_balance,
+                "games_count": p_stats["games_count"],
+                "total_balance": p_stats["total_balance"],
             }
         )
+
+    # Sorting
+    reverse_order = (order == "desc")
+    
+    if sort == "player":
+        players_info.sort(key=lambda x: x["player"].nick.lower(), reverse=reverse_order)
+    elif sort == "games_count":
+        players_info.sort(key=lambda x: x["games_count"], reverse=reverse_order)
+    elif sort == "balance":
+        players_info.sort(key=lambda x: x["total_balance"], reverse=reverse_order)
+    else:
+        # Default
+        players_info.sort(key=lambda x: x["games_count"], reverse=True)
 
     return templates.TemplateResponse(
         "team/team_view.html",
@@ -229,6 +275,8 @@ async def team_view(
             "team": team,
             "join_requests": join_requests,
             "players_info": players_info,
+            "sort_by": sort,
+            "order": order,
         },
     )
 
@@ -238,9 +286,13 @@ async def player_stats(
     request: Request,
     team_id: int,
     player_id: int,
+    sort: str = "date",
+    order: str = "desc",
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
+    from backend.db.repository.game import get_player_games_stats_bulk
+    
     team = get_team_by_id(team_id, db)
     if not team:
         return RedirectResponse("/")
@@ -253,37 +305,27 @@ async def player_stats(
     if not player:
         return RedirectResponse(f"/team/{team_id}")
 
-    # Get games for this player IN THIS TEAM
-    team_games = get_user_team_games(player, team_id, db)
-    # Sort descending
-    team_games.sort(key=lambda x: x.date, reverse=True)
+    # Get games for this player IN THIS TEAM, ALL of them
+    team_games = get_user_team_games(player, team_id, db, limit=None)
+    
+    # Bulk fetch stats
+    bulk_stats = get_player_games_stats_bulk(player.id, team.id, db)
 
     games_history = []
     total_seconds_played = 0
 
     for game in team_games:
-        balance = get_user_game_balance(player, game, db)
+        stats = bulk_stats.get(game.id, {"balance": 0.0, "total_pot": 0.0, "players_count": 0})
         
-        # Calculate Total Pot
-        total_pot = 0.0
-        for p in game.players:
-            p_buy_in = get_player_game_total_buy_in_amount(p, game, db)
-            p_add_ons = get_player_game_addons(p, game, db)
-            p_money_in = p_buy_in + sum(
-                a.amount for a in p_add_ons if a.status == PlayerRequestStatus.APPROVED
-            )
-            total_pot += p_money_in
-
         games_history.append({
             "game": game, 
-            "balance": balance,
-            "total_pot": total_pot,
-            "players_count": len(game.players)
+            "balance": stats["balance"],
+            "total_pot": stats["total_pot"],
+            "players_count": stats["players_count"]
         })
         
         # Calculate duration if times are available
         if game.start_time and game.finish_time:
-             # Make sure to handle potential negative durations if data is bad, though unlikely
             duration = (game.finish_time - game.start_time).total_seconds()
             if duration > 0:
                 total_seconds_played += duration
@@ -296,6 +338,20 @@ async def player_stats(
     if hours_played > 0:
         winrate = total_balance / hours_played
 
+    today = datetime.now().date() 
+    # Sorting
+    reverse_order = (order == "desc")
+    
+    if sort == "date":
+        games_history.sort(key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()), reverse=reverse_order)
+    elif sort == "balance":
+        games_history.sort(key=lambda x: x["balance"], reverse=reverse_order)
+    elif sort == "pot":
+        games_history.sort(key=lambda x: x["total_pot"], reverse=reverse_order)
+    else:
+        # Default
+        games_history.sort(key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()), reverse=True)
+
     return templates.TemplateResponse(
         "team/player_stats.html",
         {
@@ -305,8 +361,11 @@ async def player_stats(
             "games_history": games_history,
             "total_balance": total_balance,
             "games_count": len(games_history),
+            "visible_count": len(games_history),
             "winrate": winrate,
             "is_owner": user.id == team.owner_id,
+            "sort_by": sort,
+            "order": order,
         },
     )
 
@@ -328,3 +387,188 @@ async def remove_player(
         remove_user_from_team(team, player, db)
 
     return RedirectResponse(f"/team/{team_id}", status_code=303)
+
+
+@router.post("/{team_id}/delete")
+async def delete_team_route(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_from_token),
+):
+    from backend.db.repository.team import delete_team
+    
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Group not found")
+        
+    if user.id != team.owner_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    delete_team(team, db)
+
+    return RedirectResponse("/", status_code=303)
+
+
+@router.post("/{team_id}/import")
+async def import_legacy_games(
+    request: Request,
+    team_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    import json
+    from datetime import datetime, timedelta
+    import secrets
+    from backend.db.models.game import Game
+    from backend.db.models.buy_in import BuyIn
+    from backend.db.models.cash_out import CashOut
+    from backend.db.models.user_game import UserGame
+    from backend.db.models.user_team import UserTeam
+    from backend.core.hashing import Hasher
+    from backend.db.repository.team import create_new_user
+
+    uploaded_file = file
+    
+    if not uploaded_file:
+         raise HTTPException(status_code=400, detail="No file uploaded")
+         
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Group not found")
+        
+    if team.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        content = await uploaded_file.read()
+        data = json.loads(content)
+        
+        if not isinstance(data, list):
+             raise ValueError("JSON must be a list of game objects")
+             
+        # Cache existing team users for lookup
+        # Nickname matching is case-sensitive or insensitive? Let's do sensitive for now or match closely.
+        # User defined nick might vary.
+        team_users_map = {u.nick: u for u in team.users}
+        
+        imported_count = 0
+        skipped_count = 0
+        
+        for g_data in data:
+            # 1. Parse Date/Time
+            start_str = g_data.get("start_time") # "YYYY-MM-DD HH:MM"
+            finish_str = g_data.get("finish_time") # "YYYY-MM-DD HH:MM"
+            
+            dt_start = datetime.strptime(start_str, "%Y-%m-%d %H:%M")
+            dt_finish = datetime.strptime(finish_str, "%Y-%m-%d %H:%M")
+            g_date = dt_start.date()
+                
+            # 2. Check Duplicates
+            # Check if game exists with same team, same start time (approx)
+            exists = db.query(Game).filter(
+                Game.team_id == team.id,
+                Game.start_time == dt_start
+            ).first()
+            
+            if exists:
+                skipped_count += 1
+                continue
+                
+            # 3. Create Game
+            new_game = Game(
+                date=g_date,
+                start_time=dt_start,
+                finish_time=dt_finish,
+                default_buy_in=0,
+                running=False,
+                owner_id=team.owner_id,
+                team_id=team.id
+            )
+            db.add(new_game)
+            db.commit()
+            db.refresh(new_game)
+            
+            # 4. Process Players
+            players_list = g_data.get("players", [])
+            for p_data in players_list:
+                nick = p_data.get("nick")
+                buy_in_amt = float(p_data.get("buy_in", 0))
+                cash_out_amt = float(p_data.get("cash_out", 0))
+                
+                # Find User
+                player_user = team_users_map.get(nick)
+                
+                if not player_user:
+                    # Try finding global user by nick? Risky. 
+                    # Create Guest User
+                    random_suffix = secrets.token_hex(4)
+                    new_email = f"{nick.lower().replace(' ', '_')}_{random_suffix}@imported.legacy"
+                    
+                    # Create user
+                    player_user = User(
+                        email=new_email,
+                        nick=nick,
+                        hashed_password=Hasher.get_password_hash("guest_imported"),
+                        is_active=True
+                    )
+                    db.add(player_user)
+                    db.commit()
+                    db.refresh(player_user)
+                    
+                    # Add to Team
+                    ut = UserTeam(
+                        user_id=player_user.id,
+                        team_id=team.id,
+                        status=PlayerRequestStatus.APPROVED
+                    )
+                    db.add(ut)
+                    db.commit()
+                    
+                    # Update cache
+                    team_users_map[nick] = player_user
+                
+                # Add to Game
+                ug = UserGame(user_id=player_user.id, game_id=new_game.id)
+                db.add(ug)
+                
+                # Stats
+                if buy_in_amt > 0:
+                    bi = BuyIn(
+                        amount=buy_in_amt,
+                        user_id=player_user.id,
+                        game_id=new_game.id,
+                        time=dt_start
+                    )
+                    db.add(bi)
+                    
+                if cash_out_amt > 0: # Even if 0, record it? Usually yes, if played.
+                    co = CashOut(
+                        amount=cash_out_amt,
+                        user_id=player_user.id,
+                        game_id=new_game.id,
+                        time=dt_finish,
+                        status=PlayerRequestStatus.APPROVED
+                    )
+                    db.add(co)
+                elif buy_in_amt > 0:
+                    # If they bought in but no cashout record, assuming 0 cashout (lost everything)
+                    co = CashOut(
+                        amount=0,
+                        user_id=player_user.id,
+                        game_id=new_game.id,
+                        time=dt_finish,
+                        status=PlayerRequestStatus.APPROVED
+                    )
+                    db.add(co)
+
+            db.commit()
+            imported_count += 1
+            
+        msg = f"Imported {imported_count} games. Skipped {skipped_count} duplicates."
+        return RedirectResponse(f"/team/{team_id}?msg={msg}", status_code=303)
+        
+    except Exception as e:
+        # Check if json error
+        return RedirectResponse(f"/team/{team_id}?errors=Import failed: {str(e)}", status_code=303)

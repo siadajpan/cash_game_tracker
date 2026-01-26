@@ -9,7 +9,14 @@
         <ul class="navbar-nav flex-row">
             {% if request.cookies.access_token %}
                 <li class="nav-item ms-3">
-                    <a class="nav-link text-danger fw-semibold" href="/logout">Logout</a>
+                    <a class="nav-link text-dark d-flex align-items-center" href="/user/profile" title="Profile">
+                        <i class="bi bi-person-circle fs-5 me-1"></i> Profile
+                    </a>
+                </li>
+                <li class="nav-item ms-3">
+                    <a class="nav-link text-danger fw-semibold d-flex align-items-center" href="/logout">
+                        <i class="bi bi-box-arrow-right fs-5 me-1"></i> Logout
+                    </a>
                 </li>
             {% else %}
                 <li class="nav-item ms-3">
