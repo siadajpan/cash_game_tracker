@@ -1,11 +1,11 @@
 {% if not user_teams %}
 <div class="form-text text-danger">You are not part of any group.</div>
 {% elif user_teams|length == 1 %}
-{# If there's only one team, use a hidden input and show team name #}
+{# If there's only one team, use a hidden input and show team name in a disabled select for consistency #}
 <input type="hidden" name="team_id" id="team_id" value="{{ user_teams[0].id }}">
 
 <div class="form-floating">
-  <select name="team_id" id="team_id" required class="form-select">
+  <select id="team_id_display" disabled class="form-select">
     <option value="{{ user_teams[0].id }}" selected>
       {{ user_teams[0].name }}
     </option>

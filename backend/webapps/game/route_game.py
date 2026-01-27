@@ -121,7 +121,6 @@ async def create_game(
     form = await request.form()
     errors = []
     try:
-        # Let Pydantic handle validation
         new_game_data = GameCreate(
             date=form.get("date") or str(datetime.today().date()),
             default_buy_in=float(form.get("default_buy_in", 0)),
@@ -130,7 +129,6 @@ async def create_game(
             chip_structure_id=form.get("chip_structure_id"),
             start_time=form.get("start_time"),
         )
-
         # Check if the team exists separately
         team = get_team_by_id(new_game_data.team_id, db)
         if not team:
