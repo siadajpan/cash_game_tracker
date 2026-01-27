@@ -97,27 +97,23 @@ def remove_user_from_team(team: Team, user: User, db: Session):
     # 2. Get IDs of games belonging to this team
     # (We can do bulk delete with WHERE IN subquery or similar)
     team_game_ids = db.query(Game.id).filter(Game.team_id == team.id)
-    
+
     # 3. Remove UserGame associations (Player in specific games)
     db.query(UserGame).filter(
-        UserGame.user_id == user.id, 
-        UserGame.game_id.in_(team_game_ids)
+        UserGame.user_id == user.id, UserGame.game_id.in_(team_game_ids)
     ).delete(synchronize_session=False)
 
     # 4. Remove Financials (BuyIn, AddOn, CashOut)
     db.query(BuyIn).filter(
-        BuyIn.user_id == user.id,
-        BuyIn.game_id.in_(team_game_ids)
+        BuyIn.user_id == user.id, BuyIn.game_id.in_(team_game_ids)
     ).delete(synchronize_session=False)
-    
+
     db.query(AddOn).filter(
-        AddOn.user_id == user.id,
-        AddOn.game_id.in_(team_game_ids)
+        AddOn.user_id == user.id, AddOn.game_id.in_(team_game_ids)
     ).delete(synchronize_session=False)
 
     db.query(CashOut).filter(
-        CashOut.user_id == user.id,
-        CashOut.game_id.in_(team_game_ids)
+        CashOut.user_id == user.id, CashOut.game_id.in_(team_game_ids)
     ).delete(synchronize_session=False)
 
     db.commit()
@@ -225,12 +221,8 @@ def approve_all_join_requests(team_id: int, db: Session):
     Approves all pending join requests for a team.
     """
     db.query(UserTeam).filter(
-        UserTeam.team_id == team_id,
-        UserTeam.status == PlayerRequestStatus.REQUESTED
-    ).update(
-        {UserTeam.status: PlayerRequestStatus.APPROVED},
-        synchronize_session=False
-    )
+        UserTeam.team_id == team_id, UserTeam.status == PlayerRequestStatus.REQUESTED
+    ).update({UserTeam.status: PlayerRequestStatus.APPROVED}, synchronize_session=False)
     db.commit()
 
 
@@ -295,7 +287,9 @@ from backend.db.models.add_on import AddOn
 from backend.db.models.user_game import UserGame
 
 
-def get_team_player_stats_bulk(team_id: int, db: Session, year: int = None) -> Dict[int, Dict]:
+def get_team_player_stats_bulk(
+    team_id: int, db: Session, year: int = None
+) -> Dict[int, Dict]:
     """
     Returns a dictionary mapping user_id to their stats in the team:
     {
@@ -307,7 +301,7 @@ def get_team_player_stats_bulk(team_id: int, db: Session, year: int = None) -> D
     Optimized to use aggregation queries instead of N+1 loops.
     """
     stats = defaultdict(lambda: {"games_count": 0, "total_balance": 0.0})
-    
+
     # 1. Games Count
     q1 = (
         db.query(UserGame.user_id, func.count(UserGame.game_id))
@@ -364,13 +358,13 @@ def get_team_player_stats_bulk(team_id: int, db: Session, year: int = None) -> D
     for uid, total in cash_outs:
         if total:
             money_out[uid] += total
-            
+
     # Calculate Balance
     # We iterate over all keys found in any result to ensure coverage
     all_users = set(stats.keys()) | set(money_in.keys()) | set(money_out.keys())
-    
+
     for uid in all_users:
         stats[uid]["total_balance"] = money_out[uid] - money_in[uid]
         stats[uid]["total_investment"] = money_in[uid]
-        
+
     return stats

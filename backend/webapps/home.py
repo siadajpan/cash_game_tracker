@@ -34,7 +34,6 @@ async def home(
     )
 
 
-
 @router.get("/terms-of-service/")
 async def terms_of_service(request: Request):
     return templates.TemplateResponse(
