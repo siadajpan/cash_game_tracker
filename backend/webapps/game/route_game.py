@@ -50,7 +50,10 @@ from backend.db.repository.game import (
 )
 from backend.db.repository.team import (
     get_team_by_id,
+    is_user_admin,
 )
+from backend.db.models.team_role import TeamRole
+from backend.db.models.user_team import UserTeam
 from backend.db.session import get_db
 from backend.schemas.games import GameCreate, GameJoin
 from backend.apis.v1.route_login import get_active_user
@@ -70,9 +73,9 @@ async def delete_game(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if game.owner_id != user.id:
+    if not is_user_admin(user.id, game.team_id, db):
         raise HTTPException(
-            status_code=403, detail="Only the owner can delete the game"
+            status_code=403, detail="Only admins can delete the game"
         )
 
     delete_game_by_id(game_id, db)
@@ -445,6 +448,7 @@ async def open_game(
             "request": request,
             "game": game,
             "user": user,
+            "is_admin": is_user_admin(user.id, game.team_id, db),
             "players_info": players_info,
             "requests": existing_requests,
             "invite_link": invite_link,

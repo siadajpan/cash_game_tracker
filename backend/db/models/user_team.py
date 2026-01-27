@@ -10,6 +10,8 @@ from backend.db.models.player_request_status import (
 )
 
 
+from backend.db.models.team_role import TeamRole, TeamRoleEnum
+
 class UserTeam(Base):
     __tablename__ = "user_team_association"
 
@@ -19,5 +21,6 @@ class UserTeam(Base):
     status = Column(
         PlayerRequestStatusEnum, default=PlayerRequestStatus.REQUESTED, nullable=False
     )
+    role = Column(TeamRoleEnum, default=TeamRole.MEMBER, nullable=False)
     user = relationship("User", back_populates="team_associations")
     team = relationship("Team", back_populates="user_associations")

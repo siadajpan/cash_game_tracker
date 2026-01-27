@@ -10,10 +10,6 @@ class Team(Base):
     name = Column(String(200), nullable=False)
     search_code = Column(String(200), nullable=False)
 
-    # Owner (Many-to-One: Many teams owned by one user)
-    owner_id = Column(Integer, ForeignKey("user.id"))
-    owner = relationship("User", back_populates="teams_owned")
-
     # Players in this team (Many-to-Many)
     user_associations = relationship(
         "UserTeam",

@@ -20,13 +20,18 @@ from sqlalchemy.orm import Session
 from starlette import status
 from starlette.responses import RedirectResponse
 
-from backend.apis.v1.route_login import get_current_user, get_current_user_from_token
+from backend.apis.v1.route_login import (
+    get_current_user,
+    get_current_user_from_token,
+    get_active_user,
+)
 from backend.core.config import TEMPLATES_DIR
 from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.team import Team
 from backend.db.models.game import Game
 from backend.db.models.user import User
 from backend.db.models.user_team import UserTeam
+from backend.db.models.team_role import TeamRole
 from backend.db.repository.add_on import get_player_game_addons
 from backend.db.repository.buy_in import get_player_game_total_buy_in_amount
 from backend.db.repository.game import (
@@ -50,6 +55,7 @@ from backend.db.repository.team import (
     join_team,
     get_team_by_name,
     remove_user_from_team,
+    is_user_admin,
 )
 from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
@@ -194,7 +200,7 @@ async def decide_join_request(
             status_code=status.HTTP_404_NOT_FOUND, detail="Group not found"
         )
 
-    if team.owner_id != current_user.id:
+    if not is_user_admin(current_user.id, team.id, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to accept members.",
@@ -221,7 +227,7 @@ async def accept_all_join_requests(
     if not team:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    if team.owner_id != current_user.id:
+    if not is_user_admin(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     from backend.db.repository.team import approve_all_join_requests
@@ -278,6 +284,9 @@ async def team_view(
     # helper for bulk fetch
     bulk_stats = get_team_player_stats_bulk(team.id, db, year=target_year)
 
+    current_user_assoc = db.query(UserTeam).filter(UserTeam.team_id == team.id, UserTeam.user_id == user.id).one_or_none()
+    is_admin = current_user_assoc and current_user_assoc.role == TeamRole.ADMIN
+
     for player in get_team_approved_players(team, db):
         p_stats = bulk_stats.get(player.id, {"games_count": 0, "total_balance": 0.0})
 
@@ -285,11 +294,16 @@ async def team_view(
         if target_year and p_stats["games_count"] == 0:
             continue
 
+        # Fetch player role in this team
+        p_assoc = db.query(UserTeam).filter(UserTeam.team_id == team.id, UserTeam.user_id == player.id).one_or_none()
+        p_role = p_assoc.role.value if p_assoc else 'MEMBER'
+
         players_info.append(
             {
                 "player": player,
                 "games_count": p_stats["games_count"],
                 "total_balance": p_stats["total_balance"],
+                "player_role": p_role,
             }
         )
 
@@ -311,6 +325,7 @@ async def team_view(
         {
             "request": request,
             "current_user": user,
+            "is_admin": is_admin,
             "team": team,
             "join_requests": join_requests,
             "players_info": players_info,
@@ -563,7 +578,10 @@ async def player_stats(
     )
     g_durations = {}
     for g in games_durations:
-        print("game duration", g.start_time, g.finish_time, "seconds", (g.finish_time - g.start_time).total_seconds())
+        if g.start_time and g.finish_time:
+            print("game duration", g.start_time, g.finish_time, "seconds", (g.finish_time - g.start_time).total_seconds())
+        else:
+            print("game duration", g.start_time, g.finish_time, "missing time")
         if g.start_time and g.finish_time:
             g_durations[g.id] = (g.finish_time - g.start_time).total_seconds() / 3600
         else:
@@ -844,6 +862,7 @@ async def player_stats(
         "team/player_stats.html",
         {
             "request": request,
+            "current_user": user,
             "team": team,
             "player": player,
             "games_history": games_history,
@@ -851,9 +870,8 @@ async def player_stats(
             "games_count": len(games_history),
             "visible_count": len(games_history),
             "winrate": winrate,
-            "is_owner": user.id == team.owner_id,
-            "sort_by": sort,
-            "order": order,
+            "is_admin": is_user_admin(user.id, team.id, db),
+            "player_role": (db.query(UserTeam).filter(UserTeam.team_id == team_id, UserTeam.user_id == player_id).one().role.value if db.query(UserTeam).filter(UserTeam.team_id == team_id, UserTeam.user_id == player_id).one_or_none() else "MEMBER"),
             "sort_by": sort,
             "order": order,
             "chart_points": chart_points,
@@ -861,6 +879,53 @@ async def player_stats(
             "available_years": available_years,
             "selected_year": year if year else "all",
         },
+    )
+
+
+@router.post("/{team_id}/player/{player_id}/role")
+async def change_player_role(
+    request: Request,
+    team_id: int,
+    player_id: int,
+    role: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+):
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(
+            status_code=403, detail="Only admins can change roles"
+        )
+
+    if player_id == current_user.id:
+        raise HTTPException(
+            status_code=400, detail="Cannot change your own role"
+        )
+
+    # Update role in UserTeam association
+    user_team = (
+        db.query(UserTeam)
+        .filter(UserTeam.team_id == team_id, UserTeam.user_id == player_id)
+        .one_or_none()
+    )
+    if not user_team:
+        raise HTTPException(status_code=404, detail="Player not in group")
+
+    from backend.db.models.team_role import TeamRole
+    if role.upper() == "ADMIN":
+        user_team.role = TeamRole.ADMIN
+    else:
+        user_team.role = TeamRole.MEMBER
+
+    db.add(user_team)
+    db.commit()
+
+    return RedirectResponse(
+        url=f"/team/{team_id}/player/{player_id}?msg=Role updated successfully",
+        status_code=status.HTTP_303_SEE_OTHER,
     )
 
 
@@ -873,7 +938,7 @@ async def remove_player(
     user: User = Depends(get_current_user_from_token),
 ):
     team = get_team_by_id(team_id, db)
-    if not team or user.id != team.owner_id:
+    if not team or not is_user_admin(user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     player = get_user(player_id, db)
@@ -896,7 +961,7 @@ async def delete_team_route(
     if not team:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    if user.id != team.owner_id:
+    if not is_user_admin(user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     delete_team(team, db)
@@ -932,7 +997,7 @@ async def import_legacy_games(
     if not team:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    if team.owner_id != current_user.id:
+    if not is_user_admin(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     try:
@@ -1002,7 +1067,9 @@ async def import_legacy_games(
 
             # 3. Determine Owner (Host)
             host_nick = g_data.get("host")
-            game_owner_id = team.owner_id
+            # Any admin can be the "default" for game creation? 
+            # Or just person who imports is the owner of those games.
+            game_owner_id = current_user.id
             if host_nick:
                 host_user = get_or_create_team_user(host_nick)
                 if host_user:
