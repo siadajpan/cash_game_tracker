@@ -792,7 +792,7 @@ async def import_legacy_games(
 ):
     import json
     from datetime import datetime, timedelta
-    import secrets
+
     from backend.db.models.game import Game
     from backend.db.models.buy_in import BuyIn
     from backend.db.models.cash_out import CashOut
@@ -831,13 +831,12 @@ async def import_legacy_games(
                 return team_users_map[nick_name]
             
             # Create Guest User
-            random_suffix = secrets.token_hex(4)
-            new_email = f"{nick_name.lower().replace(' ', '_')}_{random_suffix}@imported.legacy"
+            new_email = f"{nick_name.lower().replace(' ', '_')}_{team.search_code.lower()}@over-bet.com"
             
             player_user = User(
                 email=new_email,
                 nick=nick_name,
-                hashed_password=Hasher.get_password_hash("guest_imported"),
+                hashed_password=Hasher.get_password_hash("guest123"),
                 is_active=True
             )
             db.add(player_user)
