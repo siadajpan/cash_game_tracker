@@ -107,8 +107,8 @@ async def create_game_form(
         "team_chip_structures": team_chip_structures,
         "form": {
             "default_buy_in": 0.0,
-            "date": datetime.today().date().isoformat(),  # Format as YYYY-MM-DD
-            "start_time": start_time.strftime("%Y-%m-%dT%H:%M"),
+            "date": "",
+            "start_time": "",
         },
     }
 
