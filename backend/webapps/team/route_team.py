@@ -563,6 +563,7 @@ async def player_stats(
     )
     g_durations = {}
     for g in games_durations:
+        print("game duration", g.start_time, g.finish_time, "seconds", (g.finish_time - g.start_time).total_seconds())
         if g.start_time and g.finish_time:
             g_durations[g.id] = (g.finish_time - g.start_time).total_seconds() / 3600
         else:
@@ -1102,8 +1103,7 @@ def _calculate_team_stats(team, year, db):
         query = query.filter(Game.date.like(f"{year}%"))
     games = query.all()
 
-    if not games:
-        return {"games_count": 0}
+
 
     games_count = len(games)
 

@@ -174,28 +174,32 @@ content %}
       }
 
       // --- End Time Picker Logic ---
-
-      const teamSelect = document.getElementById('team_id');  // select or hidden input
       const chipSelect = document.getElementById('chip_structure_id');
 
-      if (!chipSelect || !teamSelect) return;
+      if (!chipSelect) return;
 
       function updateChipDropdown(teamId) {
           console.log("Updating chip dropdown for teamId:", teamId);
           const chipStructures = teamChipStructures[teamId] || [];
           console.log("chipStructures found:", chipStructures);
 
+          // Clear existing options
           chipSelect.innerHTML = '';
 
-          chipSelect.innerHTML = '';
+          // If only one structure, select it by default. 
+          // Otherwise, add the placeholder "Select a chip values" as the first disabled option.
+          if (chipStructures.length !== 1) {
+              chipSelect.innerHTML = `<option value="" disabled selected>Select a chip values</option>`;
+          }
 
-          // Always add placeholder as default
-          chipSelect.innerHTML = `<option value="" disabled selected>Select a chip values</option>`;
-
-          chipStructures.forEach(cs => {
+          chipStructures.forEach((cs, index) => {
               const option = document.createElement('option');
               option.value = cs.id;
               option.textContent = cs.name;
+              // If it's the only one, mark it as selected
+              if (chipStructures.length === 1 && index === 0) {
+                  option.selected = true;
+              }
               chipSelect.appendChild(option);
           });
 
@@ -222,17 +226,30 @@ content %}
           }
       });
 
-      // Multi-team: listen to select change
-      if (teamSelect.tagName === 'SELECT') {
-          teamSelect.addEventListener('change', () => {
-              console.log("Team selection changed to:", teamSelect.value);
-              updateChipDropdown(teamSelect.value);
+      // Ensure start_time is updated before submission
+      const form = document.querySelector('form');
+      if (form) {
+          form.addEventListener('submit', function(e) {
+              updateFinalInput();
+              console.log("Final submission value for start_time:", finalInput.value);
           });
       }
-      // Single-team: hidden input, populate immediately
-      else if (teamSelect.type === 'hidden') {
-          console.log("Single team detected, populating chip dropdown:", teamSelect.value);
-          updateChipDropdown(teamSelect.value);
+
+      // Multi-team: listen to select change
+      // Use querySelector for reliability since ID might be shared or hidden
+      const teamInput = document.querySelector('[name="team_id"]');
+      if (teamInput) {
+          if (teamInput.tagName === 'SELECT') {
+              teamInput.addEventListener('change', () => {
+                  console.log("Team selection changed to:", teamInput.value);
+                  updateChipDropdown(teamInput.value);
+              });
+              // Initial load
+              updateChipDropdown(teamInput.value);
+          } else {
+              console.log("Single team (hidden) detected:", teamInput.value);
+              updateChipDropdown(teamInput.value);
+          }
       }
   });
 </script>
