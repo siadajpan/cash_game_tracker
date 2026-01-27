@@ -13,8 +13,6 @@ class User(Base):
     is_active = Column(Boolean(), default=False)
     nick = Column(String(200), nullable=False)
 
-    teams_owned = relationship("Team", back_populates="owner")
-
     # Teams a user belongs to (Many-to-Many)
     team_associations = relationship(
         "UserTeam",

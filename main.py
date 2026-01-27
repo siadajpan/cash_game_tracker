@@ -10,6 +10,7 @@ from backend.apis.base import api_router
 from backend.core.config import STATIC_DIR, settings
 from backend.db.base import Base
 from backend.db.models.player_request_status import PlayerRequestStatusEnum
+from backend.db.models.team_role import TeamRoleEnum
 from backend.db.session import engine
 from backend.webapps.base import api_router as web_app_router
 from backend.webapps.guest.route_guest import router as guest_router
@@ -32,6 +33,7 @@ def create_tables():
 
 def create_enums(engine):
     PlayerRequestStatusEnum.create(bind=engine, checkfirst=True)
+    TeamRoleEnum.create(bind=engine, checkfirst=True)
 
 
 def wait_for_db(engine, retries=10, delay=2):

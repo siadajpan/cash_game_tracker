@@ -18,7 +18,7 @@
                     <i class="bi bi-file-earmark-arrow-down"></i> Export Stats
                 </button>
             </li>
-            {% if game.owner_id == user.id %}
+            {% if is_admin %}
             <li>
                 <hr class="dropdown-divider">
             </li>

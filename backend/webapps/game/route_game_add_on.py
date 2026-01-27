@@ -32,6 +32,10 @@ from backend.db.repository.game import (
     get_game_by_id,
     user_in_game,
 )
+from backend.db.repository.team import (
+    get_team_by_id,
+    is_user_admin,
+)
 from backend.db.session import get_db
 from backend.schemas.add_on import AddOnRequest
 
@@ -139,10 +143,12 @@ async def add_on_approve(
     user: User = Depends(get_current_user_from_token),
 ):
     game = get_game_by_id(game_id, db)
-    if not user_in_game(user, game):
-        return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
 
-    # TODO check if current user is game owner
+    if not is_user_admin(user.id, game.team_id, db):
+        raise HTTPException(status_code=403, detail="Only admins can approve add-ons")
+
     action = (
         PlayerRequestStatus.APPROVED
         if action == "approve"
@@ -165,9 +171,9 @@ async def finish_game_view(
     if not game:
         return RedirectResponse(url="/")
 
-    # Check owner
-    if game.owner_id != user.id:
-        return RedirectResponse(url=f"/game/{game.id}/open")
+    # Check admin
+    if not is_user_admin(user.id, game.team_id, db):
+        return RedirectResponse(url=f"/game/{game.id}")
 
     players_info = []
     all_cashed_out = True

@@ -21,7 +21,7 @@ from backend.schemas.team import TeamCreate
 
 def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
     """
-    Creates a new team with the given creator as both owner and player.
+    Creates a new team with the given creator as an admin and player.
 
     Args:
         team: TeamCreate schema object with team info.
@@ -31,12 +31,15 @@ def create_new_team(team: TeamCreate, creator: User, db: Session) -> Team:
     Returns:
         The newly created Team instance.
     """
-    new_team = Team(**team.model_dump(), owner=creator)
+    new_team = Team(**team.model_dump())
+
+    from backend.db.models.team_role import TeamRole
 
     team_association = UserTeam(
         user=creator,
         team=new_team,
         status=PlayerRequestStatus.APPROVED,  # auto approve when creating a team
+        role=TeamRole.ADMIN,
     )
 
     creator.team_associations.append(team_association)
@@ -161,6 +164,20 @@ def get_team_by_id(team_id: int, db: Session) -> Optional[Team]:
     Fetches a Team model instance by its ID.
     """
     return db.query(Team).filter(Team.id == team_id).one_or_none()
+
+
+def is_user_admin(user_id: int, team_id: int, db: Session) -> bool:
+    """
+    Checks if a user has the ADMIN role in a team.
+    """
+    from backend.db.models.team_role import TeamRole
+
+    assoc = (
+        db.query(UserTeam)
+        .filter(UserTeam.user_id == user_id, UserTeam.team_id == team_id)
+        .one_or_none()
+    )
+    return assoc is not None and assoc.role == TeamRole.ADMIN
 
 
 def get_team_join_requests(team: Team, db: Session) -> List[UserTeam]:

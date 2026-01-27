@@ -6,7 +6,13 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="page-title">{{ player.nick }} <span class="text-muted">in {{ team.name }}</span></div>
+    <div class="page-title">
+        {{ player.nick }}
+        {% if player_role == 'ADMIN' %}
+            <span class="badge bg-info text-dark ms-1" style="font-size: 0.4em; vertical-align: middle;">ADMIN</span>
+        {% endif %}
+        <span class="text-muted">in {{ team.name }}</span>
+    </div>
     
     <div class="d-flex gap-2">
         <!-- Year Filter -->
@@ -25,13 +31,33 @@
             </ul>
         </div>
 
-        {% if is_owner and player.id != team.owner_id %}
+        {% if is_admin and player.id != current_user.id %}
         <div class="dropdown">
             <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 <i class="bi bi-gear-fill"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
+                {% if player_role == 'MEMBER' %}
+                <li>
+                    <form action="/team/{{ team.id }}/player/{{ player.id }}/role" method="post">
+                        <input type="hidden" name="role" value="ADMIN">
+                        <button class="dropdown-item" type="submit">
+                            <i class="bi bi-shield-check"></i> Promote to Admin
+                        </button>
+                    </form>
+                </li>
+                {% else %}
+                <li>
+                    <form action="/team/{{ team.id }}/player/{{ player.id }}/role" method="post">
+                        <input type="hidden" name="role" value="MEMBER">
+                        <button class="dropdown-item" type="submit">
+                            <i class="bi bi-shield-slash"></i> Demote to Member
+                        </button>
+                    </form>
+                </li>
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
                 <li>
                     <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
                         data-bs-target="#removePlayerModal">
@@ -43,7 +69,7 @@
         {% endif %}
     </div>
 
-    {% if is_owner and player.id != team.owner_id %}
+    {% if is_admin and player.id != current_user.id %}
     <!-- Modal -->
     <div class="modal fade" id="removePlayerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -189,7 +215,7 @@
 
 <!-- Advanced Stats Modal -->
 <div class="modal fade" id="advStatsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Advanced Statistics ({% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %})</h5>
@@ -198,7 +224,7 @@
             <div class="modal-body">
                 <div class="row g-3">
                      <!-- Games & Attendance -->
-                     <div class="col-md-6">
+                     <div class="col-12">
                          <h6 class="border-bottom pb-2">Activity</h6>
                          <ul class="list-group list-group-flush">
                              <li class="list-group-item d-flex justify-content-between">
@@ -212,7 +238,7 @@
                          </ul>
                      </div>
                      <!-- Financials -->
-                     <div class="col-md-6">
+                     <div class="col-12">
                          <h6 class="border-bottom pb-2">Financials</h6>
                           <ul class="list-group list-group-flush">
                              <li class="list-group-item d-flex justify-content-between">
@@ -304,7 +330,7 @@
                          </ul>
                      </div>
                      <!-- Performance -->
-                     <div class="col-md-6">
+                     <div class="col-12">
                          <h6 class="border-bottom pb-2">Performance</h6>
                          <ul class="list-group list-group-flush">
                              <li class="list-group-item d-flex justify-content-between">

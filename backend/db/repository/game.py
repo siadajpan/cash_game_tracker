@@ -104,10 +104,12 @@ def finish_the_game(
     user: User, game: Game, db: Session, finish_time: Optional[str] = None
 ):
     """
-    Mark a game as finished (running = False). Only the owner can finish the game.
+    Mark a game as finished (running = False). Only an admin can finish the game.
     """
-    if game.owner_id != user.id:
-        raise PermissionError("Only the owner can finish the game.")
+    from backend.db.repository.team import is_user_admin
+
+    if not is_user_admin(user.id, game.team_id, db):
+        raise PermissionError("Only an admin can finish the game.")
 
     add_ons = get_game_add_on_requests(game, db)
     cash_outs = get_game_cash_out_requests(game, db)
