@@ -130,32 +130,43 @@ content %}
           populateTimeDropdown();
           
           let initialValue = finalInput.value; // YYYY-MM-DDTHH:MM
-          
+          let now = new Date();
+
           if (!initialValue) {
-               const now = new Date();
-               // Round minutes
-               const m = Math.floor(now.getMinutes() / 15) * 15;
-               now.setMinutes(m);
-               now.setSeconds(0);
-               
-               // Construct default ISO for internal logic if needed
-               // But usually backend provides it. 
-               // If completely missing, we could set now.
+              // Round now to the NEAREST 15 minutes
+              const minutes = now.getMinutes();
+              const nearest15 = Math.round(minutes / 15) * 15;
+              now.setMinutes(nearest15);
+              now.setSeconds(0);
+              now.setMilliseconds(0);
+          } else {
+              // Try to parse initialValue if it exists (e.g. from validation error back-fill)
+              try {
+                  const [d, t] = initialValue.split('T');
+                  const [y, m, day] = d.split('-');
+                  const [hh, mm] = t.split(':');
+                  now.setFullYear(parseInt(y), parseInt(m) - 1, parseInt(day));
+                  now.setHours(parseInt(hh), parseInt(mm), 0, 0);
+              } catch (e) {
+                  console.error("Failed to parse initialValue:", initialValue);
+              }
           }
 
-          if (initialValue) {
-              const [d, t] = initialValue.split('T');
-              // d is YYYY-MM-DD
-              const [y, m, day] = d.split('-');
-              
-              // Set Gijgo value (dd/mm/yyyy) using library method to ensure UI update
-              if (datePicker) {
-                  datePicker.value(`${day}/${m}/${y}`);
-              }
-              
-              // Ensure t is HH:MM
-              timePart.value = t.substring(0, 5); 
+          // Populate UI elements
+          const y = now.getFullYear();
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          const day = now.getDate().toString().padStart(2, '0');
+          const hh = now.getHours().toString().padStart(2, '0');
+          const mm = now.getMinutes().toString().padStart(2, '0');
+
+          if (datePicker) {
+              datePicker.value(`${day}/${month}/${y}`);
           }
+          if (timePart) {
+              timePart.value = `${hh}:${mm}`;
+          }
+          
+          updateFinalInput();
       }
 
       function updateFinalInput() {
