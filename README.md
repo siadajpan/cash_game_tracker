@@ -1,4 +1,8 @@
-# Running locally
+# over-bet cash game tracker
+The app lets you track your cash game stats and share them with your team. 
+
+
+## Running locally
 ## Database
 Install PostgreSQL and create a user and password
 
