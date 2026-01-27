@@ -24,8 +24,7 @@ def list_users(db: Session = Depends(get_db)):
 
 @router.get("/profile")
 async def profile_view(
-    request: Request,
-    user: User = Depends(get_current_user_from_token)
+    request: Request, user: User = Depends(get_current_user_from_token)
 ):
     # Pass empty form so template can access defaults from user object
     return templates.TemplateResponse(
@@ -37,43 +36,43 @@ async def profile_view(
 async def profile_update(
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_from_token)
+    user: User = Depends(get_current_user_from_token),
 ):
     form = UserProfileForm(request)
     await form.load_data()
-    
+
     if await form.is_valid():
         # Check email uniqueness if changed
         if form.email != user.email:
             existing_user = get_user_by_email(form.email, db)
             if existing_user and existing_user.id != user.id:
                 form.errors.append("Email already registered.")
-                
+
         if not form.errors:
             # Update fields
             user.nick = form.nick
             user.email = form.email
-            
+
             if form.password:
                 user.hashed_password = Hasher.get_password_hash(form.password)
-                
+
             try:
                 db.add(user)
                 db.commit()
                 db.refresh(user)
                 return templates.TemplateResponse(
-                    "user/profile.html", 
+                    "user/profile.html",
                     {
-                        "request": request, 
-                        "user": user, 
+                        "request": request,
+                        "user": user,
                         "form": form,
-                        "msg": "Profile updated successfully"
-                    }
+                        "msg": "Profile updated successfully",
+                    },
                 )
             except Exception as e:
                 form.errors.append(f"An error occurred: {e}")
 
     return templates.TemplateResponse(
-        "user/profile.html", 
-        {"request": request, "user": user, "form": form, "errors": form.errors}
+        "user/profile.html",
+        {"request": request, "user": user, "form": form, "errors": form.errors},
     )

@@ -180,57 +180,70 @@ async def view_past_games(
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    from backend.db.repository.game import get_user_past_games, get_user_past_games_stats_bulk
-    
+    from backend.db.repository.game import (
+        get_user_past_games,
+        get_user_past_games_stats_bulk,
+    )
+
     if not user:
         return RedirectResponse(url="/login")
 
     # Get all games to allow sorting by computed fields
-    past_games = get_user_past_games(user, db, limit=None) 
+    past_games = get_user_past_games(user, db, limit=None)
     total_count = len(past_games)
-    
+
     game_ids = [g.id for g in past_games]
     bulk_stats = get_user_past_games_stats_bulk(user.id, game_ids, db)
 
     games_data = []
     for game in past_games:
-        s = bulk_stats.get(game.id, {"total_pot": 0.0, "my_balance": 0.0, "players_count": 0})
-        games_data.append({
-            "id": game.id,
-            "date": game.date,
-            "start_time": game.start_time,
-            "players_count": s["players_count"],
-            "total_pot": s["total_pot"],
-            "my_balance": s["my_balance"]
-        })
+        s = bulk_stats.get(
+            game.id, {"total_pot": 0.0, "my_balance": 0.0, "players_count": 0}
+        )
+        games_data.append(
+            {
+                "id": game.id,
+                "date": game.date,
+                "start_time": game.start_time,
+                "players_count": s["players_count"],
+                "total_pot": s["total_pot"],
+                "my_balance": s["my_balance"],
+            }
+        )
 
     # Sorting
-    reverse = (order == "desc")
+    reverse = order == "desc"
     if sort == "date":
-         games_data.sort(key=lambda x: (x["date"], x["start_time"] or datetime.min.time()), reverse=reverse)
+        games_data.sort(
+            key=lambda x: (x["date"], x["start_time"] or datetime.min.time()),
+            reverse=reverse,
+        )
     elif sort == "players":
-         games_data.sort(key=lambda x: x["players_count"], reverse=reverse)
+        games_data.sort(key=lambda x: x["players_count"], reverse=reverse)
     elif sort == "pot":
-         games_data.sort(key=lambda x: x["total_pot"], reverse=reverse)
+        games_data.sort(key=lambda x: x["total_pot"], reverse=reverse)
     elif sort == "balance":
-         games_data.sort(key=lambda x: x["my_balance"], reverse=reverse)
+        games_data.sort(key=lambda x: x["my_balance"], reverse=reverse)
     else:
-         games_data.sort(key=lambda x: (x["date"], x["start_time"] or datetime.min.time()), reverse=True)
+        games_data.sort(
+            key=lambda x: (x["date"], x["start_time"] or datetime.min.time()),
+            reverse=True,
+        )
 
     # Slicing
     visible_games = games_data[:limit]
 
     return templates.TemplateResponse(
-        "game/view_past.html", 
+        "game/view_past.html",
         {
-            "request": request, 
+            "request": request,
             "games_data": visible_games,
             "games_count": total_count,
             "visible_count": len(visible_games),
             "limit": limit,
             "sort_by": sort,
             "order": order,
-        }
+        },
     )
 
 
@@ -363,7 +376,7 @@ def process_player(
 
 
 def sort_players_game_info(players_info, sort, order):
-    reverse = (order == "desc")
+    reverse = order == "desc"
     if sort == "player":
         players_info.sort(key=lambda x: x["player"].nick.lower(), reverse=reverse)
     elif sort == "buy_in":
@@ -402,9 +415,9 @@ async def open_game(
         players_info.append(players_game_info)
         if players_game_info["request"] is not None:
             existing_requests = True
-            
+
     sort_players_game_info(players_info, sort, order)
-            
+
     invite_link = None
     if game.running:
         try:
@@ -470,7 +483,7 @@ async def get_game_table(
         players_info.append(players_game_info)
         if players_game_info["request"] is not None:
             existing_requests = True
-            
+
     sort_players_game_info(players_info, sort, order)
 
     return templates.TemplateResponse(
@@ -499,10 +512,10 @@ async def finish_game_view(
         return RedirectResponse(url="/", status_code=303)
     if not user:
         return RedirectResponse(url="/", status_code=303)
-        
+
     form = await request.form()
     finish_time = form.get("finish_time")
-    
+
     finish_the_game(user, game, db, finish_time=finish_time)
     return RedirectResponse(url="/", status_code=303)
 
