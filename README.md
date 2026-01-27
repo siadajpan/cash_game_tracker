@@ -1,26 +1,32 @@
-# Running locally
+# over-bet cash game tracker
+The app lets you track your cash game stats and share them with your team. 
+
+
+## Running locally
 ## Database
 Install PostgreSQL and create a user and password
+
+## Email
+Create a resend account and get an API key
 
 ## Update .env file
 1. Update the values in the .env_template and 
 2. Rename the file to .env
 
-## Running
+## Running locally
+### Windows
+
 ```shell
-cd backend
-poetry run uvicorn backend.main:app --reload
+just start_local
 ```
-To view the page, open
+
+### Linux
 ```shell
-localhost:8000
+make start_local
 ```
-## Tests
-To run tests:
+
+## Running on the server
+### Linux
 ```shell
-poetry run pytest backend/tests
-```
-# Using Docker
-```shell
-docker-compose --env-file .env up --build
+make start
 ```
