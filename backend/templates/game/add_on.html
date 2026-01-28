@@ -1,9 +1,15 @@
 {% extends "shared/base.html" %} {% block title %}
 <title>Request chips</title>
-{% endblock %} {% block page_heading %}Request chips{% endblock %} {% block
-content %}
+{% endblock %} {% block page_heading %}
+    {% if target_player and target_player.id != user.id %}
+        Add-on for {{ target_player.nick }}
+    {% else %}
+        Request chips
+    {% endif %}
+{% endblock %} 
 
-<form method="POST" action="/game/{{ game.id }}/add_on">
+{% block content %}
+<form method="POST" action="/game/{{ game.id }}/add_on{% if target_player and target_player.id != user.id %}?player_id={{ target_player.id }}{% endif %}">
   <div class="form-floating mb-3">
     <input
       type="number"

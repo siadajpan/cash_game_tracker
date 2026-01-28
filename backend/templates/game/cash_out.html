@@ -1,15 +1,21 @@
 {% extends "shared/base.html" %} {% block title %}
 <title>Cash Out</title>
-{% endblock %} {% block page_heading %}Cash Out{% endblock %} {% block content
-%}
+{% endblock %} {% block page_heading %}
+    {% if target_player and target_player.id != user.id %}
+        Cash Out for {{ target_player.nick }}
+    {% else %}
+        Cash Out
+    {% endif %}
+{% endblock %} 
 
+{% block content %}
 <div class="d-flex justify-content-end mb-3">
-    <a href="/game/{{ game_id }}/cash_out_by_amount" class="btn btn-outline-secondary">
+    <a href="/game/{{ game_id }}/cash_out_by_amount{% if target_player and target_player.id != user.id %}?player_id={{ target_player.id }}{% endif %}" class="btn btn-outline-secondary">
         Cash Out by Total Amount
     </a>
 </div>
 
-<form method="POST" action="/game/{{ game_id }}/cash_out" id="cashOutForm">
+<form method="POST" action="/game/{{ game_id }}/cash_out{% if target_player and target_player.id != user.id %}?player_id={{ target_player.id }}{% endif %}" id="cashOutForm">
   <div class="row mb-3">
     <table class="table align-middle">
       <thead>

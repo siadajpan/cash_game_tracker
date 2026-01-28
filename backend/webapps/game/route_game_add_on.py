@@ -47,6 +47,7 @@ router = APIRouter(include_in_schema=False)
 async def add_on_view(
     request: Request,
     game_id: int,
+    player_id: int = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -54,9 +55,15 @@ async def add_on_view(
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
+    target_player = user
+    if player_id and is_user_admin(user.id, game.team_id, db):
+        target_player = db.query(User).filter(User.id == player_id).first()
+        if not target_player:
+            raise HTTPException(status_code=404, detail="Player not found")
+
     return templates.TemplateResponse(
         "game/add_on.html",
-        {"request": request, "game": game},
+        {"request": request, "game": game, "target_player": target_player, "user": user},
     )
 
 
@@ -64,6 +71,7 @@ async def add_on_view(
 async def add_on(
     request: Request,
     game_id: int,
+    player_id: int = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -74,12 +82,24 @@ async def add_on(
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
+    target_player = user
+    auto_approve = False
+    if player_id and is_user_admin(user.id, game.team_id, db):
+        target_player = db.query(User).filter(User.id == player_id).first()
+        if not target_player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        if target_player.id != user.id:
+            auto_approve = True
+
     form = await request.form()
     print("form", form)
     errors = []
     try:
         add_on_request_form = AddOnRequest(**form)
-        create_add_on_request(game, add_on_request_form.add_on, db, user)
+        addon = create_add_on_request(game, add_on_request_form.add_on, db, target_player)
+        if auto_approve:
+            update_add_on_status(addon, PlayerRequestStatus.APPROVED, db, user)
+            
         return RedirectResponse(url=f"/game/{game.id}", status_code=303)
     except ValueError:
         errors.append("Invalid add-on")

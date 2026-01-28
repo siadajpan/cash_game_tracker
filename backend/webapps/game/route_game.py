@@ -494,6 +494,7 @@ async def get_game_table(
             "request": request,
             "game": game,
             "user": user,
+            "is_admin": is_user_admin(user.id, game.team_id, db),
             "players_info": players_info,
             "requests": existing_requests,
             "sort_by": sort,
