@@ -25,6 +25,10 @@ from backend.core.config import TEMPLATES_DIR, settings
 from backend.db.models.game import Game
 from backend.db.models.player_request_status import PlayerRequestStatus
 from backend.db.models.user import User
+from backend.db.models.user_game import UserGame
+from backend.db.models.buy_in import BuyIn
+from backend.db.models.add_on import AddOn
+from backend.db.models.cash_out import CashOut
 from backend.db.repository.add_on import (
     get_player_game_addons,
 )
@@ -650,3 +654,160 @@ def check_update(user: User = Depends(get_active_user), db: Session = Depends(ge
         db.commit()
 
     return {"new_game": new_game}
+
+
+@router.get("/{game_id}/add_player", name="get_add_player_list")
+async def get_add_player_list(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not is_user_admin(user.id, game.team_id, db):
+        raise HTTPException(status_code=403, detail="Only admins can add players")
+
+    # Get all approved members of the team
+    team_members = (
+        db.query(User)
+        .join(UserTeam)
+        .filter(
+            UserTeam.team_id == game.team_id,
+            UserTeam.status == PlayerRequestStatus.APPROVED,
+        )
+        .all()
+    )
+
+    # Filter out players already in the game
+    game_player_ids = [p.id for p in game.players]
+    available_players = [p for p in team_members if p.id not in game_player_ids]
+    available_players.sort(key=lambda p: p.nick.lower() if p.nick else "")
+
+    return templates.TemplateResponse(
+        "components/add_player_list.html",
+        {
+            "request": request,
+            "game": game,
+            "available_players": available_players,
+        },
+    )
+
+
+@router.post("/{game_id}/add_player/{player_id}", name="add_player_remotely")
+async def add_player_remotely(
+    request: Request,
+    game_id: int,
+    player_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not is_user_admin(user.id, game.team_id, db):
+        raise HTTPException(status_code=403, detail="Only admins can add players")
+
+    target_user = db.query(User).filter(User.id == player_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    # Use existing repository functions
+    try:
+        add_user_to_game(target_user, game, db)
+        
+        # Approve the game association automatically
+        assoc = db.query(UserGame).filter(
+            UserGame.user_id == player_id,
+            UserGame.game_id == game.id
+        ).first()
+        if assoc:
+            assoc.status = PlayerRequestStatus.APPROVED
+            db.commit()
+
+        # Add default buy-in if set
+        if game.default_buy_in > 0:
+            add_user_buy_in(target_user, game, game.default_buy_in, db)
+
+        # Trigger table refresh via HTMX redirect or just return success
+        response = responses.Response()
+        response.headers["HX-Refresh"] = "true"
+        return response
+
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="Player already in game")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding player: {e}")
+
+
+@router.get("/{game_id}/remove_player", name="get_remove_player_list")
+async def get_remove_player_list(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not is_user_admin(user.id, game.team_id, db):
+        raise HTTPException(status_code=403, detail="Only admins can remove players")
+
+    # Filter out the host/owner if desired, or just list everyone
+    players = [p for p in game.players if p.id != game.owner_id]
+    players.sort(key=lambda p: p.nick.lower() if p.nick else "")
+
+    return templates.TemplateResponse(
+        "components/remove_player_list.html",
+        {
+            "request": request,
+            "game": game,
+            "players": players,
+        },
+    )
+
+
+@router.delete("/{game_id}/remove_player/{player_id}", name="remove_player_remotely")
+async def remove_player_remotely(
+    game_id: int,
+    player_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not is_user_admin(user.id, game.team_id, db):
+        raise HTTPException(status_code=403, detail="Only admins can remove players")
+
+    if player_id == game.owner_id:
+        raise HTTPException(status_code=400, detail="Cannot remove game owner")
+
+    # 1. Remove UserGame association
+    db.query(UserGame).filter(
+        UserGame.user_id == player_id, UserGame.game_id == game_id
+    ).delete(synchronize_session=False)
+
+    # 2. Remove Financials for this game only
+    db.query(BuyIn).filter(
+        BuyIn.user_id == player_id, BuyIn.game_id == game_id
+    ).delete(synchronize_session=False)
+
+    db.query(AddOn).filter(
+        AddOn.user_id == player_id, AddOn.game_id == game_id
+    ).delete(synchronize_session=False)
+
+    db.query(CashOut).filter(
+        CashOut.user_id == player_id, CashOut.game_id == game_id
+    ).delete(synchronize_session=False)
+
+    db.commit()
+
+    response = responses.Response()
+    response.headers["HX-Refresh"] = "true"
+    return response
