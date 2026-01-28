@@ -33,6 +33,9 @@ from backend.db.repository.game import (
     get_game_by_id,
     user_in_game,
 )
+from backend.db.repository.team import (
+    is_user_admin,
+)
 from backend.db.session import get_db
 from backend.schemas.cash_out import (
     CashOutByAmountRequest,
@@ -47,6 +50,7 @@ router = APIRouter(include_in_schema=False)
 async def cash_out(
     request: Request,
     game_id: int,
+    player_id: int = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -55,12 +59,20 @@ async def cash_out(
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
     chip_structure = get_chip_structure_as_list(game.chip_structure_id, db)
 
+    target_player = user
+    if player_id and is_user_admin(user.id, game.team_id, db):
+        target_player = db.query(User).filter(User.id == player_id).first()
+        if not target_player:
+            raise HTTPException(status_code=404, detail="Player not found")
+
     return templates.TemplateResponse(
         "game/cash_out.html",
         context={
             "request": request,
             "game_id": game.id,
             "chip_structure": chip_structure,
+            "target_player": target_player,
+            "user": user,
         },
     )
 
@@ -69,6 +81,7 @@ async def cash_out(
 async def cash_out(
     request: Request,
     game_id: int,
+    player_id: int = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -76,11 +89,19 @@ async def cash_out(
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
+    target_player = user
+    if player_id and is_user_admin(user.id, game.team_id, db):
+        target_player = db.query(User).filter(User.id == player_id).first()
+        if not target_player:
+            raise HTTPException(status_code=404, detail="Player not found")
+
     return templates.TemplateResponse(
         "game/cash_out_by_amount.html",
         context={
             "request": request,
             "game_id": game.id,
+            "target_player": target_player,
+            "user": user,
         },
     )
 
@@ -119,6 +140,7 @@ def read_chips_from_form(form_data, expected_chip_ids):
 async def cash_out(
     request: Request,
     game_id: int,
+    player_id: int = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -131,6 +153,16 @@ async def cash_out(
 
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
+
+    target_player = user
+    auto_approve = False
+    if player_id and is_user_admin(user.id, game.team_id, db):
+        target_player = db.query(User).filter(User.id == player_id).first()
+        if not target_player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        if target_player.id != user.id:
+            auto_approve = True
+
     form = await request.form()
     try:
         chips = get_chips_from_structure(game.chip_structure_id, db)
@@ -144,7 +176,10 @@ async def cash_out(
         amount = cash_out_form.amount
         chip_amounts = cash_out_form.chips_amounts
 
-        create_cash_out_request(game, amount, chip_amounts, db, user)
+        cashout = create_cash_out_request(game, amount, chip_amounts, db, target_player)
+        if auto_approve:
+            update_cash_out_status(cashout, PlayerRequestStatus.APPROVED, db, user)
+            
         # Redirect to the game page
         return RedirectResponse(url=f"/game/{game.id}", status_code=303)
 
@@ -186,6 +221,7 @@ async def cash_out(
 async def cash_out_by_amount(
     request: Request,
     game_id: int,
+    player_id: int = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_from_token),
 ):
@@ -194,11 +230,23 @@ async def cash_out_by_amount(
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
+    target_player = user
+    auto_approve = False
+    if player_id and is_user_admin(user.id, game.team_id, db):
+        target_player = db.query(User).filter(User.id == player_id).first()
+        if not target_player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        if target_player.id != user.id:
+            auto_approve = True
+
     errors = []
 
     try:
         cash_out_form = CashOutByAmountRequest(**form)
-        create_cash_out_request(game, cash_out_form.amount, [], db, user)
+        cashout = create_cash_out_request(game, cash_out_form.amount, [], db, target_player)
+        if auto_approve:
+            update_cash_out_status(cashout, PlayerRequestStatus.APPROVED, db, user)
+            
         return RedirectResponse(url=f"/game/{game.id}", status_code=303)
     except ValidationError as e:
         print("catching error")

@@ -69,7 +69,7 @@
                 {% if game.running and info.request_type == 'add_on' %}
                 {% if user in info.can_approve %}
                 <!-- z-index needed to click button on top of stretched link -->
-                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative" style="z-index: 2;" title="{{ info.request_text }}">
+                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative" style="z-index: 5;" title="{{ info.request_text }}">
                     <i class="bi bi-exclamation-circle-fill"></i> Add-on
                 </a>
                 {% else %}
@@ -78,17 +78,24 @@
                 </span>
                 {% endif %}
                 {% else %}
+                <span class="position-relative">
                 {% if info.money_in % 1 %}
                 {{ "%.2f"|format(info.money_in) }}
                 {% else %}
                 {{ info.money_in|int }}
                 {% endif %}
+                {% if is_admin and game.running %}
+                <a href="/game/{{ game.id }}/add_on?player_id={{ info.player.id }}" class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
+                    <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
+                </a>
+                {% endif %}
+                </span>
                 {% endif %}
             </div>
             <div class="{{ col_out }}">
                 {% if game.running and info.request_type == 'cash_out' %}
                 {% if user in info.can_approve %}
-                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative" style="z-index: 2;" title="{{ info.request_text }}">
+                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative" style="z-index: 5;" title="{{ info.request_text }}">
                     <i class="bi bi-exclamation-circle-fill"></i> Cash-out
                 </a>
                 {% else %}
@@ -97,6 +104,7 @@
                 </span>
                 {% endif %}
                 {% else %}
+                <span class="position-relative">
                 {% if info.money_out is not none %}
                 {% if info.money_out % 1 %}
                 {{ "%.2f"|format(info.money_out) }}
@@ -106,6 +114,12 @@
                 {% else %}
                 -
                 {% endif %}
+                {% if is_admin and game.running %}
+                <a href="/game/{{ game.id }}/cash_out?player_id={{ info.player.id }}" class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
+                    <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
+                </a>
+                {% endif %}
+                </span>
                 {% endif %}
             </div>
 
