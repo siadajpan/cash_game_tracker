@@ -1,0 +1,14 @@
+{% if available_players %}
+<ul class="list-group list-group-flush">
+    {% for player in available_players %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ player.nick }}</span>
+        <button class="btn btn-sm btn-primary" hx-post="/game/{{ game.id }}/add_player/{{ player.id }}" hx-swap="none">
+            Add
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-center text-muted m-3">No more players available in the team.</p>
+{% endif %}

@@ -1,0 +1,31 @@
+{% if players %}
+<ul class="list-group list-group-flush">
+    {% for player in players %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ player.nick }}</span>
+        <button class="btn btn-sm btn-outline-danger" 
+                hx-delete="/game/{{ game.id }}/remove_player/{{ player.id }}" 
+                hx-swap="none"
+                hx-on:htmx:confirm="event.preventDefault();
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: 'You are about to remove {{ player.nick }} from the game. All their buy-ins and add-ons for this game will be deleted!',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, remove them!',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            event.detail.issueRequest();
+                        }
+                    })">
+            Remove
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-center text-muted m-3">No other players in the game.</p>
+{% endif %}
