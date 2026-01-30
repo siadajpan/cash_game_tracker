@@ -682,9 +682,15 @@ async def _get_player_stats_context(
         
         my_gids = g_map.keys()
         
-        # Win Share
-        total_winnings_played = sum(game_pos_sum.get(gid, 0) for gid in my_gids)
-        win_share_p = (t_bal / total_winnings_played * 100) if total_winnings_played > 0 else 0
+        # Win Share: my balance vs other winners sum of balance
+        total_winnings_in_my_games = sum(game_pos_sum.get(gid, 0) for gid in my_gids)
+        my_positive_profits = sum(max(0, g_map.get(gid, 0)) for gid in my_gids)
+        others_winnings = total_winnings_in_my_games - my_positive_profits
+        
+        if others_winnings > 0:
+            win_share_p = (t_bal / others_winnings * 100)
+        else:
+            win_share_p = 100.0 if t_bal > 0 else 0.0
         
         # Hourly
         my_hours = sum(g_durations.get(gid, 0) for gid in my_gids)

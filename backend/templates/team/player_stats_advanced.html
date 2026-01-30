@@ -2,9 +2,38 @@
 {% block title %}
 <title>{{ player.nick }} Advanced Stats - {{ team.name }}</title>
 {% endblock %}
-{% block page_heading %}Advanced Stats: {{ player.nick }}{% endblock %}
+{% block page_heading %}{% endblock %}
 
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-title">
+        Advanced Stats: {{ player.nick }}
+        <span class="text-muted">in {{ team.name }}</span>
+    </div>
+
+    <div class="d-flex gap-2">
+        <!-- Year Filter -->
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}"
+                        href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
+                {% if available_years %}
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                {% for y in available_years %}
+                <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}"
+                        href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
+                {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
 
 <!-- Overview Content -->
 <div class="row g-3">
@@ -198,7 +227,7 @@
                 <li class="list-group-item d-flex justify-content-between">
                     <span>Win Share <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
                             data-bs-toggle="tooltip"
-                            title="Your Total Balance / Sum of All Winners' Profits in games you played. Measures dominance."></i></span>
+                            title="Your Total Balance / Sum of All OTHER Winners' Profits in games you played. Measures dominance."></i></span>
                     <strong>{{ "%.1f"|format(adv_stats.win_share_pct) }}%</strong>
                 </li>
             </ul>
