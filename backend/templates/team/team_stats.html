@@ -1,0 +1,241 @@
+{% extends "shared/base.html" %}
+{% block title %}
+<title>Team Stats - {{ team.name }}</title>
+{% endblock %}
+
+{% block page_heading %}
+<div class="d-flex justify-content-between align-items-center w-100">
+    <div>
+        Group Stats: {{ team.name }}
+    </div>
+
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+            <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}" href="?year=all">All Time</a>
+            </li>
+            {% if available_years %}
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            {% for y in available_years %}
+            <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}" href="?year={{ y }}">{{ y
+                    }}</a></li>
+            {% endfor %}
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <!-- Activity & Pot Overview -->
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-bold">Overview</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Games Played</span>
+                    <strong>{{ stats.games_count }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Avg Players</span>
+                    <strong>{{ "%.1f"|format(stats.avg_players) }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Top Host <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Player who hosted the most games"></i></span>
+                    {% if stats.top_host %}
+                    <strong>{{ stats.top_host.nick }} <small class="text-muted">({{ "%.0f"|format(stats.top_host.pct)
+                            }}%)</small></strong>
+                    {% else %}
+                    <strong>-</strong>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Financials -->
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-bold">Financials</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Total Pot <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Sum of all money played"></i></span>
+                    <strong>{{ "%.0f"|format(stats.total_pot) }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Avg Pot <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Average pot per game"></i></span>
+                    <strong>{{ "%.0f"|format(stats.avg_pot) }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Avg Buy-in <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Across all players"></i></span>
+                    <strong>{{ "%.1f"|format(stats.avg_buyin_all) }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Avg Win/Loss <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Average winning and losing result"></i></span>
+                    <div>
+                        <strong class="text-success">+{{ "%.0f"|format(stats.avg_win) }}</strong> /
+                        <strong class="text-danger">{{ "%.0f"|format(stats.avg_loss) }}</strong>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Rankings / Leaderboards -->
+    <div class="col-12 mt-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-bold">Leaderboards (Top 5)</div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-4 border-end">
+                        <div class="text-muted small fw-bold mb-2 text-uppercase">Total Profit</div>
+                        <ul class="list-group list-group-flush">
+                            {% for p in stats.rankings.profit[:5] %}
+                            <li
+                                class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <span class="text-truncate">
+                                    {% if loop.index == 1 %}<i class="bi bi-trophy-fill text-warning me-2"></i>
+                                    {% elif loop.index == 2 %}<i class="bi bi-2-circle-fill text-secondary me-2"></i>
+                                    {% elif loop.index == 3 %}<i class="bi bi-3-circle-fill me-2"
+                                        style="color: #cd7f32;"></i>
+                                    {% else %}<span class="me-3 ms-1 text-muted small">{{ loop.index }}.</span>{% endif
+                                    %}
+                                    {{ p.nick }}
+                                </span>
+                                <strong class="text-success">{{ "+%.0f"|format(p.value) }}</strong>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-4 border-end">
+                        <div class="text-muted small fw-bold mb-2 text-uppercase">Biggest Single Win</div>
+                        <ul class="list-group list-group-flush">
+                            {% for p in stats.rankings.biggest_winner[:5] %}
+                            <li
+                                class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <span class="text-truncate" title="{{ p.nick }}">
+                                    {% if loop.index == 1 %}<i class="bi bi-trophy-fill text-warning me-2"></i>
+                                    {% elif loop.index == 2 %}<i class="bi bi-2-circle-fill text-secondary me-2"></i>
+                                    {% elif loop.index == 3 %}<i class="bi bi-3-circle-fill me-2"
+                                        style="color: #cd7f32;"></i>
+                                    {% else %}<span class="me-3 ms-1 text-muted small">{{ loop.index }}.</span>{% endif
+                                    %}
+                                    {{ p.nick }}
+                                </span>
+                                <strong class="text-success">{{ "+%.0f"|format(p.value) }}</strong>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small fw-bold mb-2 text-uppercase">Biggest Single Loss</div>
+                        <ul class="list-group list-group-flush">
+                            {% for p in stats.rankings.biggest_loser[:5] %}
+                            <li
+                                class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <span class="text-truncate">
+                                    {% if loop.index == 1 %}<i class="bi bi-bell-fill text-danger me-2"></i>
+                                    {% elif loop.index == 2 %}<i class="bi bi-bell-fill text-secondary me-2"></i>
+                                    {% elif loop.index == 3 %}<i class="bi bi-bell-fill me-2"
+                                        style="color: #cd7f32;"></i>
+                                    {% else %}<span class="me-3 ms-1 text-muted small">{{ loop.index }}.</span>{% endif
+                                    %}
+                                    {{ p.nick }}
+                                </span>
+                                <strong class="text-danger">{{ "%.0f"|format(p.value) }}</strong>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Volatility Rankings -->
+    <div class="col-12 mt-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-bold d-flex align-items-center">
+                Volatility & Game Style
+                <i class="bi bi-info-circle text-muted ms-2" style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                    title="Calculated for players with 15+ games (High Model Reliability). Measures the size of absolute dollar swings (Standard Deviation)."></i>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6 border-end">
+                        <div class="text-muted small fw-bold mb-2 text-uppercase">Most Volatile (LAG/Action)</div>
+                        <p class="small text-muted mb-2">High variance players. Likely to have the biggest swings.</p>
+                        <ul class="list-group list-group-flush">
+                            {% for p in stats.rankings.most_volatile[:5] %}
+                            <li
+                                class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <span class="text-truncate">
+                                    <span class="me-3 ms-1 text-muted small">{{ loop.index }}.</span>
+                                    {{ p.nick }}
+                                </span>
+                                <span
+                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">{{
+                                    "%.2f"|format(p.value) }}</span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item px-0 py-2 border-0 text-muted small">Not enough data (min 15
+                                games)</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small fw-bold mb-2 text-uppercase">The Rocks (Tight/Stable)</div>
+                        <p class="small text-muted mb-2">Low variance players. Consistent results with minimal swings.
+                        </p>
+                        <ul class="list-group list-group-flush">
+                            {% for p in stats.rankings.rocks[:5] %}
+                            <li
+                                class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <span class="text-truncate">
+                                    <span class="me-3 ms-1 text-muted small">{{ loop.index }}.</span>
+                                    {{ p.nick }}
+                                </span>
+                                <span
+                                    class="badge bg-info bg-opacity-10 text-dark border border-info border-opacity-25">{{
+                                    "%.2f"|format(p.value) }}</span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item px-0 py-2 border-0 text-muted small">Not enough data (min 15
+                                games)</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 mb-3">
+    <a href="/team/{{ team.id }}?year={{ selected_year }}" class="btn btn-outline-secondary">
+        Back to Group
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+{% endblock %}

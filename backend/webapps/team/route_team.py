@@ -376,6 +376,47 @@ async def player_stats_advanced(
     return templates.TemplateResponse("team/player_stats_advanced.html", context)
 
 
+@router.get("/{team_id}/stats", name="team_stats")
+async def team_stats(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+    year: str = "all",
+):
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        return RedirectResponse(f"/dashboard")
+
+    # Check permissions
+    if (
+        current_user.id not in [m.id for m in team.users]
+        and not current_user.is_superuser
+    ):
+        return RedirectResponse(f"/dashboard")
+
+    # Available years for the filter
+    team_games = db.query(Game).filter(Game.team_id == team_id).all()
+    all_years = set()
+    for g in team_games:
+        if g.date:
+            all_years.add(int(str(g.date)[:4]))
+    available_years = sorted(list(all_years), reverse=True)
+
+    stats = _calculate_team_stats(team, year, db)
+
+    return templates.TemplateResponse(
+        "team/team_stats.html",
+        {
+            "request": request,
+            "team": team,
+            "stats": stats,
+            "selected_year": year,
+            "available_years": available_years,
+        },
+    )
+
+
 async def _get_player_stats_context(
     request: Request,
     team_id: int,
@@ -745,21 +786,24 @@ async def _get_player_stats_context(
         "game_swings": get_rank_tier("vol_idx", player_id, lower_is_better=True, tier_labels=("Low", "Average", "High")),
     }
 
-    if avg_buyin_val > 0:
-        volatility_index = std_dev / avg_buyin_val
-        if ranks["game_swings"]:
-            volatility_label = ranks["game_swings"]["tier"] + " (Vs Team)"
+    if std_dev > 0:
+        # Use 100 as the 'Base Buy-in' for scale, as per user's stake
+        # This represents how many 'initial stacks' the average swing is
+        volatility_index = std_dev / 100.0
+        
+        # Compare against the team average absolute swings (Standard Deviation)
+        if avg_team_std_dev > 0:
+            rel_to_team = std_dev / avg_team_std_dev
+            if rel_to_team < 0.6: volatility_label = "Very Low (Vs Team)"
+            elif rel_to_team < 0.9: volatility_label = "Low (Vs Team)"
+            elif rel_to_team < 1.1: volatility_label = "Average (Vs Team)"
+            elif rel_to_team < 1.5: volatility_label = "High (Vs Team)"
+            else: volatility_label = "Extreme (Vs Team)"
         else:
-            volatility_label = "N/A"
+            volatility_label = "Average"
     else:
         volatility_index = 0
         volatility_label = "N/A"
-            
-    if volatility_label == "N/A":
-        if volatility_index < 0.8: volatility_label = "Very Low"
-        elif volatility_index < 1.5: volatility_label = "Low"
-        elif volatility_index < 3.0: volatility_label = "Average"
-        else: volatility_label = "High"
 
     # --- Bayesian Analysis ---
     # Prior
@@ -793,7 +837,12 @@ async def _get_player_stats_context(
     style_label = "Balanced"
     style_desc = "Average style"
     is_profitable = posterior_mean > 0
-    is_volatile = volatility_index > (avg_team_vol_idx if avg_team_vol_idx > 0 else 1.0)
+    is_volatile = False
+    if avg_team_std_dev > 0:
+        if (std_dev / avg_team_std_dev) >= 1.1:
+            is_volatile = True
+    else:
+        is_volatile = std_dev > 150.0 # Fallback if no team data
     
     if is_profitable:
         if is_volatile:
@@ -810,6 +859,17 @@ async def _get_player_stats_context(
             style_label = "Low Variance"
             style_desc = "Low risk, conservative results. Steady but slightly negative trend."
 
+    # Reliability Score (0 to 100%)
+    # We reach 100% confidence/reliability roughly at 30+ games (industry standard for rule of thumb)
+    reliability = min(100, (n_games / 30) * 100)
+    
+    if n_games < 5:
+        reliability_desc = "Low (Need more games)"
+    elif n_games < 15:
+        reliability_desc = "Moderate"
+    else:
+        reliability_desc = "High"
+
     adv_stats_bayesian = {
         "prior_mean": prior_mean,
         "prior_sigma": prior_sigma,
@@ -822,7 +882,15 @@ async def _get_player_stats_context(
         "expected_range_low": posterior_mean - 1.96 * pred_sigma,
         "expected_range_high": posterior_mean + 1.96 * pred_sigma,
         "style_label": style_label,
-        "style_desc": style_desc
+        "style_desc": style_desc,
+        "reliability_score": reliability,
+        "reliability_label": reliability_desc,
+        "sample_size": n_games,
+        "actual_std_dev": std_dev,
+        "volatility_index": volatility_index,
+        "team_avg_vol_idx": avg_team_vol_idx,
+        "volatility_label": volatility_label,
+        "avg_buyin": avg_buyin_val
     }
 
     # Consolidated Adv Stats for Template
@@ -1344,6 +1412,29 @@ def _calculate_team_stats(team, year, db):
         sorted_w = sorted(game_performances, key=lambda x: x["value"], reverse=True)
         sorted_l = sorted(game_performances, key=lambda x: x["value"])
 
+        # Volatility Rankings (Absolute Standard Deviation)
+        # Only include players with 15+ games (High Model Reliability)
+        min_games = 15
+        volatility_ranks = []
+        import math
+
+        for uid, count in player_games_count.items():
+            if count >= min_games:
+                # Get all balances for this player
+                p_bals = []
+                for gid, players in game_data.items():
+                    if uid in players:
+                        p_bals.append(players[uid]["cashout"] - players[uid]["buyin"])
+                
+                if len(p_bals) > 1:
+                    mean = sum(p_bals) / len(p_bals)
+                    variance = sum((x - mean) ** 2 for x in p_bals) / (len(p_bals) - 1)
+                    sd = math.sqrt(variance)
+                    volatility_ranks.append({"nick": get_nick(uid), "value": sd})
+
+        most_volatile = sorted(volatility_ranks, key=lambda x: x["value"], reverse=True)
+        the_rocks = sorted(volatility_ranks, key=lambda x: x["value"])
+
     stats = {
         "games_count": games_count,
         "avg_players": avg_players,
@@ -1359,6 +1450,8 @@ def _calculate_team_stats(team, year, db):
             "profit": rankings_profit,
             "biggest_winner": sorted_w,
             "biggest_loser": sorted_l,
+            "most_volatile": most_volatile,
+            "rocks": the_rocks,
         },
     }
     return stats
