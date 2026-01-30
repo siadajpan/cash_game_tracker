@@ -1,4 +1,5 @@
 import json
+import unicodedata
 from datetime import datetime
 from sqlite3 import IntegrityError
 from typing import List
@@ -1112,7 +1113,9 @@ async def import_legacy_games(
                 return team_users_map[nick_name]
 
             # Create Guest User
-            new_email = f"{nick_name.lower().replace(' ', '_')}_{team.search_code.lower()}@over-bet.com"
+            normalized_nick = unicodedata.normalize('NFD', nick_name.lower().replace('ł', 'l').replace('Ł', 'L'))
+            ascii_nick = "".join(c for c in normalized_nick if unicodedata.category(c) != 'Mn').replace(' ', '_')
+            new_email = f"{ascii_nick}_{team.search_code.lower()}@over-bet.com"
 
             player_user = User(
                 email=new_email,
