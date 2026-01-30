@@ -518,60 +518,7 @@
                         <div style="height: 250px; width: 100%;"><canvas id="monthlyBreakdownChart"></canvas></div>
                     </div>
                     <!-- Chart Scripts -->
-                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function () {
-                            const scaleOptions = {
-                                y: {
-                                    grid: { color: '#e9ecef' },
-                                    // "Fit min and max": Allow auto scaling, but maybe ensure we don't force too much padding.
-                                    // Default chartjs is good. Using beginAtZero: false might be what they mean if ranges are far from 0.
-                                    // But for net profit, 0 is key.
-                                    // I'll stick to default which is auto-fit.
-                                },
-                                x: {
-                                    grid: { display: false }
-                                }
-                            };
 
-                            // Monthly Breakdown
-                            const mLabels = [{% for m, d in adv_stats.monthly_balances %}"{{ m }}", {% endfor %}];
-                        const mData = [{% for m, d in adv_stats.monthly_balances %}{ { "%.2f" | format(d.balance) } }, {% endfor %}];
-
-                        if (mData.length > 0) {
-                            new Chart(document.getElementById('monthlyBreakdownChart'), {
-                                type: 'bar',
-                                data: {
-                                    labels: mLabels,
-                                    datasets: [{
-                                        label: 'Balance',
-                                        data: mData,
-                                        backgroundColor: mData.map(v => v >= 0 ? '#198754' : '#dc3545'),
-                                        borderRadius: 4
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    layout: {
-                                        padding: { top: 10, bottom: 0 }
-                                    },
-                                    plugins: {
-                                        legend: { display: false },
-                                        tooltip: {
-                                            callbacks: {
-                                                label: function (context) {
-                                                    return Number(context.parsed.y).toFixed(2);
-                                                }
-                                            }
-                                        }
-                                    },
-                                    scales: scaleOptions
-                                }
-                            });
-                        }
-                      });
-                    </script>
                 </div>
             </div>
         </div>
@@ -589,8 +536,74 @@
             return new bootstrap.Tooltip(tooltipTriggerEl)
         })
 
-        const chartData = {{ chart_points | tojson
-    }};
+        // Monthly Breakdown Chart Logic
+        var advStatsModal = document.getElementById('advStatsModal');
+        var monthlyChart = null;
+
+        if (advStatsModal) {
+            advStatsModal.addEventListener('shown.bs.modal', function () {
+                if (monthlyChart) return; // Already initialized
+
+                console.log("Initializing Monthly Chart...");
+
+                const scaleOptions = {
+                    y: {
+                        grid: { color: '#e9ecef' },
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                };
+
+                const mLabels = [{% for m, d in adv_stats.monthly_balances %}"{{ m }}", {% endfor %}];
+        const mData = [{% for m, d in adv_stats.monthly_balances %}{{ "%.2f" | format(d.balance) }}, {% endfor %}];
+
+    console.log("Monthly Data:", mData);
+
+    if (mData.length > 0) {
+        const ctx = document.getElementById('monthlyBreakdownChart');
+        if (ctx) {
+            monthlyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: mLabels,
+                    datasets: [{
+                        label: 'Balance',
+                        data: mData,
+                        backgroundColor: mData.map(v => v >= 0 ? '#198754' : '#dc3545'),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 10, bottom: 0 }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return Number(context.parsed.y).toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: scaleOptions
+                }
+            });
+            console.log("Monthly Chart Created");
+        } else {
+            console.error("Monthly Chart Canvas not found!");
+        }
+    } else {
+        console.log("No Monthly Data to display");
+    }
+            });
+        }
+
+    const chartData = {{ chart_points | tojson }};
     if (chartData && chartData.length > 0) {
         const ctx = document.getElementById('balanceChart').getContext('2d');
 

@@ -94,7 +94,12 @@
                     {% else %}
                     {{ info.money_in|int }}
                     {% endif %}
-
+                    {% if is_admin and game.running %}
+                    <a href="/game/{{ game.id }}/add_on?player_id={{ info.player.id }}"
+                        class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
+                        <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
+                    </a>
+                    {% endif %}
                 </span>
                 {% endif %}
             </div>
@@ -121,7 +126,12 @@
                     {% else %}
                     -
                     {% endif %}
-
+                    {% if is_admin and game.running %}
+                    <a href="/game/{{ game.id }}/cash_out?player_id={{ info.player.id }}"
+                        class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
+                        <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
+                    </a>
+                    {% endif %}
                 </span>
                 {% endif %}
             </div>
