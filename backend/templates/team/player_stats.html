@@ -10,19 +10,24 @@
         {{ player.nick }}
         <span class="text-muted">in {{ team.name }}</span>
     </div>
-    
+
     <div class="d-flex gap-2">
         <!-- Year Filter -->
         <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
                 {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}" href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
+                <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}"
+                        href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
                 {% if available_years %}
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
                 {% for y in available_years %}
-                <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}" href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
+                <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}"
+                        href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
                 {% endfor %}
                 {% endif %}
             </ul>
@@ -54,7 +59,9 @@
                     </form>
                 </li>
                 {% endif %}
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
                 <li>
                     <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
                         data-bs-target="#removePlayerModal">
@@ -91,7 +98,7 @@
     {% endif %}
 </div>
 
-<div id="stats-view-container" class="d-flex flex-column" style="max-height: 60vh;">
+<div id="stats-view-container" class="d-flex flex-column" style="max-height: 50vh;">
     <!-- Summary Section -->
     <div class="d-flex justify-content-between mb-3 px-2">
         <div class="text-center" style="flex: 1;">
@@ -126,33 +133,40 @@
     </div>
 
     <!-- Game History Table -->
-    <h6 class="text-uppercase text-secondary mb-2 px-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Game History ({{ games_count }})</h6>
+    <h6 class="text-uppercase text-secondary mb-2 px-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Game History
+        ({{ games_count }})</h6>
     <div class="table-responsive overflow-auto border-top" style="min-height: 0;">
         <table class="table table-hover table-hover-custom align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th class="ps-3 border-bottom-0 py-2">
-                        <a href="?sort=date&order={% if sort_by == 'date' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                        <a href="?sort=date&order={% if sort_by == 'date' and order == 'desc' %}asc{% else %}desc{% endif %}"
+                            class="text-dark text-decoration-none">
                             Date
                             {% if sort_by == 'date' %}
-                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                                style="font-size: 0.7em;"></i>
                             {% endif %}
                         </a>
                     </th>
                     <th class="text-center border-bottom-0 py-2">Players</th>
                     <th class="text-end border-bottom-0 py-2">
-                        <a href="?sort=pot&order={% if sort_by == 'pot' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                        <a href="?sort=pot&order={% if sort_by == 'pot' and order == 'desc' %}asc{% else %}desc{% endif %}"
+                            class="text-dark text-decoration-none">
                             Total Pot
                             {% if sort_by == 'pot' %}
-                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                                style="font-size: 0.7em;"></i>
                             {% endif %}
                         </a>
                     </th>
                     <th class="text-end pe-3 border-bottom-0 py-2">
-                        <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                        <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}"
+                            class="text-dark text-decoration-none">
                             Balance
                             {% if sort_by == 'balance' %}
-                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                                style="font-size: 0.7em;"></i>
                             {% endif %}
                         </a>
                     </th>
@@ -163,7 +177,8 @@
                 {% for info in games_history %}
                 <tr class="position-relative">
                     <td class="ps-3 border-bottom-0 py-2">
-                        <a href="/game/{{ info.game.id }}?return_url=/team/{{ team.id }}/player/{{ player.id }}" class="text-decoration-none text-dark fw-normal stretched-link">
+                        <a href="/game/{{ info.game.id }}?return_url=/team/{{ team.id }}/player/{{ player.id }}"
+                            class="text-decoration-none text-dark fw-normal stretched-link">
                             {{ info.game.date }}
                         </a>
                     </td>
@@ -197,17 +212,16 @@
             <a href="/team/{{ team.id }}?year={{ selected_year }}" class="btn btn-outline-secondary">Back to Group</a>
         </div>
         <div class="d-flex align-items-center">
-            {% if visible_count < games_count %}
-            <div class="me-3">
+            {% if visible_count < games_count %} <div class="me-3">
                 <span class="text-muted me-2 small">Showing {{ visible_count }} of {{ games_count }} games</span>
                 <a href="?limit=10000" class="btn btn-link pe-0">Show All</a>
-            </div>
-            {% endif %}
-            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#advStatsModal">
-                <i class="bi bi-bar-chart-fill me-1"></i> Advanced Statistics
-            </button>
         </div>
+        {% endif %}
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#advStatsModal">
+            <i class="bi bi-bar-chart-fill me-1"></i> Advanced Statistics
+        </button>
     </div>
+</div>
 </div>
 
 <!-- Advanced Stats Modal -->
@@ -215,273 +229,349 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Advanced Statistics ({% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %})</h5>
+                <h5 class="modal-title">Advanced Statistics ({% if selected_year == 'all' %}All Time{% else %}{{
+                    selected_year }}{% endif %})</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="row g-3">
-                     <!-- Games & Attendance -->
-                     <div class="col-12">
-                         <h6 class="border-bottom pb-2">Activity</h6>
-                         <ul class="list-group list-group-flush">
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Games Attended <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Number of sessions played"></i></span> 
-                                 <strong>{{ adv_stats.attendance_count }}</strong>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Attendance % <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Participation rate"></i></span> 
-                                 <strong>{{ "%.1f"|format(adv_stats.attendance_pct) }}%</strong>
-                             </li>
-                         </ul>
-                     </div>
-                     <!-- Financials -->
-                     <div class="col-12">
-                         <h6 class="border-bottom pb-2">Financials</h6>
-                          <ul class="list-group list-group-flush">
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Total Invested <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Sum of all Buy-ins and Add-ons"></i></span> 
-                                 <strong>{{ "%.2f"|format(adv_stats.total_investment) }}</strong>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Avg Buy-in <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Average amount spent per session"></i></span> 
-                                 <div>
-                                     <strong>{{ "%.2f"|format(adv_stats.avg_buyin) }}</strong>
-                                 </div>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Total Balance <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Total net result"></i></span> 
-                                 <div>
-                                     <strong class="{% if adv_stats.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{ "%.2f"|format(adv_stats.total_balance) }}</strong>
-                                     {% if adv_stats.ranks.total_balance %}
-                                       {% set r = adv_stats.ranks.total_balance %}
-                                       {% if r.rank == 1 %}
-                                         <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
-                                       {% elif r.rank == 2 %}
-                                         <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;" data-bs-toggle="tooltip" title="2nd Place"></i>
-                                       {% elif r.rank == 3 %}
-                                         <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;" data-bs-toggle="tooltip" title="3rd Place"></i>
-                                       {% else %}
-                                         {% set pct = r.top_pct %}
-                                         <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
-                                       {% endif %}
-                                     {% endif %}
-                                 </div>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Avg Profit/Game <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Average net result per session"></i></span> 
-                                 <div>
-                                     <strong class="{% if adv_stats.avg_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{ "%.2f"|format(adv_stats.avg_balance) }}</strong>
-                                     {% if adv_stats.ranks.avg_profit %}
-                                       {% set r = adv_stats.ranks.avg_profit %}
-                                       {% if r.rank == 1 %}
-                                         <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
-                                       {% elif r.rank == 2 %}
-                                         <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;" data-bs-toggle="tooltip" title="2nd Place"></i>
-                                       {% elif r.rank == 3 %}
-                                         <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;" data-bs-toggle="tooltip" title="3rd Place"></i>
-                                       {% else %}
-                                         {% set pct = r.top_pct %}
-                                         <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
-                                       {% endif %}
-                                     {% endif %}
-                                 </div>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Return on Investment <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="(Total Profit / Total Invested) * 100"></i></span> 
-                                 <div>
-                                    <strong class="{% if adv_stats.roi < 0 %}text-danger{% else %}text-success{% endif %}">{{ "%.1f"|format(adv_stats.roi) }}%</strong>
+                    <!-- Games & Attendance -->
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Activity</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Games Attended <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Number of sessions played"></i></span>
+                                <strong>{{ adv_stats.attendance_count }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Attendance % <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Participation rate"></i></span>
+                                <strong>{{ "%.1f"|format(adv_stats.attendance_pct) }}%</strong>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Financials -->
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Financials</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Total Invested <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Sum of all Buy-ins and Add-ons"></i></span>
+                                <strong>{{ "%.2f"|format(adv_stats.total_investment) }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Avg Buy-in <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                                        data-bs-toggle="tooltip" title="Average amount spent per session"></i></span>
+                                <div>
+                                    <strong>{{ "%.2f"|format(adv_stats.avg_buyin) }}</strong>
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Total Balance <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Total net result"></i></span>
+                                <div>
+                                    <strong
+                                        class="{% if adv_stats.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{
+                                        "%.2f"|format(adv_stats.total_balance) }}</strong>
+                                    {% if adv_stats.ranks.total_balance %}
+                                    {% set r = adv_stats.ranks.total_balance %}
+                                    {% if r.rank == 1 %}
+                                    <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip"
+                                        title="1st Place"></i>
+                                    {% elif r.rank == 2 %}
+                                    <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="2nd Place"></i>
+                                    {% elif r.rank == 3 %}
+                                    <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="3rd Place"></i>
+                                    {% else %}
+                                    {% set pct = r.top_pct %}
+                                    <span
+                                        class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top
+                                        {{ pct }}%</span>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Avg Profit/Game <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Average net result per session"></i></span>
+                                <div>
+                                    <strong
+                                        class="{% if adv_stats.avg_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{
+                                        "%.2f"|format(adv_stats.avg_balance) }}</strong>
+                                    {% if adv_stats.ranks.avg_profit %}
+                                    {% set r = adv_stats.ranks.avg_profit %}
+                                    {% if r.rank == 1 %}
+                                    <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip"
+                                        title="1st Place"></i>
+                                    {% elif r.rank == 2 %}
+                                    <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="2nd Place"></i>
+                                    {% elif r.rank == 3 %}
+                                    <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="3rd Place"></i>
+                                    {% else %}
+                                    {% set pct = r.top_pct %}
+                                    <span
+                                        class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top
+                                        {{ pct }}%</span>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Return on Investment <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="(Total Profit / Total Invested) * 100"></i></span>
+                                <div>
+                                    <strong
+                                        class="{% if adv_stats.roi < 0 %}text-danger{% else %}text-success{% endif %}">{{
+                                        "%.1f"|format(adv_stats.roi) }}%</strong>
                                     {% if adv_stats.ranks.roi %}
-                                       {% set r = adv_stats.ranks.roi %}
-                                       {% if r.rank == 1 %}
-                                         <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
-                                       {% elif r.rank == 2 %}
-                                         <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;" data-bs-toggle="tooltip" title="2nd Place"></i>
-                                       {% elif r.rank == 3 %}
-                                         <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;" data-bs-toggle="tooltip" title="3rd Place"></i>
-                                       {% else %}
-                                         {% set pct = r.top_pct %}
-                                         <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
-                                       {% endif %}
+                                    {% set r = adv_stats.ranks.roi %}
+                                    {% if r.rank == 1 %}
+                                    <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip"
+                                        title="1st Place"></i>
+                                    {% elif r.rank == 2 %}
+                                    <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="2nd Place"></i>
+                                    {% elif r.rank == 3 %}
+                                    <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="3rd Place"></i>
+                                    {% else %}
+                                    {% set pct = r.top_pct %}
+                                    <span
+                                        class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top
+                                        {{ pct }}%</span>
                                     {% endif %}
-                                 </div>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Win Share <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Share of total winnings in games played (Your Balance / Total Winnings)"></i></span> 
-                                 <div>
-                                     <strong>{{ "%.1f"|format(adv_stats.win_share_pct) }}%</strong>
-                                     {% if adv_stats.ranks.win_share %}
-                                       {% set r = adv_stats.ranks.win_share %}
-                                       {% if r.rank == 1 %}
-                                         <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
-                                       {% elif r.rank == 2 %}
-                                         <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;" data-bs-toggle="tooltip" title="2nd Place"></i>
-                                       {% elif r.rank == 3 %}
-                                         <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;" data-bs-toggle="tooltip" title="3rd Place"></i>
-                                       {% else %}
-                                         {% set pct = r.top_pct %}
-                                         <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
-                                       {% endif %}
-                                     {% endif %}
-                                 </div>
-                             </li>
-                         </ul>
-                     </div>
-                     <!-- Performance -->
-                     <div class="col-12">
-                         <h6 class="border-bottom pb-2">Performance</h6>
-                         <ul class="list-group list-group-flush">
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Win / Draw / Loss <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Sessions ended in Profit / Break-even / Loss"></i></span> 
-                                 <strong>{{ adv_stats.wins }} / {{ adv_stats.draws }} / {{ adv_stats.losses }}</strong>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Win Rate <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="% of winning sessions"></i></span> 
-                                 <div>
-                                     <strong>{{ "%.1f"|format(adv_stats.win_pct) }}%</strong>
-                                     {% if adv_stats.ranks.win_pct %}
-                                       {% set r = adv_stats.ranks.win_pct %}
-                                       {% if r.rank == 1 %}
-                                         <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
-                                       {% elif r.rank == 2 %}
-                                         <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;" data-bs-toggle="tooltip" title="2nd Place"></i>
-                                       {% elif r.rank == 3 %}
-                                         <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;" data-bs-toggle="tooltip" title="3rd Place"></i>
-                                       {% else %}
-                                         {% set pct = r.top_pct %}
-                                         <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
-                                       {% endif %}
-                                     {% endif %}
-                                 </div>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Hourly Winrate <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Average profit per hour played"></i></span> 
-                                 <div>
-                                     <strong class="{% if adv_stats.hourly_winrate < 0 %}text-danger{% else %}text-success{% endif %}">{{ "%.2f"|format(adv_stats.hourly_winrate) }}</strong>
-                                     {% if adv_stats.ranks.hourly_winrate %}
-                                       {% set r = adv_stats.ranks.hourly_winrate %}
-                                       {% if r.rank == 1 %}
-                                         <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
-                                       {% elif r.rank == 2 %}
-                                         <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;" data-bs-toggle="tooltip" title="2nd Place"></i>
-                                       {% elif r.rank == 3 %}
-                                         <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;" data-bs-toggle="tooltip" title="3rd Place"></i>
-                                       {% else %}
-                                         {% set pct = r.top_pct %}
-                                         <span class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top {{ pct }}%</span>
-                                       {% endif %}
-                                     {% endif %}
-                                 </div>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Standard Deviation <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Typical swing +/- from your average result. Team Mean SD: {{ '%.2f'|format(adv_stats.avg_team_std_dev) }}"></i></span> 
-                                 <div>
-                                     <strong>{{ "%.2f"|format(adv_stats.std_dev) }}</strong>
-                                     {% if adv_stats.ranks.std_dev %}
-                                       {% set tier = adv_stats.ranks.std_dev.tier %}
-                                       <span class="badge ms-1 {% if tier == 'Low' %}bg-success{% elif tier == 'Average' %}bg-warning text-dark{% else %}bg-danger{% endif %}" data-bs-toggle="tooltip" title="Compared to team: Low (Bot 33%) | Avg (Mid 33%) | High (Top 33%)">{{ tier }}</span>
-                                     {% endif %}
-                                 </div>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between">
-                                 <span>Typical Result <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip" title="Estimated range for most (68%) of your sessions (Avg +/- StdDev)"></i></span> 
-                                 <strong>{{ "%.0f"|format(adv_stats.typical_range_low) }} to {{ "%.0f"|format(adv_stats.typical_range_high) }}</strong>
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between"><span>Best Result</span> 
-                                 {% if adv_stats.best_result %}
-                                 <div>
-                                     <strong class="text-success">{{ "%.2f"|format(adv_stats.best_result.balance) }} <small class="text-muted">({{ adv_stats.best_result.date }})</small></strong>
-                                     {% if adv_stats.ranks.best_result %}
-                                      {% set r = adv_stats.ranks.best_result %}
-                                      {% if r.rank == 1 %}
-                                        <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
-                                      {% elif r.rank == 2 %}
-                                        <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;" data-bs-toggle="tooltip" title="2nd Place"></i>
-                                      {% elif r.rank == 3 %}
-                                        <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;" data-bs-toggle="tooltip" title="3rd Place"></i>
-                                      {% endif %}
                                     {% endif %}
-                                 </div>
-                                 {% else %}-{% endif %}
-                             </li>
-                             <li class="list-group-item d-flex justify-content-between"><span>Worst Result</span> 
-                                 {% if adv_stats.worst_result %}
-                                 <div>
-                                     <strong class="text-danger">{{ "%.2f"|format(adv_stats.worst_result.balance) }} <small class="text-muted">({{ adv_stats.worst_result.date }})</small></strong>
-                                     {% if adv_stats.ranks.worst_result %}
-                                      {% set r = adv_stats.ranks.worst_result %}
-                                      {% if r.rank == 1 %}
-                                        <i class="bi bi-bell-fill text-warning ms-1" data-bs-toggle="tooltip" title="Worst Result (1st)"></i>
-                                      {% elif r.rank == 2 %}
-                                        <i class="bi bi-bell-fill text-secondary ms-1" style="font-size: 1.1em;" data-bs-toggle="tooltip" title="2nd Worst"></i>
-                                      {% elif r.rank == 3 %}
-                                        <i class="bi bi-bell-fill ms-1" style="color: #cd7f32; font-size: 1.1em;" data-bs-toggle="tooltip" title="3rd Worst"></i>
-                                      {% endif %}
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Win Share <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                                        data-bs-toggle="tooltip"
+                                        title="Share of total winnings in games played (Your Balance / Total Winnings)"></i></span>
+                                <div>
+                                    <strong>{{ "%.1f"|format(adv_stats.win_share_pct) }}%</strong>
+                                    {% if adv_stats.ranks.win_share %}
+                                    {% set r = adv_stats.ranks.win_share %}
+                                    {% if r.rank == 1 %}
+                                    <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip"
+                                        title="1st Place"></i>
+                                    {% elif r.rank == 2 %}
+                                    <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="2nd Place"></i>
+                                    {% elif r.rank == 3 %}
+                                    <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="3rd Place"></i>
+                                    {% else %}
+                                    {% set pct = r.top_pct %}
+                                    <span
+                                        class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top
+                                        {{ pct }}%</span>
                                     {% endif %}
-                                 </div>
-                                 {% else %}-{% endif %}
-                             </li>
-                         </ul>
-                     </div>
-                     <!-- Monthly Breakdown -->
-                      <div class="col-12">
-                          <h6 class="border-bottom pb-2 pt-2">Monthly Breakdown</h6>
-                          <div style="height: 250px; width: 100%;"><canvas id="monthlyBreakdownChart"></canvas></div>
-                      </div>
-                      <!-- Chart Scripts -->
-                      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-                      <script>
-                      document.addEventListener('DOMContentLoaded', function() {
-                          const scaleOptions = {
-                              y: { 
-                                  grid: { color: '#e9ecef' },
-                                  // "Fit min and max": Allow auto scaling, but maybe ensure we don't force too much padding.
-                                  // Default chartjs is good. Using beginAtZero: false might be what they mean if ranges are far from 0.
-                                  // But for net profit, 0 is key.
-                                  // I'll stick to default which is auto-fit.
-                              },
-                              x: {
-                                  grid: { display: false }
-                              }
-                          };
+                                    {% endif %}
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Performance -->
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Performance</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Win / Draw / Loss <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Sessions ended in Profit / Break-even / Loss"></i></span>
+                                <strong>{{ adv_stats.wins }} / {{ adv_stats.draws }} / {{ adv_stats.losses }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Win Rate <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                                        data-bs-toggle="tooltip" title="% of winning sessions"></i></span>
+                                <div>
+                                    <strong>{{ "%.1f"|format(adv_stats.win_pct) }}%</strong>
+                                    {% if adv_stats.ranks.win_pct %}
+                                    {% set r = adv_stats.ranks.win_pct %}
+                                    {% if r.rank == 1 %}
+                                    <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip"
+                                        title="1st Place"></i>
+                                    {% elif r.rank == 2 %}
+                                    <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="2nd Place"></i>
+                                    {% elif r.rank == 3 %}
+                                    <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="3rd Place"></i>
+                                    {% else %}
+                                    {% set pct = r.top_pct %}
+                                    <span
+                                        class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top
+                                        {{ pct }}%</span>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Hourly Winrate <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Average profit per hour played"></i></span>
+                                <div>
+                                    <strong
+                                        class="{% if adv_stats.hourly_winrate < 0 %}text-danger{% else %}text-success{% endif %}">{{
+                                        "%.2f"|format(adv_stats.hourly_winrate) }}</strong>
+                                    {% if adv_stats.ranks.hourly_winrate %}
+                                    {% set r = adv_stats.ranks.hourly_winrate %}
+                                    {% if r.rank == 1 %}
+                                    <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip"
+                                        title="1st Place"></i>
+                                    {% elif r.rank == 2 %}
+                                    <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="2nd Place"></i>
+                                    {% elif r.rank == 3 %}
+                                    <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="3rd Place"></i>
+                                    {% else %}
+                                    {% set pct = r.top_pct %}
+                                    <span
+                                        class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top
+                                        {{ pct }}%</span>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Standard Deviation <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Typical swing +/- from your average result. Team Mean SD: {{ '%.2f'|format(adv_stats.avg_team_std_dev) }}"></i></span>
+                                <div>
+                                    <strong>{{ "%.2f"|format(adv_stats.std_dev) }}</strong>
+                                    {% if adv_stats.ranks.std_dev %}
+                                    {% set tier = adv_stats.ranks.std_dev.tier %}
+                                    <span
+                                        class="badge ms-1 {% if tier == 'Low' %}bg-success{% elif tier == 'Average' %}bg-warning text-dark{% else %}bg-danger{% endif %}"
+                                        data-bs-toggle="tooltip"
+                                        title="Compared to team: Low (Bot 33%) | Avg (Mid 33%) | High (Top 33%)">{{ tier
+                                        }}</span>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Typical Result <i class="bi bi-info-circle text-muted ms-1"
+                                        style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                                        title="Estimated range for most (68%) of your sessions (Avg +/- StdDev)"></i></span>
+                                <strong>{{ "%.0f"|format(adv_stats.typical_range_low) }} to {{
+                                    "%.0f"|format(adv_stats.typical_range_high) }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between"><span>Best Result</span>
+                                {% if adv_stats.best_result %}
+                                <div>
+                                    <strong class="text-success">{{ "%.2f"|format(adv_stats.best_result.balance) }}
+                                        <small class="text-muted">({{ adv_stats.best_result.date }})</small></strong>
+                                    {% if adv_stats.ranks.best_result %}
+                                    {% set r = adv_stats.ranks.best_result %}
+                                    {% if r.rank == 1 %}
+                                    <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip"
+                                        title="1st Place"></i>
+                                    {% elif r.rank == 2 %}
+                                    <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="2nd Place"></i>
+                                    {% elif r.rank == 3 %}
+                                    <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="3rd Place"></i>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                                {% else %}-{% endif %}
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between"><span>Worst Result</span>
+                                {% if adv_stats.worst_result %}
+                                <div>
+                                    <strong class="text-danger">{{ "%.2f"|format(adv_stats.worst_result.balance) }}
+                                        <small class="text-muted">({{ adv_stats.worst_result.date }})</small></strong>
+                                    {% if adv_stats.ranks.worst_result %}
+                                    {% set r = adv_stats.ranks.worst_result %}
+                                    {% if r.rank == 1 %}
+                                    <i class="bi bi-bell-fill text-warning ms-1" data-bs-toggle="tooltip"
+                                        title="Worst Result (1st)"></i>
+                                    {% elif r.rank == 2 %}
+                                    <i class="bi bi-bell-fill text-secondary ms-1" style="font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="2nd Worst"></i>
+                                    {% elif r.rank == 3 %}
+                                    <i class="bi bi-bell-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                                        data-bs-toggle="tooltip" title="3rd Worst"></i>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                                {% else %}-{% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Monthly Breakdown -->
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2 pt-2">Monthly Breakdown</h6>
+                        <div style="height: 250px; width: 100%;"><canvas id="monthlyBreakdownChart"></canvas></div>
+                    </div>
+                    <!-- Chart Scripts -->
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            const scaleOptions = {
+                                y: {
+                                    grid: { color: '#e9ecef' },
+                                    // "Fit min and max": Allow auto scaling, but maybe ensure we don't force too much padding.
+                                    // Default chartjs is good. Using beginAtZero: false might be what they mean if ranges are far from 0.
+                                    // But for net profit, 0 is key.
+                                    // I'll stick to default which is auto-fit.
+                                },
+                                x: {
+                                    grid: { display: false }
+                                }
+                            };
 
-                          // Monthly Breakdown
-                          const mLabels = [{% for m, d in adv_stats.monthly_balances %}"{{ m }}",{% endfor %}];
-                          const mData = [{% for m, d in adv_stats.monthly_balances %}{{ "%.2f"|format(d.balance) }},{% endfor %}];
+                            // Monthly Breakdown
+                            const mLabels = [{% for m, d in adv_stats.monthly_balances %}"{{ m }}", {% endfor %}];
+                        const mData = [{% for m, d in adv_stats.monthly_balances %}{ { "%.2f" | format(d.balance) } }, {% endfor %}];
 
-                          if (mData.length > 0) {
-                              new Chart(document.getElementById('monthlyBreakdownChart'), {
-                                  type: 'bar',
-                                  data: {
-                                      labels: mLabels,
-                                      datasets: [{
-                                          label: 'Balance',
-                                          data: mData,
-                                          backgroundColor: mData.map(v => v >= 0 ? '#198754' : '#dc3545'),
-                                          borderRadius: 4
-                                      }]
-                                  },
-                                  options: {
-                                      responsive: true,
-                                      maintainAspectRatio: false,
-                                      layout: {
-                                          padding: { top: 10, bottom: 0 }
-                                      },
-                                      plugins: {
-                                          legend: { display: false },
-                                          tooltip: {
-                                               callbacks: {
-                                                   label: function(context) {
-                                                       return Number(context.parsed.y).toFixed(2);
-                                                   }
-                                               }
-                                          }
-                                      },
-                                      scales: scaleOptions
-                                  }
-                              });
-                          }
+                        if (mData.length > 0) {
+                            new Chart(document.getElementById('monthlyBreakdownChart'), {
+                                type: 'bar',
+                                data: {
+                                    labels: mLabels,
+                                    datasets: [{
+                                        label: 'Balance',
+                                        data: mData,
+                                        backgroundColor: mData.map(v => v >= 0 ? '#198754' : '#dc3545'),
+                                        borderRadius: 4
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    layout: {
+                                        padding: { top: 10, bottom: 0 }
+                                    },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function (context) {
+                                                    return Number(context.parsed.y).toFixed(2);
+                                                }
+                                            }
+                                        }
+                                    },
+                                    scales: scaleOptions
+                                }
+                            });
+                        }
                       });
-                      </script>
+                    </script>
                 </div>
             </div>
         </div>
@@ -492,106 +582,107 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         // Initialize Tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-          return new bootstrap.Tooltip(tooltipTriggerEl)
+            return new bootstrap.Tooltip(tooltipTriggerEl)
         })
 
-        const chartData = {{ chart_points | tojson }};
-        if (chartData && chartData.length > 0) {
-            const ctx = document.getElementById('balanceChart').getContext('2d');
-            
-            // Create gradient
-            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-            gradient.addColorStop(0, 'rgba(13, 110, 253, 0.2)');
-            gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)');
+        const chartData = {{ chart_points | tojson
+    }};
+    if (chartData && chartData.length > 0) {
+        const ctx = document.getElementById('balanceChart').getContext('2d');
 
-            const balances = chartData.map(d => d.balance);
-            const minBalance = Math.min(...balances);
-            const maxBalance = Math.max(...balances);
-            
-            // Add slight padding (5%) so points aren't cut off at the edges
-            const range = maxBalance - minBalance;
-            const padding = range === 0 ? 10 : range * 0.05;
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(13, 110, 253, 0.2)');
+        gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)');
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.map(d => d.date),
-                    datasets: [{
-                        label: 'Balance',
-                        data: balances,
-                        borderColor: '#0d6efd',
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#0d6efd',
-                        pointBorderWidth: 2,
-                        pointRadius: 3,
-                        pointHoverRadius: 6
-                    }]
+        const balances = chartData.map(d => d.balance);
+        const minBalance = Math.min(...balances);
+        const maxBalance = Math.max(...balances);
+
+        // Add slight padding (5%) so points aren't cut off at the edges
+        const range = maxBalance - minBalance;
+        const padding = range === 0 ? 10 : range * 0.05;
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map(d => d.date),
+                datasets: [{
+                    label: 'Balance',
+                    data: balances,
+                    borderColor: '#0d6efd',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#0d6efd',
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index',
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y).replace('$', '');
-                                    }
-                                    return label;
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
                                 }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y).replace('$', '');
+                                }
+                                return label;
                             }
                         }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: minBalance - padding,
+                        max: maxBalance + padding,
+                        beginAtZero: false,
+                        grid: { borderDash: [2, 4], color: '#e9ecef' },
+                        ticks: { callback: function (value) { return value; } }
                     },
-                    scales: {
-                        y: {
-                            min: minBalance - padding,
-                            max: maxBalance + padding,
-                            beginAtZero: false,
-                            grid: { borderDash: [2, 4], color: '#e9ecef' },
-                            ticks: { callback: function(value) { return value; } }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { maxTicksLimit: 8 }
-                        }
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxTicksLimit: 8 }
                     }
                 }
-            });
-        }
+            }
+        });
+    }
     });
 
     function adjustStatsViewHeight() {
         const container = document.getElementById('stats-view-container');
         if (!container) return;
-        
+
         // Calculate available height: Window height - container top position - bottom margin (20px)
         const rect = container.getBoundingClientRect();
         const availableHeight = window.innerHeight - rect.top - 20;
-        
+
         // Ensure a reasonable minimum height
         container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
     }
 
     window.addEventListener('resize', adjustStatsViewHeight);
     window.addEventListener('load', adjustStatsViewHeight);
-    
+
     adjustStatsViewHeight();
 </script>
 {% endblock %}

@@ -64,9 +64,11 @@ async def player_game_history(
     for bi in buy_ins:
         events.append({"type": "buy_in", "obj": bi, "time": bi.time, "amount": bi.amount, "id": bi.id})
     for ao in add_ons:
-        events.append({"type": "add_on", "obj": ao, "time": ao.time, "amount": ao.amount, "id": ao.id, "status": ao.status})
+        if ao.status == "APPROVED":
+            events.append({"type": "add_on", "obj": ao, "time": ao.time, "amount": ao.amount, "id": ao.id, "status": ao.status})
     for co in cash_outs:
-        events.append({"type": "cash_out", "obj": co, "time": co.time, "amount": co.amount, "id": co.id, "status": co.status})
+        if co.status == "APPROVED":
+            events.append({"type": "cash_out", "obj": co, "time": co.time, "amount": co.amount, "id": co.id, "status": co.status})
 
     events.sort(key=lambda x: x["time"] or "")
 
@@ -79,7 +81,9 @@ async def player_game_history(
             "player": target_player,
             "events": events,
             "user": user,
-            "can_edit": can_edit
+            "can_edit": can_edit,
+            "total_money_in": sum(bi.amount for bi in buy_ins) + sum(ao.amount for ao in add_ons if ao.status == "APPROVED"),
+            "total_money_out": sum(co.amount for co in cash_outs if co.status == "APPROVED")
         },
     )
 

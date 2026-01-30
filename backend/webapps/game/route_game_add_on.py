@@ -84,12 +84,11 @@ async def add_on(
 
     target_player = user
     auto_approve = False
-    if player_id and is_user_admin(user.id, game.team_id, db):
+    if player_id and (is_user_admin(user.id, game.team_id, db) or game.book_keeper_id == user.id):
         target_player = db.query(User).filter(User.id == player_id).first()
         if not target_player:
             raise HTTPException(status_code=404, detail="Player not found")
-        if target_player.id != user.id:
-            auto_approve = True
+        auto_approve = True
 
     form = await request.form()
     print("form", form)
