@@ -453,6 +453,7 @@ async def open_game(
             "game": game,
             "user": user,
             "is_admin": is_user_admin(user.id, game.team_id, db),
+            "is_book_keeper": (game.book_keeper_id == user.id),
             "players_info": players_info,
             "requests": existing_requests,
             "invite_link": invite_link,
@@ -499,6 +500,7 @@ async def get_game_table(
             "game": game,
             "user": user,
             "is_admin": is_user_admin(user.id, game.team_id, db),
+            "is_book_keeper": (game.book_keeper_id == user.id),
             "players_info": players_info,
             "requests": existing_requests,
             "sort_by": sort,
@@ -525,6 +527,67 @@ async def finish_game_view(
 
     finish_the_game(user, game, db, finish_time=finish_time)
     return RedirectResponse(url="/", status_code=303)
+
+
+@router.get("/{game_id}/book_keeper", name="get_assign_book_keeper_list")
+async def get_assign_book_keeper_list(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not is_user_admin(user.id, game.team_id, db):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+    # Get team members to show in list
+    team_members = (
+        db.query(User)
+        .join(UserTeam)
+        .filter(
+            UserTeam.team_id == game.team_id,
+            UserTeam.status == PlayerRequestStatus.APPROVED,
+        )
+        .all()
+    )
+
+    return templates.TemplateResponse(
+        "game/partials/assign_book_keeper.html",
+        {
+            "request": request,
+            "game": game,
+            "team_members": team_members,
+        },
+    )
+
+
+@router.post("/{game_id}/book_keeper", name="assign_book_keeper")
+async def assign_book_keeper(
+    game_id: int,
+    user_id: int = Form(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not is_user_admin(user.id, game.team_id, db):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+    # Verify user is in the team (or game?) - Team member check is safer
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    game.book_keeper_id = user_id
+    db.commit()
+    
+    # Refresh to show update
+    return Response(status_code=200, headers={"HX-Refresh": "true"})
 
 
 @router.post("/{game_id}/export", name="export_game_stats")

@@ -1343,3 +1343,78 @@ def _calculate_team_stats(team, year, db):
         },
     }
     return stats
+
+@router.get("/{team_id}/manage_operators", name="get_manage_operators_list")
+async def get_manage_operators_list(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Get all members with their roles
+    # We need a custom query or helper to get (User, Role)
+    from backend.db.models.team_role import TeamRole
+    members_with_roles = (
+        db.query(User, UserTeam.role)
+        .join(UserTeam)
+        .filter(
+            UserTeam.team_id == team.id,
+            UserTeam.status == PlayerRequestStatus.APPROVED,
+        )
+        .all()
+    )
+    
+    # Sort: Admins, Book Keepers, Members
+    def role_priority(role):
+        if role == TeamRole.ADMIN: return 0
+        if role == TeamRole.BOOK_KEEPER: return 1
+        return 2
+
+    sorted_members = sorted(
+        members_with_roles, 
+        key=lambda x: (role_priority(x[1]), x[0].nick.lower())
+    )
+
+    return templates.TemplateResponse(
+        "game/partials/manage_operators.html",
+        {
+            "request": request,
+            "team": team,
+            "members": sorted_members,
+            "TeamRole": TeamRole
+        },
+    )
+
+
+@router.post("/{team_id}/player/{player_id}/role", name="update_player_role")
+async def update_player_role(
+    team_id: int,
+    player_id: int,
+    role: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Validate role
+    from backend.db.models.team_role import TeamRole
+    if role not in [TeamRole.MEMBER, TeamRole.ADMIN, TeamRole.BOOK_KEEPER]:
+         raise HTTPException(status_code=400, detail="Invalid role")
+
+    # Create a helper or import it if created in repo
+    from backend.db.repository.team import update_user_role
+    update_user_role(team.id, player_id, role, db)
+
+    return responses.Response(status_code=200, headers={"HX-Refresh": "true"})

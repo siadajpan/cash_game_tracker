@@ -1,0 +1,22 @@
+<div class="modal-body">
+    <p class="text-muted small mb-3">
+        Assign a member to be the <strong>Book Keeper</strong> for this game.
+        They will be able to edit buy-ins, add-ons, and cash-outs.
+    </p>
+
+    <div class="list-group">
+        {% for member in team_members %}
+        <button type="button"
+            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+            hx-post="/game/{{ game.id }}/book_keeper" hx-vals='{"user_id": {{ member.id }}}'
+            hx-target="#assignBookKeeperContent" {% if game.book_keeper_id==member.id %}disabled{% endif %}>
+
+            <span>{{ member.nick }}</span>
+
+            {% if game.book_keeper_id == member.id %}
+            <span class="badge bg-success rounded-pill">Current</span>
+            {% endif %}
+        </button>
+        {% endfor %}
+    </div>
+</div>

@@ -1,0 +1,36 @@
+<li class="list-group-item d-flex justify-content-between align-items-center p-2"
+    id="event-row-{{ event.type }}-{{ event.id }}">
+    <div class="d-flex align-items-center" style="min-width: 120px;">
+        {% if event.type == 'buy_in' %}
+        <span class="fw-bold me-2">Buy-in:</span>
+        {% elif event.type == 'add_on' %}
+        <span class="fw-bold me-2">+</span>
+        {% elif event.type == 'cash_out' %}
+        <span class="fw-bold me-2">Cash-out:</span>
+        {% endif %}
+        <span class="fw-bold">{{ event.amount }}</span>
+    </div>
+
+    <div class="text-muted small mx-auto">
+        <!-- Time: HH:MM only -->
+        {{ event.time[11:16] if event.time|length >= 16 else event.time }}
+    </div>
+
+    <div class="text-end" style="min-width: 60px;">
+        {% if can_edit %}
+        <!-- Edit Button -->
+        <button class="btn btn-link text-primary p-0 border-0 lh-1 me-2"
+            hx-get="/game/{{ game.id }}/{{ event.type }}/{{ event.id }}/edit_row"
+            hx-target="#event-row-{{ event.type }}-{{ event.id }}" hx-swap="outerHTML" title="Edit">
+            <i class="bi bi-pencil" style="font-size: 0.9rem;"></i>
+        </button>
+        <!-- Delete Button -->
+        <button class="btn btn-link text-danger p-0 border-0 lh-1"
+            hx-delete="/game/{{ game.id }}/{{ event.type }}/{{ event.id }}"
+            hx-confirm="Are you sure you want to delete this event?" hx-target="closest li" hx-swap="outerHTML"
+            title="Delete">
+            <i class="bi bi-trash" style="font-size: 0.9rem;"></i>
+        </button>
+        {% endif %}
+    </div>
+</li>

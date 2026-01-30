@@ -1,0 +1,148 @@
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5>History: {{ player.nick }}</h5>
+    <div>
+        Balance:
+        <span
+            class="fw-bold {% if (events|sum(attribute='amount') * -1) < 0 %}text-danger{% else %}text-success{% endif %}">
+            <!-- This sum logic is tricky in jinja, better use backend passed balance or re-calc -->
+            <!-- Simplified: Just show total balance passed from backend? Or just list events -->
+        </span>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Time</th>
+                <th>Amount</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="historyTableBody">
+            {% for event in events %}
+            <tr id="event-row-{{ event.type }}-{{ event.id }}">
+                <td>
+                    {% if event.type == 'buy_in' %}
+                    <span class="badge bg-success">Buy-in</span>
+                    {% elif event.type == 'add_on' %}
+                    <span class="badge bg-warning text-dark">Add-on</span>
+                    {% elif event.type == 'cash_out' %}
+                    <span class="badge bg-primary">Cash-out</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <input type="datetime-local" class="form-control form-control-sm" value="{{ event.time }}"
+                        name="time" form="edit-form-{{ event.type }}-{{ event.id }}" step="1">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" value="{{ event.amount }}" name="amount"
+                        step="0.01" form="edit-form-{{ event.type }}-{{ event.id }}">
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <form id="edit-form-{{ event.type }}-{{ event.id }}"
+                            hx-put="/game/{{ game.id }}/{{ event.type }}/{{ event.id }}" hx-trigger="submit"
+                            hx-target="#playerHistoryContent">
+                            <button type="submit" class="btn btn-outline-primary" title="Save">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+
+                        <button class="btn btn-outline-danger"
+                            hx-delete="/game/{{ game.id }}/{{ event.type }}/{{ event.id }}" hx-confirm="Are you sure?"
+                            hx-target="#playerHistoryContent">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+
+            <!-- Add New Rows -->
+            <tr class="table-light border-top border-4">
+                <td colspan="4" class="text-center fw-bold text-muted small">Add New Event</td>
+            </tr>
+
+            <!-- Add Buy In -->
+            <tr>
+                <td><span class="badge bg-success">Buy-in</span></td>
+                <td>
+                    <input type="datetime-local" class="form-control form-control-sm" name="time" form="add-buyin-form"
+                        step="1">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" name="amount" placeholder="Amount"
+                        step="0.01" form="add-buyin-form" required>
+                </td>
+                <td>
+                    <form id="add-buyin-form" hx-post="/game/{{ game.id }}/buy_in/add"
+                        hx-target="#playerHistoryContent">
+                        <input type="hidden" name="player_id" value="{{ player.id }}">
+                        <button type="submit" class="btn btn-sm btn-success w-100">Add</button>
+                    </form>
+                </td>
+            </tr>
+
+            <!-- Add Add-on -->
+            <tr>
+                <td><span class="badge bg-warning text-dark">Add-on</span></td>
+                <td>
+                    <input type="datetime-local" class="form-control form-control-sm" name="time" form="add-addon-form"
+                        step="1">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" name="amount" placeholder="Amount"
+                        step="0.01" form="add-addon-form" required>
+                </td>
+                <td>
+                    <form id="add-addon-form" hx-post="/game/{{ game.id }}/add_on/add"
+                        hx-target="#playerHistoryContent">
+                        <input type="hidden" name="player_id" value="{{ player.id }}">
+                        <button type="submit" class="btn btn-sm btn-warning w-100">Add</button>
+                    </form>
+                </td>
+            </tr>
+
+            <!-- Add Cash-out -->
+            <tr>
+                <td><span class="badge bg-primary">Cash-out</span></td>
+                <td>
+                    <input type="datetime-local" class="form-control form-control-sm" name="time"
+                        form="add-cashout-form" step="1">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" name="amount" placeholder="Amount"
+                        step="0.01" form="add-cashout-form" required>
+                </td>
+                <td>
+                    <form id="add-cashout-form" hx-post="/game/{{ game.id }}/cash_out/add"
+                        hx-target="#playerHistoryContent">
+                        <input type="hidden" name="player_id" value="{{ player.id }}">
+                        <button type="submit" class="btn btn-sm btn-primary w-100">Add</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Listen for refresh events (if using full hx-swap, script re-execution might be needed)
+    // Actually the response replaces the content, so it's a full refresh of this block.
+    // However, we also want to refresh the MAIN table in the background.
+    document.body.addEventListener('refreshTable', function () {
+        // find the main table element and trigger refresh
+        // The main table in view_running.html has hx-trigger="every 5s", but we can force it
+        // Or manually hx-get it
+        const tableContainer = document.querySelector('[hx-get*="/game/"][hx-get*="/table"]');
+        if (tableContainer) {
+            htmx.trigger(tableContainer, 'htmx:trigger'); // works? or just call generic event
+            // htmx.ajax('GET', tableContainer.getAttribute('hx-get'), tableContainer); 
+        }
+    });
+
+    // Optional: Pre-fill time inputs with current time if empty (handled by backend or user interaction)
+</script>

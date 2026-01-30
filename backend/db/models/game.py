@@ -19,7 +19,10 @@ class Game(Base):
 
     # Owner (Many-to-One: Many games owned by one user)
     owner_id = Column(Integer, ForeignKey("user.id"))
-    owner = relationship("User", back_populates="games_owned")
+    owner = relationship("User", back_populates="games_owned", foreign_keys=[owner_id])
+
+    book_keeper_id = Column(Integer, ForeignKey("user.id"), nullable=True)
+    book_keeper = relationship("User", foreign_keys=[book_keeper_id])
 
     team_id = Column(Integer, ForeignKey("team.id"))
     team = relationship("Team", back_populates="games")

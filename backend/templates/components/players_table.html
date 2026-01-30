@@ -16,35 +16,43 @@
     <li class="list-group-item">
         <div class="row fw-bold text-center">
             <div class="{{ col_player }} text-start">
-                <a href="?sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}" class="text-dark text-decoration-none">
+                <a href="?sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                    class="text-dark text-decoration-none">
                     Player
                     {% if sort_by == 'player' %}
-                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                        style="font-size: 0.7em;"></i>
                     {% endif %}
                 </a>
             </div>
             <div class="{{ col_in }}">
-                <a href="?sort=buy_in&order={% if sort_by == 'buy_in' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                <a href="?sort=buy_in&order={% if sort_by == 'buy_in' and order == 'desc' %}asc{% else %}desc{% endif %}"
+                    class="text-dark text-decoration-none">
                     In
                     {% if sort_by == 'buy_in' %}
-                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                        style="font-size: 0.7em;"></i>
                     {% endif %}
                 </a>
             </div>
             <div class="{{ col_out }}">
-                <a href="?sort=cash_out&order={% if sort_by == 'cash_out' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                <a href="?sort=cash_out&order={% if sort_by == 'cash_out' and order == 'desc' %}asc{% else %}desc{% endif %}"
+                    class="text-dark text-decoration-none">
                     Out
                     {% if sort_by == 'cash_out' %}
-                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                        style="font-size: 0.7em;"></i>
                     {% endif %}
                 </a>
             </div>
             {% if not game.running or show_balance %}
             <div class="{{ col_balance }}">
-                <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-dark text-decoration-none">
+                <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}"
+                    class="text-dark text-decoration-none">
                     Balance
                     {% if sort_by == 'balance' %}
-                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                        style="font-size: 0.7em;"></i>
                     {% endif %}
                 </a>
             </div>
@@ -59,7 +67,8 @@
     <li class="list-group-item position-relative">
         <div class="row text-center align-items-center">
             <div class="{{ col_player }} text-start">
-                <a href="/team/{{ game.team_id }}/player/{{ info.player.id }}" class="text-decoration-none text-dark fw-semibold stretched-link">
+                <a href="/game/{{ game.id }}/player/{{ info.player.id }}/history"
+                    class="text-decoration-none text-dark fw-semibold stretched-link">
                     {{ info.player.nick }}
                     {% if info.owner %} (host) {% endif %}
                 </a>
@@ -69,7 +78,8 @@
                 {% if game.running and info.request_type == 'add_on' %}
                 {% if user in info.can_approve %}
                 <!-- z-index needed to click button on top of stretched link -->
-                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative" style="z-index: 5;" title="{{ info.request_text }}">
+                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative"
+                    style="z-index: 5;" title="{{ info.request_text }}">
                     <i class="bi bi-exclamation-circle-fill"></i> Add-on
                 </a>
                 {% else %}
@@ -79,23 +89,25 @@
                 {% endif %}
                 {% else %}
                 <span class="position-relative">
-                {% if info.money_in % 1 %}
-                {{ "%.2f"|format(info.money_in) }}
-                {% else %}
-                {{ info.money_in|int }}
-                {% endif %}
-                {% if is_admin and game.running %}
-                <a href="/game/{{ game.id }}/add_on?player_id={{ info.player.id }}" class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
-                    <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
-                </a>
-                {% endif %}
+                    {% if info.money_in % 1 %}
+                    {{ "%.2f"|format(info.money_in) }}
+                    {% else %}
+                    {{ info.money_in|int }}
+                    {% endif %}
+                    {% if is_admin and game.running %}
+                    <a href="/game/{{ game.id }}/add_on?player_id={{ info.player.id }}"
+                        class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
+                        <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
+                    </a>
+                    {% endif %}
                 </span>
                 {% endif %}
             </div>
             <div class="{{ col_out }}">
                 {% if game.running and info.request_type == 'cash_out' %}
                 {% if user in info.can_approve %}
-                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative" style="z-index: 5;" title="{{ info.request_text }}">
+                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative"
+                    style="z-index: 5;" title="{{ info.request_text }}">
                     <i class="bi bi-exclamation-circle-fill"></i> Cash-out
                 </a>
                 {% else %}
@@ -105,20 +117,21 @@
                 {% endif %}
                 {% else %}
                 <span class="position-relative">
-                {% if info.money_out is not none %}
-                {% if info.money_out % 1 %}
-                {{ "%.2f"|format(info.money_out) }}
-                {% else %}
-                {{ info.money_out|int }}
-                {% endif %}
-                {% else %}
-                -
-                {% endif %}
-                {% if is_admin and game.running %}
-                <a href="/game/{{ game.id }}/cash_out?player_id={{ info.player.id }}" class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
-                    <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
-                </a>
-                {% endif %}
+                    {% if info.money_out is not none %}
+                    {% if info.money_out % 1 %}
+                    {{ "%.2f"|format(info.money_out) }}
+                    {% else %}
+                    {{ info.money_out|int }}
+                    {% endif %}
+                    {% else %}
+                    -
+                    {% endif %}
+                    {% if is_admin and game.running %}
+                    <a href="/game/{{ game.id }}/cash_out?player_id={{ info.player.id }}"
+                        class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
+                        <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
+                    </a>
+                    {% endif %}
                 </span>
                 {% endif %}
             </div>
@@ -128,7 +141,7 @@
                 {{ "%.2f"|format(info.balance) }}
             </div>
             {% endif %}
-            
+
             <div class="{{ col_arrow }} text-end text-muted">
                 <i class="bi bi-chevron-right" style="font-size: 0.8rem;"></i>
             </div>

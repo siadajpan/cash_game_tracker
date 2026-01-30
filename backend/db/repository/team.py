@@ -180,6 +180,27 @@ def is_user_admin(user_id: int, team_id: int, db: Session) -> bool:
     return assoc is not None and assoc.role == TeamRole.ADMIN
 
 
+
+
+
+def update_user_role(team_id: int, user_id: int, role: str, db: Session):
+    """
+    Updates the role of a user in a team.
+    """
+    from backend.db.models.team_role import TeamRole
+
+    assoc = (
+        db.query(UserTeam)
+        .filter(UserTeam.user_id == user_id, UserTeam.team_id == team_id)
+        .one_or_none()
+    )
+    if assoc:
+        assoc.role = TeamRole(role)
+        db.add(assoc)
+        db.commit()
+
+
+
 def get_team_join_requests(team: Team, db: Session) -> List[UserTeam]:
     """
     Retrieves a list of UserTeam objects who have requested to join the specified team.

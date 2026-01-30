@@ -27,6 +27,10 @@ api_router.include_router(
 api_router.include_router(
     route_game_add_on.router, prefix="/game", tags=["game-webapp"]
 )
+from backend.webapps.game import route_game_history
+api_router.include_router(
+    route_game_history.router, prefix="/game", tags=["game-webapp"]
+)
 
 api_router.include_router(route_login.router, prefix="", tags=["auth-webapp"])
 api_router.include_router(route_user_login.router, prefix="", tags=["auth-webapp"])

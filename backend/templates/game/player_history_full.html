@@ -1,0 +1,131 @@
+{% extends "shared/base.html" %}
+
+{% block title %}
+<title>History: {{ player.nick }}</title>
+{% endblock %}
+
+{% block page_heading %}History: {{ player.nick }}{% endblock %}
+
+{% block content %}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <!-- History List -->
+        <ul class="list-group list-group-flush" id="historyList">
+            {% for event in events %}
+            {% include "game/partials/history_row.html" %}
+            {% endfor %}
+        </ul>
+
+        {% if can_edit %}
+        <!-- Add New Event Section -->
+        <div class="p-3 bg-light mt-3">
+            <!-- Main Toolbar -->
+            <div id="mainToolbar" class="d-flex gap-2 justify-content-between">
+                <div>
+                    {% if request.query_params.return_url %}
+                    <a href="{{ request.query_params.return_url }}"
+                        class="btn btn-outline-secondary w-100">Back</a>
+                    {% else %}
+                    <a href="/" class="btn btn-outline-secondary w-100">Back</a>
+                    {% endif %}
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary w-100" onclick="showSection('cashoutSection')">
+                        Cash-out
+                    </button>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary w-100" onclick="showSection('addonSection')">
+                        Add-on
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add-on Section (Hidden) -->
+            <div id="addonSection" class="d-none mt-2">
+
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                    <!-- Quick Add Button -->
+                    <button type="button" class="btn btn-link text-decoration-none p-0 me-2"
+                        onclick="showSection('mainToolbar')">
+                        <i class="bi bi-arrow-left fs-4 text-dark"></i>
+                    </button>
+                    <form hx-post="/game/{{ game.id }}/add_on/add" hx-target="#historyList" hx-swap="none"
+                        class="flex-grow-1">
+                        <input type="hidden" name="player_id" value="{{ player.id }}">
+                        <input type="hidden" name="amount" value="{{ game.default_buy_in }}">
+                        <button type="submit" class="btn btn-warning w-100 py-2">
+                            +{{ game.default_buy_in }}
+                        </button>
+                    </form>
+
+                    <span class="text-muted fw-bold">OR</span>
+
+                    <!-- Manual Add Section -->
+                    <form hx-post="/game/{{ game.id }}/add_on/add" hx-target="#historyList" hx-swap="none"
+                        class="d-flex gap-2 flex-grow-1" style="min-width: 0;">
+                        <input type="hidden" name="player_id" value="{{ player.id }}">
+                        <input type="number" class="form-control" name="amount" step="0.01" required
+                            placeholder="Amount" style="min-width: 80px;">
+                        <button type="submit" class="btn btn-primary">
+                            ADD
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cash-out Section (Hidden) -->
+            <div id="cashoutSection" class="d-none mt-2">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                    <button type="button" class="btn btn-link text-decoration-none p-0 me-2"
+                        onclick="showSection('mainToolbar')">
+                        <i class="bi bi-arrow-left fs-4 text-dark"></i>
+                    </button>
+
+                    <form hx-post="/game/{{ game.id }}/cash_out/add" hx-target="#historyList" hx-swap="none"
+                        class="d-flex gap-2">
+                        <input type="hidden" name="player_id" value="{{ player.id }}">
+                        <div class="form-floating flex-grow-1">
+                            <input type="number" class="form-control" id="cashOutAmount" name="amount" placeholder="Amount"
+                                step="0.01" required>
+                            <label for="cashOutAmount">Cash-out Amount</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary px-4">
+                            Cash Out
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Simple reload on success for now to refresh the list cleanly
+    document.body.addEventListener('htmx:afterRequest', function (evt) {
+        if (evt.detail.successful) {
+            // If it was an add or edit, we might want to reload to verify state/sorting
+            if (evt.detail.elt.tagName === 'FORM') {
+                setTimeout(() => window.location.reload(), 100);
+            }
+        }
+    });
+
+    function showSection(sectionId) {
+        // Hide all sections
+        document.getElementById('mainToolbar').classList.add('d-none');
+        document.getElementById('addonSection').classList.add('d-none');
+        document.getElementById('cashoutSection').classList.add('d-none');
+
+        // Show target section and ensure flex is restored for toolbar if needed
+        const target = document.getElementById(sectionId);
+        target.classList.remove('d-none');
+        if (sectionId === 'mainToolbar') {
+            target.classList.add('d-flex');
+        }
+    }
+</script>
+
+{% endblock %}

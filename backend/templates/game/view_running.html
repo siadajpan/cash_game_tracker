@@ -15,8 +15,17 @@
         <ul class="dropdown-menu dropdown-menu-end shadow">
             {% if is_admin %}
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#addPlayerModal" hx-get="/game/{{ game.id }}/add_player" hx-target="#add-player-list-container">
+                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#addPlayerModal"
+                    hx-get="/game/{{ game.id }}/add_player" hx-target="#add-player-list-container">
                     <i class="bi bi-person-plus-fill"></i> Add Player
+                </button>
+            </li>
+            {% endif %}
+            {% if is_admin %}
+            <li>
+                <button class="dropdown-item" type="button" hx-get="/game/{{ game.id }}/book_keeper"
+                    hx-target="#assignBookKeeperContent" data-bs-toggle="modal" data-bs-target="#assignBookKeeperModal">
+                    <i class="bi bi-person-badge"></i> Assign Book Keeper
                 </button>
             </li>
             {% endif %}
@@ -27,7 +36,8 @@
             </li>
             {% if is_admin %}
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#removePlayerModal" hx-get="/game/{{ game.id }}/remove_player" hx-target="#remove-player-list-container">
+                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#removePlayerModal"
+                    hx-get="/game/{{ game.id }}/remove_player" hx-target="#remove-player-list-container">
                     <i class="bi bi-person-dash-fill"></i> Remove Player
                 </button>
             </li>
@@ -45,7 +55,9 @@
 </div>
 
 <div id="game-view-container" class="d-flex flex-column" style="max-height: 60vh;">
-    <div class="overflow-auto" style="min-height: 0;" hx-get="/game/{{ game.id }}/table?sort={{ sort_by }}&order={{ order }}" hx-trigger="every 5s" hx-swap="innerHTML">
+    <div class="overflow-auto" style="min-height: 0;"
+        hx-get="/game/{{ game.id }}/table?sort={{ sort_by }}&order={{ order }}" hx-trigger="every 5s"
+        hx-swap="innerHTML">
         {% include "components/players_table.html" %}
     </div>
     <div class="mt-3 flex-shrink-0 bg-white pt-2">
@@ -112,7 +124,8 @@
 </div>
 
 <!-- Remove Player Modal -->
-<div class="modal fade" id="removePlayerModal" tabindex="-1" aria-labelledby="removePlayerModalLabel" aria-hidden="true">
+<div class="modal fade" id="removePlayerModal" tabindex="-1" aria-labelledby="removePlayerModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -120,6 +133,49 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="remove-player-list-container">
+                <div class="text-center p-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Player History Modal -->
+<div class="modal fade" id="playerHistoryModal" tabindex="-1" aria-labelledby="playerHistoryModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg"> <!-- Large modal for table -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="playerHistoryModalLabel">Player History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="playerHistoryContent">
+                <div class="text-center p-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Operators Modal -->
+<!-- Assign Book Keeper Modal -->
+<div class="modal fade" id="assignBookKeeperModal" tabindex="-1" aria-labelledby="assignBookKeeperModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignBookKeeperModalLabel">Assign Book Keeper</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="assignBookKeeperContent">
+                <!-- Content loaded via HTMX -->
                 <div class="text-center p-3">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -137,18 +193,18 @@
     function adjustGameViewHeight() {
         const container = document.getElementById('game-view-container');
         if (!container) return;
-        
+
         // Calculate available height: Window height - container top position - bottom margin (20px)
         const rect = container.getBoundingClientRect();
         const availableHeight = window.innerHeight - rect.top - 20;
-        
+
         // Ensure a reasonable minimum height
         container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
     }
 
     window.addEventListener('resize', adjustGameViewHeight);
     window.addEventListener('load', adjustGameViewHeight);
-    
+
     adjustGameViewHeight();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>

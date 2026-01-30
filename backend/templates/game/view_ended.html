@@ -20,6 +20,14 @@
             </li>
             {% if is_admin %}
             <li>
+                <button class="dropdown-item" type="button" hx-get="/game/{{ game.id }}/book_keeper"
+                    hx-target="#assignBookKeeperContent" data-bs-toggle="modal" data-bs-target="#assignBookKeeperModal">
+                    <i class="bi bi-person-badge"></i> Assign Book Keeper
+                </button>
+            </li>
+            {% endif %}
+            {% if is_admin %}
+            <li>
                 <hr class="dropdown-divider">
             </li>
             <li>
@@ -148,6 +156,49 @@
         </div>
     </div>
 </div>
+</div>
+
+<!-- Player History Modal -->
+<div class="modal fade" id="playerHistoryModal" tabindex="-1" aria-labelledby="playerHistoryModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg"> <!-- Large modal for table -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="playerHistoryModalLabel">Player History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="playerHistoryContent">
+                <div class="text-center p-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Operators Modal -->
+<!-- Assign Book Keeper Modal -->
+<div class="modal fade" id="assignBookKeeperModal" tabindex="-1" aria-labelledby="assignBookKeeperModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignBookKeeperModalLabel">Assign Book Keeper</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="assignBookKeeperContent">
+                <!-- Content loaded via HTMX -->
+                <div class="text-center p-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 
@@ -156,19 +207,19 @@
     function adjustGameViewHeight() {
         const container = document.getElementById('game-view-container');
         if (!container) return;
-        
+
         // Calculate available height: Window height - container top position - bottom margin (20px)
         const rect = container.getBoundingClientRect();
         // Adjust margin to ensure buttons are visible
         const availableHeight = window.innerHeight - rect.top - 20;
-        
+
         // Ensure a reasonable minimum height
         container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
     }
 
     window.addEventListener('resize', adjustGameViewHeight);
     window.addEventListener('load', adjustGameViewHeight);
-    
+
     adjustGameViewHeight();
 
     function showToast(message, type = 'primary') {

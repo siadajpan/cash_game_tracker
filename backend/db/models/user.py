@@ -28,7 +28,7 @@ class User(Base):
     )
 
     # Games a user owns (One-to-Many: One user owns many games)
-    games_owned = relationship("Game", back_populates="owner")
+    games_owned = relationship("Game", back_populates="owner", foreign_keys="[Game.owner_id]")
 
     # NEW: Buy-ins and Add-ons
     buy_ins = relationship("BuyIn", back_populates="user", cascade="all, delete-orphan")
