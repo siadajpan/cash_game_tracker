@@ -17,8 +17,8 @@
         </div>
         {% if total_money_out > 0 %}
         <div class="text-center" style="flex: 1;">
-            <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Money Out</small>
-            <span class="fs-5 fw-medium text-success">{{ total_money_out }}</span>
+            <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Balance</small>
+            <span class="fs-5 fw-medium text-success">{{ total_money_out - total_money_in }}</span>
         </div>
         {% endif %}
     </div>

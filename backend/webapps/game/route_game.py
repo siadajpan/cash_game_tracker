@@ -543,23 +543,16 @@ async def get_assign_book_keeper_list(
     if not is_user_admin(user.id, game.team_id, db):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
-    # Get team members to show in list
-    team_members = (
-        db.query(User)
-        .join(UserTeam)
-        .filter(
-            UserTeam.team_id == game.team_id,
-            UserTeam.status == PlayerRequestStatus.APPROVED,
-        )
-        .all()
-    )
+    # Get players currently in the game
+    players = list(game.players)
+    players.sort(key=lambda x: x.nick.lower() if x.nick else "")
 
     return templates.TemplateResponse(
         "game/partials/assign_book_keeper.html",
         {
             "request": request,
             "game": game,
-            "team_members": team_members,
+            "players": players,
         },
     )
 
@@ -578,16 +571,21 @@ async def assign_book_keeper(
     if not is_user_admin(user.id, game.team_id, db):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
-    # Verify user is in the team (or game?) - Team member check is safer
+    # Verify user is in the game
     target_user = db.query(User).filter(User.id == user_id).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if not user_in_game(target_user, game):
+        raise HTTPException(status_code=400, detail="User must be in the game to be a book keeper")
+
+
         
     game.book_keeper_id = user_id
     db.commit()
     
     # Refresh to show update
-    return Response(status_code=200, headers={"HX-Refresh": "true"})
+    return responses.Response(status_code=200, headers={"HX-Refresh": "true"})
 
 
 @router.post("/{game_id}/export", name="export_game_stats")
