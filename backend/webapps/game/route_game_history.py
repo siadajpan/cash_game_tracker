@@ -27,8 +27,9 @@ def verify_book_keeper_access(game_id: int, user_id: int, db: Session) -> Game:
     # Check if user is the assigned book keeper OR the team admin
     is_admin = is_user_admin(user_id, game.team_id, db)
     is_assigned = (game.book_keeper_id == user_id)
+    is_owner = (game.owner_id == user_id)
     
-    if not (is_admin or is_assigned):
+    if not (is_admin or is_assigned or is_owner):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     return game
@@ -50,9 +51,8 @@ async def player_game_history(
     if not target_player:
         return Response("Player not found", status_code=404)
 
-    # Check permission for UI rendering only
     is_admin = is_user_admin(user.id, game.team_id, db)
-    can_edit = is_admin or (game.book_keeper_id == user.id)
+    can_edit = is_admin or (game.book_keeper_id == user.id) or (game.owner_id == user.id)
 
     # Fetch all events
     buy_ins = db.query(BuyIn).filter(BuyIn.game_id == game_id, BuyIn.user_id == player_id).all()
@@ -135,9 +135,8 @@ def render_history_row(request: Request, game: Game, event_obj, event_type: str,
     }
     
     template_name = "game/partials/history_row_edit.html" if edit_mode else "game/partials/history_row.html"
-    
     is_admin = is_user_admin(user.id, game.team_id, db)
-    can_edit = is_admin or (game.book_keeper_id == user.id)
+    can_edit = is_admin or (game.book_keeper_id == user.id) or (game.owner_id == user.id)
 
     return templates.TemplateResponse(
         template_name,

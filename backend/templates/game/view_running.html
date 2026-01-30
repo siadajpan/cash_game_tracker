@@ -1,19 +1,19 @@
 {% extends "shared/base.html" %}
 {% block title %}
-<title>Game on {{ game.date }}</title>
+<title>Game {{ game.date }}</title>
 {% endblock %}
 {% block page_heading %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="page-title">Game on {{ game.date }}</div>
+    <div class="page-title">Game {{ game.date }}</div>
     <div class="dropdown">
         <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false">
             <i class="bi bi-gear-fill"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow">
-            {% if is_admin %}
+            {% if is_admin or is_owner or is_book_keeper %}
             <li>
                 <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#addPlayerModal"
                     hx-get="/game/{{ game.id }}/add_player" hx-target="#add-player-list-container">
@@ -21,7 +21,7 @@
                 </button>
             </li>
             {% endif %}
-            {% if is_admin %}
+            {% if is_admin or is_owner %}
             <li>
                 <button class="dropdown-item" type="button" hx-get="/game/{{ game.id }}/book_keeper"
                     hx-target="#assignBookKeeperContent" data-bs-toggle="modal" data-bs-target="#assignBookKeeperModal">
@@ -34,7 +34,7 @@
                     <i class="bi bi-qr-code"></i> Show QR
                 </button>
             </li>
-            {% if is_admin %}
+            {% if is_admin or is_owner or is_book_keeper %}
             <li>
                 <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#removePlayerModal"
                     hx-get="/game/{{ game.id }}/remove_player" hx-target="#remove-player-list-container">
@@ -61,27 +61,19 @@
         {% include "components/players_table.html" %}
     </div>
     <div class="mt-3 flex-shrink-0 bg-white pt-2">
-        {% if is_admin %}
         <div class="d-flex justify-content-between align-items-center">
             {% if request.query_params.return_url %}
             <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
             {% else %}
             <a href="/" class="btn btn-outline-secondary">Back</a>
             {% endif %}
-            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
-            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
+            <div>
+                <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
+            </div>
+            <div>
+                <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
+            </div>
         </div>
-        {% else %}
-        <div class="d-flex justify-content-between">
-            {% if request.query_params.return_url %}
-            <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
-            {% else %}
-            <a href="/" class="btn btn-outline-secondary">Back</a>
-            {% endif %}
-            <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
-            <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
-        </div>
-        {% endif %}
     </div>
 </div>
 

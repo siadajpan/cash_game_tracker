@@ -24,6 +24,7 @@ def create_new_game_db(
 ):
     new_game = Game(
         owner_id=current_user.id,
+        book_keeper_id=current_user.id,
         **game.model_dump(),
     )
     db.add(new_game)
@@ -108,8 +109,8 @@ def finish_the_game(
     """
     from backend.db.repository.team import is_user_admin
 
-    if not is_user_admin(user.id, game.team_id, db):
-        raise PermissionError("Only an admin can finish the game.")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
+        raise PermissionError("Only an admin or the game owner can finish the game.")
 
     add_ons = get_game_add_on_requests(game, db)
     cash_outs = get_game_cash_out_requests(game, db)

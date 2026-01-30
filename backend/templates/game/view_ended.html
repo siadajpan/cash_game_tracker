@@ -1,12 +1,12 @@
 {% extends "shared/base.html" %}
 {% block title %}
-<title>Game on {{ game.date }} (Ended)</title>
+<title>Game {{ game.date }} (Ended)</title>
 {% endblock %}
 {% block page_heading %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="page-title">Game on {{ game.date }}</div>
+    <div class="page-title">Game {{ game.date }}</div>
     <div class="dropdown">
         <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -18,7 +18,7 @@
                     <i class="bi bi-file-earmark-arrow-down"></i> Export Stats
                 </button>
             </li>
-            {% if is_admin %}
+            {% if is_admin or is_owner %}
             <li>
                 <button class="dropdown-item" type="button" hx-get="/game/{{ game.id }}/book_keeper"
                     hx-target="#assignBookKeeperContent" data-bs-toggle="modal" data-bs-target="#assignBookKeeperModal">
@@ -26,7 +26,7 @@
                 </button>
             </li>
             {% endif %}
-            {% if is_admin %}
+            {% if is_admin or is_owner %}
             <li>
                 <hr class="dropdown-divider">
             </li>
