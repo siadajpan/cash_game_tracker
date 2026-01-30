@@ -71,6 +71,7 @@
                     class="text-decoration-none text-dark fw-semibold stretched-link">
                     {{ info.player.nick }}
                     {% if info.owner %} (host) {% endif %}
+                    {% if info.is_book_keeper and not info.owner %} (bookkeeper) {% endif %}
                 </a>
             </div>
 
@@ -94,7 +95,7 @@
                     {% else %}
                     {{ info.money_in|int }}
                     {% endif %}
-                    {% if is_admin and game.running %}
+                    {% if (is_admin or is_owner or is_book_keeper) and game.running %}
                     <a href="/game/{{ game.id }}/add_on?player_id={{ info.player.id }}"
                         class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
                         <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
@@ -126,7 +127,7 @@
                     {% else %}
                     -
                     {% endif %}
-                    {% if is_admin and game.running %}
+                    {% if (is_admin or is_owner or is_book_keeper) and game.running %}
                     <a href="/game/{{ game.id }}/cash_out?player_id={{ info.player.id }}"
                         class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
                         <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>

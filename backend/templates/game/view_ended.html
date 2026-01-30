@@ -18,7 +18,7 @@
                     <i class="bi bi-file-earmark-arrow-down"></i> Export Stats
                 </button>
             </li>
-            {% if is_admin %}
+            {% if is_admin or is_owner %}
             <li>
                 <button class="dropdown-item" type="button" hx-get="/game/{{ game.id }}/book_keeper"
                     hx-target="#assignBookKeeperContent" data-bs-toggle="modal" data-bs-target="#assignBookKeeperModal">
@@ -26,7 +26,7 @@
                 </button>
             </li>
             {% endif %}
-            {% if is_admin %}
+            {% if is_admin or is_owner %}
             <li>
                 <hr class="dropdown-divider">
             </li>
