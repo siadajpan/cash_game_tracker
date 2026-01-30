@@ -60,7 +60,7 @@ async def cash_out(
     chip_structure = get_chip_structure_as_list(game.chip_structure_id, db)
 
     target_player = user
-    if player_id and is_user_admin(user.id, game.team_id, db):
+    if player_id and (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         target_player = db.query(User).filter(User.id == player_id).first()
         if not target_player:
             raise HTTPException(status_code=404, detail="Player not found")
@@ -90,7 +90,7 @@ async def cash_out(
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
     target_player = user
-    if player_id and is_user_admin(user.id, game.team_id, db):
+    if player_id and (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         target_player = db.query(User).filter(User.id == player_id).first()
         if not target_player:
             raise HTTPException(status_code=404, detail="Player not found")
@@ -156,7 +156,7 @@ async def cash_out(
 
     target_player = user
     auto_approve = False
-    if player_id and (is_user_admin(user.id, game.team_id, db) or game.book_keeper_id == user.id):
+    if player_id and (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         target_player = db.query(User).filter(User.id == player_id).first()
         if not target_player:
             raise HTTPException(status_code=404, detail="Player not found")
@@ -231,7 +231,7 @@ async def cash_out_by_amount(
 
     target_player = user
     auto_approve = False
-    if player_id and (is_user_admin(user.id, game.team_id, db) or game.book_keeper_id == user.id):
+    if player_id and (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         target_player = db.query(User).filter(User.id == player_id).first()
         if not target_player:
             raise HTTPException(status_code=404, detail="Player not found")
@@ -284,7 +284,8 @@ async def cash_out_approve(
     if not user_in_game(user, game):
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
-    # TODO check if current user is game owner
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, the game owner, or the bookkeeper can approve cash-outs")
     action = (
         PlayerRequestStatus.APPROVED
         if action == "approve"

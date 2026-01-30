@@ -24,7 +24,7 @@ def create_new_game_db(
 ):
     new_game = Game(
         owner_id=current_user.id,
-x``        book_keeper_id=current_user.id,
+        book_keeper_id=current_user.id,
         **game.model_dump(),
     )
     db.add(new_game)

@@ -56,7 +56,7 @@ async def add_on_view(
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
     target_player = user
-    if player_id and is_user_admin(user.id, game.team_id, db):
+    if player_id and (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         target_player = db.query(User).filter(User.id == player_id).first()
         if not target_player:
             raise HTTPException(status_code=404, detail="Player not found")
@@ -84,7 +84,7 @@ async def add_on(
 
     target_player = user
     auto_approve = False
-    if player_id and (is_user_admin(user.id, game.team_id, db) or game.book_keeper_id == user.id):
+    if player_id and (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         target_player = db.query(User).filter(User.id == player_id).first()
         if not target_player:
             raise HTTPException(status_code=404, detail="Player not found")
@@ -165,8 +165,8 @@ async def add_on_approve(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not is_user_admin(user.id, game.team_id, db):
-        raise HTTPException(status_code=403, detail="Only admins can approve add-ons")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, the game owner, or the bookkeeper can approve add-ons")
 
     action = (
         PlayerRequestStatus.APPROVED
@@ -190,8 +190,8 @@ async def finish_game_view(
     if not game:
         return RedirectResponse(url="/")
 
-    # Check admin
-    if not is_user_admin(user.id, game.team_id, db):
+    # Check admin or owner
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
         return RedirectResponse(url=f"/game/{game.id}")
 
     players_info = []

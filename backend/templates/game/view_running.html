@@ -1,12 +1,12 @@
 {% extends "shared/base.html" %}
 {% block title %}
-<title>Game on {{ game.date }}</title>
+<title>Game {{ game.date }}</title>
 {% endblock %}
 {% block page_heading %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="page-title">Game on {{ game.date }}</div>
+    <div class="page-title">Game {{ game.date }}</div>
     <div class="dropdown">
         <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -67,17 +67,12 @@
             {% else %}
             <a href="/" class="btn btn-outline-secondary">Back</a>
             {% endif %}
-            {% if is_admin or is_owner or is_book_keeper %}
             <div>
                 <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
+            </div>
+            <div>
                 <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
             </div>
-            {% else %}
-            <div>
-                <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary ms-2">Cash out</a>
-                <a href="/game/{{ game.id }}/add_on" class="btn btn-primary ms-2">Add on</a>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
