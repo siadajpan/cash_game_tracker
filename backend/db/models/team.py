@@ -23,4 +23,4 @@ class Team(Base):
     @property
     def users(self):
         # Retrieve the User objects via the association objects
-        return [assoc.user for assoc in self.user_associations]
+        return [assoc.user for assoc in self.user_associations if assoc.user]
