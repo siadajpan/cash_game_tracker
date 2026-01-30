@@ -1,0 +1,283 @@
+{% extends "shared/base.html" %}
+{% block title %}
+<title>{{ player.nick }} Advanced Stats - {{ team.name }}</title>
+{% endblock %}
+{% block page_heading %}Advanced Stats: {{ player.nick }}{% endblock %}
+
+{% block content %}
+
+<!-- Overview Content -->
+<div class="row g-3">
+    <!-- Games & Attendance -->
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-bold">Activity</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Games Attended <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Number of sessions played"></i></span>
+                    <strong>{{ adv_stats.attendance_count }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Attendance % <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Participation rate"></i></span>
+                    <strong>{{ "%.1f"|format(adv_stats.attendance_pct) }}%</strong>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Performance -->
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-bold">Performance</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Win / Draw / Loss</span>
+                    <strong>{{ adv_stats.wins }} / {{ adv_stats.draws }} / {{ adv_stats.losses
+                        }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Win Rate</span>
+                    <strong>{{ "%.1f"|format(adv_stats.win_pct) }}%</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Hourly Winrate</span>
+                    <strong class="{% if adv_stats.hourly_winrate < 0 %}text-danger{% else %}text-success{% endif %}">{{
+                        "%.2f"|format(adv_stats.hourly_winrate) }}</strong>
+                </li>
+                <!-- Bayesian / Advanced Stats Moved Here -->
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        Classification
+                        <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                            title="{{ adv_stats.bayesian.style_desc }}"></i>
+                    </span>
+                    <strong class="text-primary">{{ adv_stats.bayesian.style_label }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        Win Probability
+                        <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                            title="Chance of ending a session with profit > 0 (based on next game prediction)"></i>
+                    </span>
+                    <strong
+                        class="{% if adv_stats.bayesian.win_prob > 50 %}text-success{% else %}text-secondary{% endif %}">
+                        {{ "%.1f"|format(adv_stats.bayesian.win_prob) }}%
+                    </strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        Predicted Profit
+                        <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                            title="Your estimated average profit per game based on past performance and variance."></i>
+                    </span>
+                    <strong
+                        class="{% if adv_stats.bayesian.posterior_mean > 0 %}text-success{% else %}text-danger{% endif %}">{{
+                        "%.2f"|format(adv_stats.bayesian.posterior_mean) }} / game</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        Average Swing
+                        <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                            title="Average dollar swing (Standard Deviation). Classification is based on how your swings compare to the team average."></i>
+                    </span>
+                    <div class="text-end">
+                        <strong>{{ "%.2f"|format(adv_stats.bayesian.actual_std_dev) }}</strong>
+                        <div class="small text-muted" style="font-size: 0.65rem;">{{ adv_stats.bayesian.volatility_label
+                            }}</div>
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        Likely Outcome Range
+                        <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                            title="The range where 95% of your future results are expected to fall."></i>
+                    </span>
+                    <span class="text-end" style="font-size: 0.9em;">
+                        {{ "%.2f"|format(adv_stats.bayesian.expected_range_low) }} to {{
+                        "%.2f"|format(adv_stats.bayesian.expected_range_high) }}
+                    </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        Model Reliability
+                        <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip"
+                            title="How confident the Bayesian model is in these predictions. Confidence increases as you play more games."></i>
+                    </span>
+                    <div class="text-end">
+                        <span
+                            class="badge {% if adv_stats.bayesian.reliability_score < 30 %}bg-warning text-dark{% elif adv_stats.bayesian.reliability_score < 70 %}bg-info text-dark{% else %}bg-success{% endif %}">
+                            {{ adv_stats.bayesian.reliability_label }}
+                        </span>
+                        <div class="small text-muted" style="font-size: 0.7rem;">Verified by {{
+                            adv_stats.bayesian.sample_size }} games</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Financials -->
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-bold">Financials</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Total Invested <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Sum of all Buy-ins and Add-ons"></i></span>
+                    <strong>{{ "%.2f"|format(adv_stats.total_investment) }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Avg Buy-in <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Average amount spent per session"></i></span>
+                    <div>
+                        <strong>{{ "%.2f"|format(adv_stats.avg_buyin) }}</strong>
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Total Balance <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Total net result"></i></span>
+                    <div>
+                        <strong
+                            class="{% if adv_stats.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{
+                            "%.2f"|format(adv_stats.total_balance) }}</strong>
+                        {% if adv_stats.ranks.total_balance %}
+                        {% set r = adv_stats.ranks.total_balance %}
+                        {% if r.rank == 1 %}
+                        <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
+                        {% elif r.rank == 2 %}
+                        <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                            data-bs-toggle="tooltip" title="2nd Place"></i>
+                        {% elif r.rank == 3 %}
+                        <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                            data-bs-toggle="tooltip" title="3rd Place"></i>
+                        {% else %}
+                        {% set pct = r.top_pct %}
+                        <span
+                            class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top
+                            {{ pct }}%</span>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Avg Profit/Game <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip" title="Average net result per session"></i></span>
+                    <div>
+                        <strong
+                            class="{% if adv_stats.avg_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{
+                            "%.2f"|format(adv_stats.avg_balance) }}</strong>
+                        {% if adv_stats.ranks.avg_profit %}
+                        {% set r = adv_stats.ranks.avg_profit %}
+                        {% if r.rank == 1 %}
+                        <i class="bi bi-trophy-fill text-warning ms-1" data-bs-toggle="tooltip" title="1st Place"></i>
+                        {% elif r.rank == 2 %}
+                        <i class="bi bi-2-circle-fill text-secondary ms-1" style="font-size: 1.1em;"
+                            data-bs-toggle="tooltip" title="2nd Place"></i>
+                        {% elif r.rank == 3 %}
+                        <i class="bi bi-3-circle-fill ms-1" style="color: #cd7f32; font-size: 1.1em;"
+                            data-bs-toggle="tooltip" title="3rd Place"></i>
+                        {% else %}
+                        {% set pct = r.top_pct %}
+                        <span
+                            class="badge ms-1 {% if pct <= 20 %}bg-success{% elif pct <= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %}">Top
+                            {{ pct }}%</span>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </li>
+                <!-- ROI and Win Share -->
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Return on Investment <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip"
+                            title="Net percentage profit relative to total investment."></i></span>
+                    <strong class="{% if adv_stats.roi < 0 %}text-danger{% else %}text-success{% endif %}">{{
+                        "%.1f"|format(adv_stats.roi) }}%</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Win Share <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
+                            data-bs-toggle="tooltip"
+                            title="Your Total Balance / Sum of All Winners' Profits in games you played. Measures dominance."></i></span>
+                    <strong>{{ "%.1f"|format(adv_stats.win_share_pct) }}%</strong>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Monthly Breakdown -->
+    <div class="col-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-bold">Monthly Breakdown</div>
+            <div class="card-body">
+                <div style="height: 300px; width: 100%;"><canvas id="monthlyBreakdownChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <!-- Back Button -->
+    <div class="mt-4 mb-3">
+        <a href="/team/{{ team.id }}/player/{{ player.id }}?year={{ selected_year }}" class="btn btn-outline-secondary">
+            Back to Profile
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        // --- Monthly Breakdown Chart ---
+        const ctxMonthly = document.getElementById('monthlyBreakdownChart');
+        if (ctxMonthly) {
+            const scaleOptions = {
+                y: { grid: { color: '#e9ecef' } },
+                x: { grid: { display: false } }
+            };
+
+            const mLabels = [];
+            const mData = [];
+            /* {% for m, d in adv_stats.monthly_balances %} */
+            mLabels.push("{{ m }}");
+            mData.push(Number('{{ "%.2f"|format(d.balance) }}'));
+            /* {% endfor %} */
+
+            new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: mLabels,
+                    datasets: [{
+                        label: 'Balance',
+                        data: mData,
+                        backgroundColor: mData.map(v => v >= 0 ? '#198754' : '#dc3545'),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return Number(context.parsed.y).toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: scaleOptions
+                }
+            });
+        }
+
+
+    });
+</script>
+{% endblock %}

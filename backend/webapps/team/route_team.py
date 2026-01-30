@@ -343,159 +343,263 @@ async def player_stats(
     request: Request,
     team_id: int,
     player_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+    year: str = "all",
     sort: str = "date",
     order: str = "desc",
-    year: str = None,
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_from_token),
 ):
-    from backend.db.repository.game import get_player_games_stats_bulk
+    context = await _get_player_stats_context(
+        request, team_id, player_id, db, current_user, year, sort, order
+    )
+    if isinstance(context, RedirectResponse):
+        return context
+    return templates.TemplateResponse("team/player_stats.html", context)
 
-    team = get_team_by_id(team_id, db)
+
+@router.get("/{team_id}/player/{player_id}/advanced")
+async def player_stats_advanced(
+    request: Request,
+    team_id: int,
+    player_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+    year: str = "all",
+    sort: str = "date",
+    order: str = "desc",
+):
+    context = await _get_player_stats_context(
+        request, team_id, player_id, db, current_user, year, sort, order
+    )
+    if isinstance(context, RedirectResponse):
+        return context
+    return templates.TemplateResponse("team/player_stats_advanced.html", context)
+
+
+@router.get("/{team_id}/stats", name="team_stats")
+async def team_stats(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+    year: str = "all",
+):
+    team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
-        return RedirectResponse("/")
+        return RedirectResponse(f"/dashboard")
 
-    # Verify user is in team
-    if user not in team.users:
-        return RedirectResponse("/")
+    # Check permissions
+    if (
+        current_user.id not in [m.id for m in team.users]
+        and not current_user.is_superuser
+    ):
+        return RedirectResponse(f"/dashboard")
 
-    player = get_user(player_id, db)
+    # Available years for the filter
+    team_games = db.query(Game).filter(Game.team_id == team_id).all()
+    all_years = set()
+    for g in team_games:
+        if g.date:
+            all_years.add(int(str(g.date)[:4]))
+    available_years = sorted(list(all_years), reverse=True)
+
+    stats = _calculate_team_stats(team, year, db)
+
+    return templates.TemplateResponse(
+        "team/team_stats.html",
+        {
+            "request": request,
+            "team": team,
+            "stats": stats,
+            "selected_year": year,
+            "available_years": available_years,
+        },
+    )
+
+
+async def _get_player_stats_context(
+    request: Request,
+    team_id: int,
+    player_id: int,
+    db: Session,
+    current_user: User,
+    year: str = "all",
+    sort: str = "date",
+    order: str = "desc",
+):
+    from backend.db.models.buy_in import BuyIn
+    from backend.db.models.add_on import AddOn
+    from backend.db.models.cash_out import CashOut
+    from sqlalchemy import func
+    from collections import defaultdict
+    import math
+    from datetime import datetime, timedelta
+
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        return RedirectResponse(f"/dashboard")
+
+    # Check permissions
+    if current_user.id not in [m.id for m in team.users] and not current_user.is_superuser:
+        return RedirectResponse(f"/dashboard")
+    
+    # Check player role for admin actions
+    is_admin = False
+    player_role = "MEMBER"
+    for m in team.users:
+        if m.id == current_user.id:
+            membership = (
+                db.query(UserTeam)
+                .filter(UserTeam.team_id == team.id, UserTeam.user_id == current_user.id)
+                .first()
+            )
+            if membership and membership.role == TeamRole.ADMIN:
+                is_admin = True
+        
+        if m.id == player_id:
+             p_membership = (
+                db.query(UserTeam)
+                .filter(UserTeam.team_id == team.id, UserTeam.user_id == player_id)
+                .first()
+            )
+             if p_membership:
+                 player_role = p_membership.role
+
+    player = db.query(User).filter(User.id == player_id).first()
     if not player:
         return RedirectResponse(f"/team/{team_id}")
 
-    # Get games for this player IN THIS TEAM, ALL of them
-    team_games = get_user_team_games(player, team_id, db, limit=None)
-
-    # Extract years and Filter
-    available_years = sorted(
-        list(set([int(str(g.date)[:4]) for g in team_games])), reverse=True
-    )
+    # Build filters
+    filters = [Game.team_id == team.id]
+    target_year = None
     if year and year != "all":
-        try:
-            target_year = int(year)
-            team_games = [g for g in team_games if int(str(g.date)[:4]) == target_year]
-        except ValueError:
-            pass
+        target_year = year
+        filters.append(Game.date.like(f"{target_year}%"))
 
-    # Bulk fetch stats
-    bulk_stats = get_player_games_stats_bulk(player.id, team.id, db)
+    # Fetch all games for this team (filtered by year)
+    q_games = db.query(Game).filter(*filters).order_by(Game.date.desc())
+    all_team_games = q_games.all()
+    team_total_games = len(all_team_games)
+    
+    team_game_ids = [g.id for g in all_team_games]
+    
+    # Determine available years for filter
+    # To get available years we need ALL games for the team, unqualified by year filter
+    all_dates = db.query(Game.date).filter(Game.team_id == team.id).all()
+    available_years = sorted(
+        list(set([str(d[0])[:4] for d in all_dates if d[0]])), reverse=True
+    )
+
+    # Calculate stats for the specific player
+    # 1. Get games where player participated
+    # Participation is defined by having a BuyIn or AddOn or CashOut? Or just being in the game?
+    # Usually we use BuyIn as participation marker.
+    
+    # We need to calculate balance for each game for this player
+    # Balance = CashOut - (BuyIn + AddOn)
+    
+    # Optimization: Fetch all transactions for this player in these games
+    p_buyins = db.query(BuyIn).filter(BuyIn.user_id == player_id, BuyIn.game_id.in_(team_game_ids)).all()
+    p_addons = db.query(AddOn).filter(AddOn.user_id == player_id, AddOn.game_id.in_(team_game_ids), AddOn.status == PlayerRequestStatus.APPROVED).all()
+    p_cashouts = db.query(CashOut).filter(CashOut.user_id == player_id, CashOut.game_id.in_(team_game_ids)).all()
+
+    game_stats = defaultdict(lambda: {"buyin": 0.0, "addon": 0.0, "cashout": 0.0})
+    played_game_ids = set()
+
+    for b in p_buyins:
+        game_stats[b.game_id]["buyin"] += b.amount
+        played_game_ids.add(b.game_id)
+    for a in p_addons:
+        game_stats[a.game_id]["addon"] += a.amount
+        played_game_ids.add(a.game_id)
+    for c in p_cashouts:
+        game_stats[c.game_id]["cashout"] += c.amount
+        # Cashout implies participation usually, but let's stick to buyin/addon as entry.
+        # If someone has cashout but no buyin, it's weird, but they played.
+        played_game_ids.add(c.game_id)
 
     games_history = []
-    total_seconds_played = 0
-
-    for game in team_games:
-        stats = bulk_stats.get(
-            game.id, {"balance": 0.0, "total_pot": 0.0, "players_count": 0}
-        )
-
-        games_history.append(
-            {
-                "game": game,
-                "balance": stats["balance"],
-                "total_pot": stats["total_pot"],
-                "players_count": stats["players_count"],
-            }
-        )
-
-        # Calculate duration if times are available
-        if game.start_time and game.finish_time:
-            duration = (game.finish_time - game.start_time).total_seconds()
-            if duration > 0:
-                total_seconds_played += duration
-
-    total_balance = sum(g["balance"] for g in games_history)
-
-    # Calculate Winrate (Won / Hour)
-    hours_played = total_seconds_played / 3600
-    winrate = 0
-    if hours_played > 0:
-        winrate = total_balance / hours_played
-
-    # --- Advanced Stats ---
-    from backend.db.models.buy_in import BuyIn
-    from backend.db.models.add_on import AddOn
-    from sqlalchemy import func
-    from collections import defaultdict
-
-    # 1. Team Context
-    q_team_games = db.query(Game).filter(Game.team_id == team.id)
-    if year and year != "all":
-        q_team_games = q_team_games.filter(Game.date.like(f"{target_year}%"))
-    team_total_games = q_team_games.count()
-
-    q_bi = db.query(func.sum(BuyIn.amount)).join(Game).filter(Game.team_id == team.id)
-    q_ao = (
-        db.query(func.sum(AddOn.amount))
-        .join(Game)
-        .filter(Game.team_id == team.id, AddOn.status == PlayerRequestStatus.APPROVED)
-    )
-    if year and year != "all":
-        q_bi = q_bi.filter(Game.date.like(f"{target_year}%"))
-        q_ao = q_ao.filter(Game.date.like(f"{target_year}%"))
-    team_total_pot = (q_bi.scalar() or 0) + (q_ao.scalar() or 0)
-
-    # 2. Player Details
     total_investment = 0.0
+    total_balance = 0.0
     wins_count = 0
-    losses_count = 0
     draws_count = 0
+    losses_count = 0
     best_result = None
     worst_result = None
+    
+    # Calculate Total Pot per game for display
+    # This is expensive if we do it for every game individually.
+    # Let's fetch total pot for the team_games
+    # Total Pot = Sum(BuyIns) + Sum(AddOns) for that game
+    game_pots = defaultdict(float)
+    all_bi = db.query(BuyIn.game_id, BuyIn.amount).filter(BuyIn.game_id.in_(team_game_ids)).all()
+    all_ao = db.query(AddOn.game_id, AddOn.amount).filter(AddOn.game_id.in_(team_game_ids), AddOn.status == PlayerRequestStatus.APPROVED).all()
+    
+    for gid, amt in all_bi:
+        game_pots[gid] += amt
+    for gid, amt in all_ao:
+        game_pots[gid] += amt
+        
+    # Also need player count per game
+    game_player_counts = defaultdict(int)
+    # Count distinct users per game in BuyIn
+    # This is an approximation but fast enough. 
+    # Or cleaner: db.query(BuyIn.game_id, func.count(func.distinct(BuyIn.user_id))).group_by(BuyIn.game_id)
+    gpc_query = db.query(BuyIn.game_id, func.count(func.distinct(BuyIn.user_id))).filter(BuyIn.game_id.in_(team_game_ids)).group_by(BuyIn.game_id).all()
+    for gid, count in gpc_query:
+        game_player_counts[gid] = count
 
-    game_ids = [g.id for g in team_games]
-    if game_ids:
-        # Investment calculation
-        user_bi = (
-            db.query(BuyIn.game_id, func.sum(BuyIn.amount))
-            .filter(BuyIn.user_id == player.id, BuyIn.game_id.in_(game_ids))
-            .group_by(BuyIn.game_id)
-            .all()
-        )
-        user_ao = (
-            db.query(AddOn.game_id, func.sum(AddOn.amount))
-            .filter(
-                AddOn.user_id == player.id,
-                AddOn.game_id.in_(game_ids),
-                AddOn.status == PlayerRequestStatus.APPROVED,
-            )
-            .group_by(AddOn.game_id)
-            .all()
-        )
-
-        invest_map = defaultdict(float)
-        for gid, amt in user_bi:
-            invest_map[gid] += amt
-        for gid, amt in user_ao:
-            invest_map[gid] += amt
-
-        for g_data in games_history:
-            gid = g_data["game"].id
-            inv = invest_map[gid]
-            bal = g_data["balance"]
-
-            total_investment += inv
-
-            if bal > 0.01:
-                wins_count += 1
-            elif bal < -0.01:
-                losses_count += 1
-            else:
-                draws_count += 1
-
-            if best_result is None or bal > best_result["balance"]:
-                best_result = {"balance": bal, "date": g_data["game"].date}
-            if worst_result is None or bal < worst_result["balance"]:
-                worst_result = {"balance": bal, "date": g_data["game"].date}
-
-    games_count = len(team_games)
-
-    # Additional Stats: Variance & Monthly
-    import math
-
-    avg_balance = (total_balance / games_count) if games_count else 0
-    variance = 0
-    std_dev = 0
+    # Prep games_history
+    games_map = {g.id: g for g in all_team_games}
+    
     monthly_balances = defaultdict(lambda: {"balance": 0.0, "count": 0})
+
+    for gid in played_game_ids:
+        s = game_stats[gid]
+        inv = s["buyin"] + s["addon"]
+        cash = s["cashout"]
+        bal = cash - inv
+        
+        total_investment += inv
+        total_balance += bal
+        
+        if bal > 0.01:
+            wins_count += 1
+        elif bal < -0.01:
+            losses_count += 1
+        else:
+            draws_count += 1
+            
+        if best_result is None or bal > best_result:
+            best_result = bal
+        if worst_result is None or bal < worst_result:
+            worst_result = bal
+            
+        games_history.append({
+            "game": games_map[gid],
+            "balance": bal,
+            "total_pot": game_pots[gid],
+            "players_count": game_player_counts[gid]
+        })
+
+        # Monthly Aggregation
+        m_key = str(games_map[gid].date)[:7]
+        monthly_balances[m_key]["balance"] += bal
+        monthly_balances[m_key]["count"] += 1
+
+    games_count = len(games_history)
+    avg_balance = total_balance / games_count if games_count else 0
+    avg_buyin_val = total_investment / games_count if games_count else 0
+    
+    # Calculate durations for winrate
+    total_hours = 0
+    for g in games_history:
+        game = g["game"]
+        if game.start_time and game.finish_time:
+            dur = (game.finish_time - game.start_time).total_seconds() / 3600
+            total_hours += dur
+            
+    winrate = total_balance / total_hours if total_hours > 0 else 0
 
     if games_history:
         # Variance
@@ -503,49 +607,34 @@ async def player_stats(
             games_history
         )
         std_dev = math.sqrt(variance)
-
-        # Monthly Aggregation
-        for g in games_history:
-            m_key = str(g["game"].date)[:7]
-            monthly_balances[m_key]["balance"] += g["balance"]
-            monthly_balances[m_key]["count"] += 1
-
+    else:
+        variance = 0
+        std_dev = 0
     sorted_months = sorted(monthly_balances.items(), key=lambda x: x[0], reverse=False)
 
     # Volatility Rating (Std Dev relative to Avg Buy-in)
     volatility_index = 0
     volatility_label = "N/A"
-    avg_buyin_val = (total_investment / games_count) if games_count else 0
-
+    
     # --- Team Context & Rankings ---
-    from backend.db.models.cash_out import CashOut
-
-    filters = [Game.team_id == team.id]
-    if year and year != "all":
-        filters.append(Game.date.like(f"{target_year}%"))
-
-    bis = (
-        db.query(BuyIn.user_id, BuyIn.game_id, BuyIn.amount)
-        .join(Game)
-        .filter(*filters)
-        .all()
-    )
-    aos = (
-        db.query(AddOn.user_id, AddOn.game_id, AddOn.amount)
-        .join(Game)
-        .filter(*filters, AddOn.status == PlayerRequestStatus.APPROVED)
-        .all()
-    )
-    cos = (
-        db.query(CashOut.user_id, CashOut.game_id, CashOut.amount)
-        .join(Game)
-        .filter(*filters)
-        .all()
-    )
-
+    # We need bulk stats for ALL players in the team (filtered by year) to calculate rankings
+    # This might be heavy, but necessary for "Advanced Stats".
+    # We can reuse `get_player_games_stats_bulk` which was likely used before?
+    # Yes, previous code used `get_player_games_stats_bulk`.
+    # To save time writing all that aggregation logic again, I should use the helper if available.
+    # But `get_player_games_stats_bulk` calculates per-game stats for a player.
+    # We need per-player stats for the team.
+    
+    # Let's try to infer the previous implementation of bulk stats.
+    # It queried BuyIn, AddOn, CashOut for the team+year.
+    
+    bis = db.query(BuyIn.user_id, BuyIn.game_id, BuyIn.amount).join(Game).filter(*filters).all()
+    aos = db.query(AddOn.user_id, AddOn.game_id, AddOn.amount).join(Game).filter(*filters, AddOn.status == PlayerRequestStatus.APPROVED).all()
+    cos = db.query(CashOut.user_id, CashOut.game_id, CashOut.amount).join(Game).filter(*filters).all()
+    
     p_net = defaultdict(lambda: defaultdict(float))
     p_inv = defaultdict(lambda: defaultdict(float))
-
+    
     for u, g, a in bis:
         p_net[u][g] -= a
         p_inv[u][g] += a
@@ -554,220 +643,97 @@ async def player_stats(
         p_inv[u][g] += a
     for u, g, a in cos:
         p_net[u][g] += a
-
-    player_metrics = {}
-    team_vols = []
-
-    # Calculate Pot Size per Game & Durations & Positive Winnings
-    game_pot_sizes = defaultdict(float)
-    for u, g, a in bis:
-        game_pot_sizes[g] += a
-    for u, g, a in aos:
-        game_pot_sizes[g] += a
-
-    # Calculate total winnings per game (sum of positive results)
+        
+    # Helpers for Win Share etc
     game_pos_sum = defaultdict(float)
-    for uid, g_map in p_net.items():
+    for u, g_map in p_net.items():
         for gid, bal in g_map.items():
             if bal > 0:
                 game_pos_sum[gid] += bal
-
-    # Fetch durations for hourly calc
-    games_durations = (
-        db.query(Game.id, Game.start_time, Game.finish_time).filter(*filters).all()
-    )
+                
+    # Duration map
     g_durations = {}
-    for g in games_durations:
+    for g in all_team_games:
         if g.start_time and g.finish_time:
-            print("game duration", g.start_time, g.finish_time, "seconds", (g.finish_time - g.start_time).total_seconds())
+             g_durations[g.id] = (g.finish_time - g.start_time).total_seconds() / 3600
         else:
-            print("game duration", g.start_time, g.finish_time, "missing time")
-        if g.start_time and g.finish_time:
-            g_durations[g.id] = (g.finish_time - g.start_time).total_seconds() / 3600
-        else:
-            g_durations[g.id] = 0
+             g_durations[g.id] = 0
 
+    player_metrics = {}
+    team_vols = []
+    
     for uid, g_map in p_net.items():
         bals = list(g_map.values())
-        if len(bals) < 1:
-            continue
-
-        n_games = len(bals)  # Active games
-        total_bal = sum(bals)
-        m = total_bal / n_games
-        v = sum((b - m) ** 2 for b in bals) / n_games if n_games > 1 else 0
+        if not bals: continue
+        
+        n = len(bals)
+        t_bal = sum(bals)
+        m = t_bal / n
+        v = sum((b - m) ** 2 for b in bals) / n if n > 1 else 0
         sd = math.sqrt(v)
-
+        
         invs = list(p_inv[uid].values())
-        total_inv = sum(invs)
-        avg_inv = total_inv / n_games if n_games else 0
-        roi = (total_bal / total_inv * 100) if total_inv else -999.0
-
-        # Calculate Win Rate (%)
-        wins = sum(1 for b in bals if b > 0.01)
-        win_pct = (wins / n_games * 100) if n_games else 0.0
-
-        my_played_gids = g_map.keys()
-
-        # Win Share (Share of total winnings in games played)
-        total_winnings_played = sum(game_pos_sum.get(gid, 0) for gid in my_played_gids)
-        win_share = (
-            (total_bal / total_winnings_played * 100)
-            if total_winnings_played > 0
-            else 0.0
-        )
-
-        # Calculate Hourly Winrate
-        my_hours = sum(g_durations.get(gid, 0) for gid in my_played_gids)
-        hourly_winrate = (total_bal / my_hours) if my_hours > 0 else 0.0
-
-        # Best/Worst Result
-        best_res = max(bals) if bals else 0.0
-        worst_res = min(bals) if bals else 0.0
-
-        vol_idx = (sd / avg_inv) if avg_inv > 0 else 0
-        if vol_idx > 0:
-            team_vols.append(vol_idx)
-
+        t_inv = sum(invs)
+        avg_inv_p = t_inv / n if n else 0
+        roi_p = (t_bal / t_inv * 100) if t_inv else -999.0
+        
+        wins_p = sum(1 for b in bals if b > 0.01)
+        win_pct_p = (wins_p / n * 100) if n else 0
+        
+        my_gids = g_map.keys()
+        
+        # Win Share
+        total_winnings_played = sum(game_pos_sum.get(gid, 0) for gid in my_gids)
+        win_share_p = (t_bal / total_winnings_played * 100) if total_winnings_played > 0 else 0
+        
+        # Hourly
+        my_hours = sum(g_durations.get(gid, 0) for gid in my_gids)
+        hourly_p = (t_bal / my_hours) if my_hours > 0 else 0
+        
+        best_p = max(bals) if bals else 0
+        worst_p = min(bals) if bals else 0
+        
+        vol_idx_p = (sd / avg_inv_p) if avg_inv_p > 0 else 0
+        if vol_idx_p > 0:
+            team_vols.append(vol_idx_p)
+            
         player_metrics[uid] = {
             "std_dev": sd,
-            "avg_buyin": avg_inv,
+            "avg_buyin": avg_inv_p,
             "avg_profit": m,
-            "total_balance": total_bal,
-            "roi": roi,
-            "win_share": win_share,
-            "vol_idx": vol_idx,
-            "win_pct": win_pct,
-            "hourly_winrate": hourly_winrate,
-            "best_result": best_res,
-            "worst_result": worst_res,
-            "games_count": n_games,
+            "total_balance": t_bal,
+            "roi": roi_p,
+            "win_share": win_share_p,
+            "vol_idx": vol_idx_p,
+            "win_pct": win_pct_p,
+            "hourly_winrate": hourly_p,
+            "best_result": best_p,
+            "worst_result": worst_p,
+            "games_count": n
         }
 
+    # Ensure current player stats are matching consistent (sometimes local logic might differ slightly due to float etc)
+    # We will trust the bulk calculation for consistency
+    if player_id in player_metrics:
+        # Override local calcs with bulk ones to match rankings?
+        # Actually local calcs are fine, but let's use player_metrics for consistency in rankings
+        pass
+        
     avg_team_vol_idx = sum(team_vols) / len(team_vols) if team_vols else 0
     team_sds = [m["std_dev"] for m in player_metrics.values() if m["games_count"] >= 5]
     avg_team_std_dev = sum(team_sds) / len(team_sds) if team_sds else 0
 
-    def get_rank_tier(
-        metric, my_uid, lower_is_better=False, tier_labels=("Low", "Average", "High")
-    ):
-        if my_uid not in player_metrics:
-            return None
-        # User defined rule: Only compare against players with at least 5 games
-        # Also ensure the current player has enough games to be ranked?
-        # Usually if I don't have enough games, I shouldn't be ranked "Top 1%".
-        # But if the user didn't specify, I'll allow ranking IF the player meets the criteria,
-        # OR just filter the *population* to >= 5.
-
-        # Let's filter the population first
-        valid_metrics = [m for m in player_metrics.values() if m["games_count"] >= 5]
-
-        # If current player has < 5 games, maybe return None?
-        # The prompt said: "When taking into account the comparison against the team, take into accout only the players that have at least 5 games"
-        # It implies the reference group. If I am not in the reference group, I can't be ranked against it properly (or I am outlier).
-        # Safe bet: If I have < 5 games, no rank.
-        if player_metrics[my_uid]["games_count"] < 5:
-            return None
-
-        values = sorted([m[metric] for m in valid_metrics], reverse=not lower_is_better)
-        my_val = player_metrics[my_uid][metric]
-
-        try:
-            rank = values.index(my_val) + 1
-        except ValueError:
-            return None
-
-        total = len(values)
-        if total == 0:
-            return None
-
-        pct = (rank / total) * 100
-        top_pct = math.ceil(pct)
-
-        # Tier Assignment (3 buckets)
-        if rank <= total / 3:
-            tier = tier_labels[0]
-        elif rank <= 2 * total / 3:
-            tier = tier_labels[1]
-        else:
-            tier = tier_labels[2]
-
-        return {"rank": rank, "total": total, "top_pct": top_pct, "tier": tier}
-
-    # Rankings
-    ranks = {
-        # Lower SD is "Low" tier / Top %
-        "std_dev": get_rank_tier("std_dev", player_id, lower_is_better=True),
-        # Higher Buyin is Top %
-        "avg_buyin": get_rank_tier(
-            "avg_buyin",
-            player_id,
-            lower_is_better=False,
-            tier_labels=("High", "Average", "Low"),
-        ),
-        # Higher Profit is "Top X%"
-        "avg_profit": get_rank_tier("avg_profit", player_id, lower_is_better=False),
-        "total_balance": get_rank_tier(
-            "total_balance", player_id, lower_is_better=False
-        ),
-        "hourly_winrate": get_rank_tier(
-            "hourly_winrate", player_id, lower_is_better=False
-        ),
-        "roi": get_rank_tier("roi", player_id, lower_is_better=False),
-        "win_share": get_rank_tier("win_share", player_id, lower_is_better=False),
-        "win_pct": get_rank_tier("win_pct", player_id, lower_is_better=False),
-        "best_result": get_rank_tier("best_result", player_id, lower_is_better=False),
-        "worst_result": get_rank_tier("worst_result", player_id, lower_is_better=True),
-        # Volatility Index: "Low" is better (stable)? User said "Game Swings... Low/Medium/High".
-        # If I use lower_is_better=True (Low Vol), rank 1 is Low Vol.
-        "game_swings": get_rank_tier(
-            "vol_idx",
-            player_id,
-            lower_is_better=True,
-            tier_labels=("Low", "Average", "High"),
-        ),
-    }
-
-    if avg_buyin_val > 0:
-        volatility_index = std_dev / avg_buyin_val
-        # Determine label from Rank
-        if ranks["game_swings"]:
-            volatility_label = ranks["game_swings"]["tier"] + " (Vs Team)"
-        else:
-            volatility_label = "N/A"
-
-    # Fallback absolute check if Team data missing
-    if volatility_label == "N/A":
-        if volatility_index < 0.8:
-            volatility_label = "Very Low"
-        elif volatility_index < 1.5:
-            volatility_label = "Low"
-        elif volatility_index < 3.0:
-            volatility_label = "Average"
-        else:
-            volatility_label = "High"
-
-    # Team Comparisons
-    team_aggregates = {
-        "games": [],
-        "roi": [],
-        "attendance": [],
-        "avg_buyin": [],
-        "avg_profit": [],
-    }
-    for uid, s in bulk_stats.items():
-        g = s.get("games_count", 0)
-        if g > 0:
-            inv = s.get("total_investment", 0)
-            bal = s.get("total_balance", 0)
-            team_aggregates["games"].append(g)
-            team_aggregates["attendance"].append(
-                g / team_total_games * 100 if team_total_games else 0
-            )
-            team_aggregates["avg_profit"].append(bal / g)
-            if inv > 0:
-                team_aggregates["avg_buyin"].append(inv / g)
-                team_aggregates["roi"].append(bal / inv * 100)
+    # Team Aggregates
+    team_aggregates = {"games": [], "roi": [], "attendance": [], "avg_buyin": [], "avg_profit": []}
+    for uid, pm in player_metrics.items():
+        if pm["games_count"] > 0:
+            team_aggregates["games"].append(pm["games_count"])
+            team_aggregates["attendance"].append(pm["games_count"] / team_total_games * 100 if team_total_games else 0)
+            team_aggregates["avg_profit"].append(pm["avg_profit"])
+            if pm["avg_buyin"] > 0: # Approximating investment check
+                team_aggregates["avg_buyin"].append(pm["avg_buyin"]) # Note: avg_buyin here is per game, which is what we want? 
+                # Wait, earlier loop: "avg_buyin": inv / g. Yes.
+                team_aggregates["roi"].append(pm["roi"])
 
     def safe_avg(lst):
         return sum(lst) / len(lst) if lst else 0
@@ -780,34 +746,176 @@ async def player_stats(
         "roi": safe_avg(team_aggregates["roi"]),
     }
 
+    # Rank Helper
+    def get_rank_tier(metric, my_uid, lower_is_better=False, tier_labels=("Low", "Average", "High")):
+        if my_uid not in player_metrics: return None
+        if player_metrics[my_uid]["games_count"] < 5: return None
+        
+        valid = [m for m in player_metrics.values() if m["games_count"] >= 5]
+        values = sorted([m[metric] for m in valid], reverse=not lower_is_better)
+        my_val = player_metrics[my_uid][metric]
+        
+        try:
+            rank = values.index(my_val) + 1
+        except ValueError:
+            return None
+            
+        total = len(values)
+        if total == 0: return None
+        
+        pct = (rank / total) * 100
+        top_pct = math.ceil(pct)
+        
+        if rank <= total / 3: tier = tier_labels[0]
+        elif rank <= 2 * total / 3: tier = tier_labels[1]
+        else: tier = tier_labels[2]
+        
+        return {"rank": rank, "total": total, "top_pct": top_pct, "tier": tier}
+
+    ranks = {
+        "std_dev": get_rank_tier("std_dev", player_id, lower_is_better=True),
+        "avg_buyin": get_rank_tier("avg_buyin", player_id, lower_is_better=False, tier_labels=("High", "Average", "Low")),
+        "avg_profit": get_rank_tier("avg_profit", player_id, lower_is_better=False),
+        "total_balance": get_rank_tier("total_balance", player_id, lower_is_better=False),
+        "hourly_winrate": get_rank_tier("hourly_winrate", player_id, lower_is_better=False),
+        "roi": get_rank_tier("roi", player_id, lower_is_better=False),
+        "win_share": get_rank_tier("win_share", player_id, lower_is_better=False),
+        "win_pct": get_rank_tier("win_pct", player_id, lower_is_better=False),
+        "best_result": get_rank_tier("best_result", player_id, lower_is_better=False),
+        "worst_result": get_rank_tier("worst_result", player_id, lower_is_better=True),
+        "game_swings": get_rank_tier("vol_idx", player_id, lower_is_better=True, tier_labels=("Low", "Average", "High")),
+    }
+
+    if std_dev > 0:
+        # Use 100 as the 'Base Buy-in' for scale, as per user's stake
+        # This represents how many 'initial stacks' the average swing is
+        volatility_index = std_dev / 100.0
+        
+        # Compare against the team average absolute swings (Standard Deviation)
+        if avg_team_std_dev > 0:
+            rel_to_team = std_dev / avg_team_std_dev
+            if rel_to_team < 0.6: volatility_label = "Very Low (Vs Team)"
+            elif rel_to_team < 0.9: volatility_label = "Low (Vs Team)"
+            elif rel_to_team < 1.1: volatility_label = "Average (Vs Team)"
+            elif rel_to_team < 1.5: volatility_label = "High (Vs Team)"
+            else: volatility_label = "Extreme (Vs Team)"
+        else:
+            volatility_label = "Average"
+    else:
+        volatility_index = 0
+        volatility_label = "N/A"
+
+    # --- Bayesian Analysis ---
+    # Prior
+    prior_mean = adv_stats_team["avg_balance"]
+    prior_sigma = avg_team_std_dev if avg_team_std_dev > 0 else (avg_buyin_val if avg_buyin_val > 0 else 100)
+    
+    # Likelihood
+    likelihood_mean = avg_balance
+    likelihood_sigma = std_dev if std_dev > 0 else prior_sigma
+    n_games = games_count
+    
+    if prior_sigma > 0 and likelihood_sigma > 0:
+        prior_var = prior_sigma ** 2
+        likelihood_var = likelihood_sigma ** 2
+        posterior_var = 1 / ((1/prior_var) + (n_games/likelihood_var))
+        posterior_mean = posterior_var * ((prior_mean/prior_var) + (n_games*likelihood_mean/likelihood_var))
+        posterior_sigma = math.sqrt(posterior_var)
+    else:
+        posterior_mean = likelihood_mean
+        posterior_sigma = likelihood_sigma
+        
+    pred_sigma = math.sqrt(posterior_sigma**2 + likelihood_sigma**2)
+    
+    if pred_sigma > 0:
+        z_score = (0 - posterior_mean) / pred_sigma
+        win_prob = 0.5 * (1 - math.erf(z_score / math.sqrt(2)))
+    else:
+        win_prob = 0.5 if posterior_mean == 0 else (1.0 if posterior_mean > 0 else 0.0)
+        
+    # Playstyle
+    style_label = "Balanced"
+    style_desc = "Average style"
+    is_profitable = posterior_mean > 0
+    is_volatile = False
+    if avg_team_std_dev > 0:
+        if (std_dev / avg_team_std_dev) >= 1.1:
+            is_volatile = True
+    else:
+        is_volatile = std_dev > 150.0 # Fallback if no team data
+    
+    if is_profitable:
+        if is_volatile:
+            style_label = "Volatile Winner"
+            style_desc = "Experiences high variance but maintains a positive win rate. Expect big swings."
+        else:
+            style_label = "Consistent Winner"
+            style_desc = "Steady, reliable accumulation of profit with controlled risk."
+    else:
+        if is_volatile:
+            style_label = "High Variance"
+            style_desc = "Large swings in results with an overall negative trend. High risk."
+        else:
+            style_label = "Low Variance"
+            style_desc = "Low risk, conservative results. Steady but slightly negative trend."
+
+    # Reliability Score (0 to 100%)
+    # We reach 100% confidence/reliability roughly at 30+ games (industry standard for rule of thumb)
+    reliability = min(100, (n_games / 30) * 100)
+    
+    if n_games < 5:
+        reliability_desc = "Low (Need more games)"
+    elif n_games < 15:
+        reliability_desc = "Moderate"
+    else:
+        reliability_desc = "High"
+
+    adv_stats_bayesian = {
+        "prior_mean": prior_mean,
+        "prior_sigma": prior_sigma,
+        "likelihood_mean": likelihood_mean,
+        "likelihood_sigma": likelihood_sigma,
+        "posterior_mean": posterior_mean,
+        "posterior_sigma": posterior_sigma,
+        "pred_sigma": pred_sigma,
+        "win_prob": win_prob * 100,
+        "expected_range_low": posterior_mean - 1.96 * pred_sigma,
+        "expected_range_high": posterior_mean + 1.96 * pred_sigma,
+        "style_label": style_label,
+        "style_desc": style_desc,
+        "reliability_score": reliability,
+        "reliability_label": reliability_desc,
+        "sample_size": n_games,
+        "actual_std_dev": std_dev,
+        "volatility_index": volatility_index,
+        "team_avg_vol_idx": avg_team_vol_idx,
+        "volatility_label": volatility_label,
+        "avg_buyin": avg_buyin_val
+    }
+
+    # Consolidated Adv Stats for Template
     adv_stats = {
         "total_investment": total_investment,
         "avg_buyin": avg_buyin_val,
         "avg_balance": avg_balance,
-        "attendance_pct": (games_count / team_total_games * 100)
-        if team_total_games
-        else 0,
+        "attendance_pct": (games_count / team_total_games * 100) if team_total_games else 0,
         "attendance_count": games_count,
         "team_total_games": team_total_games,
         "total_balance": total_balance,
         "hourly_winrate": winrate,
         "roi": (total_balance / total_investment * 100) if total_investment else 0,
-        "win_share_pct": player_metrics[player_id]["win_share"]
-        if player_id in player_metrics
-        else 0,
+        "win_share_pct": player_metrics[player_id]["win_share"] if player_id in player_metrics else 0,
         "wins": wins_count,
         "draws": draws_count,
         "losses": losses_count,
         "win_pct": (wins_count / games_count * 100) if games_count else 0,
         "best_result": best_result,
         "worst_result": worst_result,
-        "last_5_games": sorted(
-            games_history, key=lambda x: (x["game"].date), reverse=True
-        )[:5],
-        "variance": variance,
-        "std_dev": std_dev,
-        "typical_range_low": avg_balance - std_dev,
-        "typical_range_high": avg_balance + std_dev,
+        "last_5_games": sorted(games_history, key=lambda x: (x["game"].date), reverse=True)[:5],
+        "variance": variance if games_history else 0,
+        "std_dev": std_dev if games_history else 0,
+        "typical_range_low": avg_balance - std_dev if games_history else 0,
+        "typical_range_high": avg_balance + std_dev if games_history else 0,
         "volatility_index": volatility_index,
         "volatility_label": volatility_label,
         "avg_team_vol_idx": avg_team_vol_idx,
@@ -815,71 +923,50 @@ async def player_stats(
         "ranks": ranks,
         "team_avgs": adv_stats_team,
         "monthly_balances": sorted_months,
+        "bayesian": adv_stats_bayesian,
     }
 
-    # Prepare Chart Data (Chronological)
-    chronological_games = sorted(
-        games_history,
-        key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()),
-    )
-    cumulative_balance = 0.0
-    chart_points = []
-    for g in chronological_games:
-        cumulative_balance += g["balance"]
-        chart_points.append(
-            {
-                "date": str(g["game"].date),
-                "balance": round(cumulative_balance, 2),
-                "game_id": g["game"].id,
-            }
-        )
-
-    # Add initial zero point to start graph from 0
-    if chart_points:
-        chart_points.insert(0, {"date": "Start", "balance": 0.0, "game_id": -1})
-
-    today = datetime.now().date()
-    # Sorting
+    # Sorting for Display
     reverse_order = order == "desc"
-
     if sort == "date":
-        games_history.sort(
-            key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()),
-            reverse=reverse_order,
-        )
+        games_history.sort(key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()), reverse=reverse_order)
     elif sort == "balance":
         games_history.sort(key=lambda x: x["balance"], reverse=reverse_order)
     elif sort == "pot":
         games_history.sort(key=lambda x: x["total_pot"], reverse=reverse_order)
     else:
-        # Default
-        games_history.sort(
-            key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()),
-            reverse=True,
-        )
+        games_history.sort(key=lambda x: (x["game"].date), reverse=reverse_order)
 
-    return templates.TemplateResponse(
-        "team/player_stats.html",
-        {
-            "request": request,
-            "current_user": user,
-            "team": team,
-            "player": player,
-            "games_history": games_history,
-            "total_balance": total_balance,
-            "games_count": len(games_history),
-            "visible_count": len(games_history),
-            "winrate": winrate,
-            "is_admin": is_user_admin(user.id, team.id, db),
-            "player_role": (db.query(UserTeam).filter(UserTeam.team_id == team_id, UserTeam.user_id == player_id).one().role.value if db.query(UserTeam).filter(UserTeam.team_id == team_id, UserTeam.user_id == player_id).one_or_none() else "MEMBER"),
-            "sort_by": sort,
-            "order": order,
-            "chart_points": chart_points,
-            "adv_stats": adv_stats,
-            "available_years": available_years,
-            "selected_year": year if year else "all",
-        },
-    )
+    # Chart Data (Cumulative Balance)
+    chart_data_src = sorted(games_history, key=lambda x: (x["game"].date, x["game"].start_time or datetime.min.time()))
+    chart_points = []
+    running_bal = 0.0
+    for g in chart_data_src:
+        running_bal += g["balance"]
+        chart_points.append({
+            "date": str(g["game"].date),
+            "balance": running_bal
+        })
+
+    return {
+        "request": request,
+        "team": team,
+        "player": player,
+        "games_history": games_history,
+        "adv_stats": adv_stats,
+        "games_count": games_count,
+        "total_balance": total_balance,
+        "winrate": winrate,
+        "available_years": available_years,
+        "selected_year": year if year else "all",
+        "chart_points": chart_points,
+        "sort_by": sort,
+        "order": order,
+        "is_admin": is_admin,
+        "player_role": player_role,
+        "visible_count": len(games_history),
+        "current_user": current_user,
+    }
 
 
 @router.post("/{team_id}/player/{player_id}/role")
@@ -1325,6 +1412,29 @@ def _calculate_team_stats(team, year, db):
         sorted_w = sorted(game_performances, key=lambda x: x["value"], reverse=True)
         sorted_l = sorted(game_performances, key=lambda x: x["value"])
 
+        # Volatility Rankings (Absolute Standard Deviation)
+        # Only include players with 15+ games (High Model Reliability)
+        min_games = 15
+        volatility_ranks = []
+        import math
+
+        for uid, count in player_games_count.items():
+            if count >= min_games:
+                # Get all balances for this player
+                p_bals = []
+                for gid, players in game_data.items():
+                    if uid in players:
+                        p_bals.append(players[uid]["cashout"] - players[uid]["buyin"])
+                
+                if len(p_bals) > 1:
+                    mean = sum(p_bals) / len(p_bals)
+                    variance = sum((x - mean) ** 2 for x in p_bals) / (len(p_bals) - 1)
+                    sd = math.sqrt(variance)
+                    volatility_ranks.append({"nick": get_nick(uid), "value": sd})
+
+        most_volatile = sorted(volatility_ranks, key=lambda x: x["value"], reverse=True)
+        the_rocks = sorted(volatility_ranks, key=lambda x: x["value"])
+
     stats = {
         "games_count": games_count,
         "avg_players": avg_players,
@@ -1340,6 +1450,8 @@ def _calculate_team_stats(team, year, db):
             "profit": rankings_profit,
             "biggest_winner": sorted_w,
             "biggest_loser": sorted_l,
+            "most_volatile": most_volatile,
+            "rocks": the_rocks,
         },
     }
     return stats

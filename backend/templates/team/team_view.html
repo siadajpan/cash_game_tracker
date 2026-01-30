@@ -8,18 +8,23 @@
     <div>
         {{ team.name }} <span class="text-muted">#{{ team.search_code }}</span>
     </div>
-    
+
     <div class="d-flex gap-2">
         <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
                 {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
             </button>
             <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
-                <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}" href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
+                <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}"
+                        href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
                 {% if available_years %}
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
                 {% for y in available_years %}
-                <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}" href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
+                <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}"
+                        href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
                 {% endfor %}
                 {% endif %}
             </ul>
@@ -38,7 +43,9 @@
                         <i class="bi bi-file-earmark-arrow-up"></i> Import Games
                     </button>
                 </li>
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
                 <li>
                     <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
                         data-bs-target="#deleteTeamModal">
@@ -50,9 +57,9 @@
         {% endif %}
     </div>
 
-{% endblock %}
+    {% endblock %}
 
-{% block content %}
+    {% block content %}
 
     <!-- Import Modal -->
     <div class="modal fade" id="importGamesModal" tabindex="-1" aria-hidden="true">
@@ -62,11 +69,13 @@
                     <h5 class="modal-title">Import Legacy Games</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="importGamesForm" action="/team/{{ team.id }}/import" method="post" enctype="multipart/form-data">
+                <form id="importGamesForm" action="/team/{{ team.id }}/import" method="post"
+                    enctype="multipart/form-data">
                     <div class="modal-body">
-                        <p class="mb-3" style="font-size: 0.8rem;">Upload a JSON file containing your game history. The data should be formatted as follows:</p>
+                        <p class="mb-3" style="font-size: 0.8rem;">Upload a JSON file containing your game history. The
+                            data should be formatted as follows:</p>
                         <div class="bg-light p-3 rounded mb-3 border overflow-auto" style="max-height: 150px;">
-<pre class="mb-0" style="font-size: 0.75rem;">
+                            <pre class="mb-0" style="font-size: 0.75rem;">
 [
   {
     "start_time": "YYYY-MM-DD HH:MM",
@@ -84,17 +93,21 @@
 </pre>
                         </div>
                         <div class="mb-3">
-                            <label for="importFile" class="form-label" style="font-size: 0.8rem;">Select JSON File</label>
-                            <input class="form-control form-control-sm" type="file" id="importFile" name="file" accept=".json" required>
+                            <label for="importFile" class="form-label" style="font-size: 0.8rem;">Select JSON
+                                File</label>
+                            <input class="form-control form-control-sm" type="file" id="importFile" name="file"
+                                accept=".json" required>
                         </div>
                         <div class="alert alert-info py-2" style="font-size: 0.65rem;">
-                            <i class="bi bi-info-circle me-1"></i> Existing games will be skipped. New players will be added as guests.
+                            <i class="bi bi-info-circle me-1"></i> Existing games will be skipped. New players will be
+                            added as guests.
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="importSubmitBtn">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="importSpinner"></span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"
+                                id="importSpinner"></span>
                             <span id="importBtnText">Import Games</span>
                         </button>
                     </div>
@@ -114,7 +127,8 @@
                 <div class="modal-body text-center">
                     <p class="fs-5">Are you sure you want to delete <strong>{{ team.name }}</strong>?</p>
                     <p class="text-danger fw-bold mb-1">Warning: This action cannot be undone.</p>
-                    <p class="text-muted small">All games, history, and members associated with this group will be permanently removed.</p>
+                    <p class="text-muted small">All games, history, and members associated with this group will be
+                        permanently removed.</p>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -149,7 +163,8 @@
     </div>
     <div class="text-center" style="flex: 1;">
         <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Frequency</small>
-        <span class="fs-5 fw-normal">{{ stats.frequency }} <small class="text-muted" style="font-size: 0.6em;">days</small></span>
+        <span class="fs-5 fw-normal">{{ stats.frequency }} <small class="text-muted"
+                style="font-size: 0.6em;">days</small></span>
     </div>
 </div>
 {% endif %}
@@ -159,26 +174,32 @@
             <thead class="sticky-top bg-white border-bottom">
                 <tr class="text-uppercase text-secondary" style="font-size: 0.75rem; letter-spacing: 0.05em;">
                     <th scope="col" class="py-2 ps-3 fw-normal border-0">
-                        <a href="?year={{ selected_year }}&sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}" class="text-secondary text-decoration-none d-block">
+                        <a href="?year={{ selected_year }}&sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                            class="text-secondary text-decoration-none d-block">
                             Player
                             {% if sort_by == 'player' %}
-                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                                style="font-size: 0.7em;"></i>
                             {% endif %}
                         </a>
                     </th>
                     <th scope="col" class="py-2 text-center fw-normal border-0">
-                        <a href="?year={{ selected_year }}&sort=games_count&order={% if sort_by == 'games_count' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
+                        <a href="?year={{ selected_year }}&sort=games_count&order={% if sort_by == 'games_count' and order == 'desc' %}asc{% else %}desc{% endif %}"
+                            class="text-secondary text-decoration-none d-block">
                             Games
                             {% if sort_by == 'games_count' %}
-                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                                style="font-size: 0.7em;"></i>
                             {% endif %}
                         </a>
                     </th>
                     <th scope="col" class="py-2 text-end pe-3 fw-normal border-0">
-                        <a href="?year={{ selected_year }}&sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}" class="text-secondary text-decoration-none d-block">
+                        <a href="?year={{ selected_year }}&sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}"
+                            class="text-secondary text-decoration-none d-block">
                             Balance
                             {% if sort_by == 'balance' %}
-                                <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill" style="font-size: 0.7em;"></i>
+                            <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
+                                style="font-size: 0.7em;"></i>
                             {% endif %}
                         </a>
                     </th>
@@ -189,16 +210,19 @@
                 {% for info in players_info %}
                 <tr class="position-relative">
                     <td class="ps-3 border-bottom-0 py-2">
-                        <a href="/team/{{ team.id }}/player/{{ info.player.id }}?year={{ selected_year }}" class="text-decoration-none text-dark fw-semibold stretched-link">
+                        <a href="/team/{{ team.id }}/player/{{ info.player.id }}?year={{ selected_year }}"
+                            class="text-decoration-none text-dark fw-semibold stretched-link">
                             {{ info.player.nick }}
                         </a>
                         {% if info.player_role == 'ADMIN' %}
-                        <span class="badge rounded-pill bg-info text-dark ms-1 border border-info bg-opacity-25" style="font-size: 0.6em; vertical-align: text-top;">ADMIN</span>
+                        <span class="badge rounded-pill bg-info text-dark ms-1 border border-info bg-opacity-25"
+                            style="font-size: 0.6em; vertical-align: text-top;">ADMIN</span>
                         {% endif %}
                     </td>
                     <td class="text-center border-bottom-0 py-2 text-secondary">{{ info.games_count }}</td>
                     <td class="text-end pe-3 border-bottom-0 py-2">
-                        <span class="fw-medium {% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                        <span
+                            class="fw-medium {% if info.total_balance < 0 %}text-danger{% else %}text-success{% endif %}">
                             {% if info.total_balance % 1 %}
                             {{ "%.2f"|format(info.total_balance) }}
                             {% else %}
@@ -218,127 +242,14 @@
     <div class="mt-3 flex-shrink-0 bg-white pt-2 d-flex justify-content-between align-items-center">
         <a href="/?tab=groups" class="btn btn-outline-secondary">Back</a>
         {% if stats.games_count >= 5 %}
-        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#teamStatsModal">
-             <i class="bi bi-bar-chart-fill me-1"></i> Team Stats
-        </button>
+        <a href="/team/{{ team.id }}/stats?year={{ selected_year }}" class="btn btn-outline-primary">
+            <i class="bi bi-bar-chart-fill me-1"></i> Group Stats
+        </a>
         {% endif %}
     </div>
 </div>
 
-<div class="modal fade" id="teamStatsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Team Statistics ({% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}) <span class="text-muted ms-2">{{ team.name }}</span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <!-- Hosting & Financials -->
-                    <div class="col-12">
-                        <h6 class="border-bottom pb-2">Overview</h6>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Top Host <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" title="Player who hosted the most games"></i></span>
-                                {% if stats.top_host %}
-                                <strong>{{ stats.top_host.nick }} <small class="text-muted">({{ "%.0f"|format(stats.top_host.pct) }}%)</small></strong>
-                                {% else %}
-                                <strong>-</strong>
-                                {% endif %}
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Total Pot <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" title="Sum of all money played"></i></span>
-                                <strong>{{ "%.0f"|format(stats.total_pot) }}</strong>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Avg Pot <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" title="Average pot per game"></i></span>
-                                <strong>{{ "%.0f"|format(stats.avg_pot) }}</strong>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Avg Buy-in <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" title="Across all players"></i></span>
-                                <strong>{{ "%.1f"|format(stats.avg_buyin_all) }}</strong>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Avg Win/Loss <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" title="Average winning and losing result"></i></span>
-                                <div>
-                                    <strong class="text-success">+{{ "%.0f"|format(stats.avg_win) }}</strong> / 
-                                    <strong class="text-danger">{{ "%.0f"|format(stats.avg_loss) }}</strong>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-    
-                    <!-- Rankings -->
-                    <div class="col-12 mt-4">
-                        <h6 class="border-bottom pb-2">Leaderboards</h6>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="text-muted small fw-bold mb-1">Total Profit</div>
-                                <ul class="list-group list-group-flush">
-                                    {% for p in stats.rankings.profit[:3] %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1">
-                                        <span class="text-truncate">
-                                            {% if loop.index == 1 %}
-                                            <i class="bi bi-trophy-fill text-warning me-2"></i>
-                                            {% elif loop.index == 2 %}
-                                            <i class="bi bi-2-circle-fill text-secondary me-2"></i>
-                                            {% else %}
-                                            <i class="bi bi-3-circle-fill me-2" style="color: #cd7f32;"></i>
-                                            {% endif %}
-                                            {{ p.nick }}
-                                        </span>
-                                        <strong class="text-success" >{{ "+%.0f"|format(p.value) }}</strong>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="text-muted small fw-bold mb-1">Biggest Win</div>
-                                <ul class="list-group list-group-flush">
-                                    {% for p in stats.rankings.biggest_winner[:3] %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1">
-                                        <span class="text-truncate" title="{{ p.nick }}">
-                                            {% if loop.index == 1 %}
-                                            <i class="bi bi-trophy-fill text-warning me-2"></i>
-                                            {% elif loop.index == 2 %}
-                                            <i class="bi bi-2-circle-fill text-secondary me-2"></i>
-                                            {% else %}
-                                            <i class="bi bi-3-circle-fill me-2" style="color: #cd7f32;"></i>
-                                            {% endif %}
-                                            {{ p.nick }}
-                                        </span>
-                                        <strong class="text-success" >{{ "+%.0f"|format(p.value) }}</strong>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="text-muted small fw-bold mb-1">Biggest Loss</div>
-                                <ul class="list-group list-group-flush">
-                                    {% for p in stats.rankings.biggest_loser[:3] %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1">
-                                        <span class="text-truncate">
-                                            {% if loop.index == 1 %}
-                                            <i class="bi bi-bell-fill text-warning me-2" data-bs-toggle="tooltip" title="Worst Result (1st)"></i>
-                                            {% elif loop.index == 2 %}
-                                            <i class="bi bi-bell-fill text-secondary me-2" data-bs-toggle="tooltip" title="2nd Worst"></i>
-                                            {% elif loop.index == 3 %}
-                                            <i class="bi bi-bell-fill me-2" style="color: #cd7f32;" data-bs-toggle="tooltip" title="3rd Worst"></i>
-                                            {% endif %}
-                                            {{ p.nick }}
-                                        </span>
-                                        <strong class="text-danger" >{{ "%.0f"|format(p.value) }}</strong>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 {% endblock %}
 
@@ -348,11 +259,11 @@
     function adjustTeamViewHeight() {
         const container = document.getElementById('team-view-container');
         if (!container) return;
-        
+
         // Calculate available height: Window height - container top position - bottom margin (20px)
         const rect = container.getBoundingClientRect();
         const availableHeight = window.innerHeight - rect.top - 20;
-        
+
         // Ensure a reasonable minimum height
         container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
     }
@@ -360,17 +271,17 @@
     window.addEventListener('resize', adjustTeamViewHeight);
     window.addEventListener('load', adjustTeamViewHeight);
     // document.addEventListener('DOMContentLoaded', adjustTeamViewHeight); // redundant with load usually but good safety
-    
+
     // Initial call in case DOM is ready
     adjustTeamViewHeight();
 
     const importForm = document.getElementById('importGamesForm');
     if (importForm) {
-        importForm.addEventListener('submit', function() {
+        importForm.addEventListener('submit', function () {
             const btn = document.getElementById('importSubmitBtn');
             const spinner = document.getElementById('importSpinner');
             const text = document.getElementById('importBtnText');
-            
+
             if (btn && spinner && text) {
                 btn.disabled = true;
                 spinner.classList.remove('d-none');
