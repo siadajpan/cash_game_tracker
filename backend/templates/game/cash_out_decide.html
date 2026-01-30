@@ -1,20 +1,16 @@
 {% extends "shared/base.html" %} {% block title %}
 <title>Cash Out Decision</title>
-{% endblock %} {% block page_heading %}Cash Out Request{% endblock %} {% block
+{% endblock %} {% block page_heading %}Cash Out: {{ player.nick }}{% endblock %} {% block
 content %}
 
 <!-- Player Info -->
 <div class="mb-4">
   <div class="row mb-2">
-    <div class="col-4 fw-bold">Nickname:</div>
-    <div class="col-8">{{ player.nick }}</div>
-  </div>
-  <div class="row mb-2">
     <div class="col-4 fw-bold">Money-in:</div>
     <div class="col-8">{{ money_in }}</div>
   </div>
 </div>
-    {% if cash_out_request.chip_amounts | length > 0 %}
+{% if cash_out_request.chip_amounts | length > 0 %}
 
 <!-- Cash Out Table (read-only) -->
 <div class="mb-4">
@@ -30,13 +26,9 @@ content %}
     <tbody>
       {% for chip_amount in cash_out_request.chip_amounts %}
       <tr>
-        <td class="text-center" >
-          <button
-            type="button"
-            class="btn btn-sm"
-            style="background-color: {{ chip_amount.chip.color }}; width: 30px; height: 30px;"
-            disabled
-          ></button>
+        <td class="text-center">
+          <button type="button" class="btn btn-sm"
+            style="background-color: {{ chip_amount.chip.color }}; width: 30px; height: 30px;" disabled></button>
         </td>
         <td class="text-center">{{ "%.2f"|format(chip_amount.chip.value) }}</td>
         <td class="text-center">{{ chip_amount.amount }}</td>
@@ -48,24 +40,25 @@ content %}
     </tbody>
   </table>
 </div>
-    {% endif %}
+{% endif %}
 
 <div class="d-flex mt-3">
-    <h5>Requested amount: {{  cash_out_request.amount }}</h5>
+  <h5>Requested amount: {{ cash_out_request.amount }}</h5>
 </div>
 
 <!-- Accept / Decline Buttons -->
 <div class="d-flex justify-content-between mt-4">
-  <form
-    method="POST"
-    action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/decline"
-  >
+  <div>
+    {% if request.query_params.return_url %}
+    <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
+    {% else %}
+    <a href="/game/{{ game_id }}" class="btn btn-outline-secondary">Back</a>
+    {% endif %}
+  </div>
+  <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/decline">
     <button type="submit" class="btn btn-danger px-4">Decline</button>
   </form>
-  <form
-    method="POST"
-    action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/approve"
-  >
+  <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/approve">
     <button type="submit" class="btn btn-primary px-4">Accept</button>
   </form>
 </div>

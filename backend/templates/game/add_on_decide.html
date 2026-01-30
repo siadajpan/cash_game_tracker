@@ -1,48 +1,39 @@
 {% extends "shared/base.html" %}
 {% block title %}
-    <title>Add on request</title>
+<title>Add on request</title>
 {% endblock %}
-{% block page_heading %}Add-on Request{% endblock %}
+{% block page_heading %}Add-on Request: {{ player.nick }}{% endblock %}
 
 {% block content %}
 <!-- Player Info Section -->
-<div class="mb-4">
-    <h5>Player Information</h5>
-    <div class="row mb-2">
-        <div class="col-4 fw-bold">Nickname:</div>
-        <div class="col-8">{{ player.nick }}</div>
-    </div>
-    <div class="row mb-2">
-        <div class="col-4 fw-bold">Initial Buy-in:</div>
-        <div class="col-8">{{ buy_in }}</div>
-    </div>
-</div>
+
 <div class="mb-4">
 
-<h5>Add-on History</h5>
-{% if previous_addons | length > 0 %}
+    <h5>History</h5>
+    {% if previous_addons | length > 0 %}
     <ul class=" list-group-flush list-group">
+
         {% for add_on in previous_addons %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div class="col-4">{{ add_on.amount }}</div>
-                <div class="col-4 text-center">
-                    {% if add_on.status == "DECLINED" %}
-                        <span class="text-danger">Declined</span>
-                    {% elif add_on.status == "APPROVED" %}
-                        <span class="text-success">Approved</span>
-                    {% else %}
-                        <span class="text-secondary">Requested</span>
-                    {% endif %}
-                </div>
-                <div class="col-4 text-end">
-                    {{ add_on.time.split('T')[1][:5] if 'T' in add_on.time else add_on.time }}
-                </div>
-            </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div class="col-4">+ {{ add_on.amount }}</div>
+            <div class="col-4 text-center">
+                {% if add_on.status == "DECLINED" %}
+                <span class="text-danger">Declined</span>
+                {% elif add_on.status == "APPROVED" %}
+                <span class="text-success">Approved</span>
+                {% else %}
+                <span class="text-secondary">Requested</span>
+                {% endif %}
+            </div>
+            <div class="col-4 text-end">
+                {{ add_on.time.split('T')[1][:5] if 'T' in add_on.time else add_on.time }}
+            </div>
+        </li>
         {% endfor %}
     </ul>
-{% else %}
+    {% else %}
     <p class="text-muted">No previous add-ons.</p>
-{% endif %}
+    {% endif %}
 
 </div>
 
@@ -58,6 +49,10 @@
     <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/approve">
         <button type="submit" class="btn btn-primary px-4">Accept</button>
     </form>
+</div>
+
+<div class="mt-4">
+    <a href="/game/{{ game_id }}" class="btn btn-outline-secondary w-100">Back</a>
 </div>
 
 {% endblock %}
