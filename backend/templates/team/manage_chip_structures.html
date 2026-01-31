@@ -1,0 +1,113 @@
+{% extends "shared/base.html" %}
+{% block title %}
+<title>Chip Structures - {{ team.name }}</title>
+{% endblock %}
+
+{% block page_heading %}
+<div class="d-flex justify-content-between align-items-center w-100">
+    <div>
+        Chip Structures <span class="text-muted" style="font-size: 0.8rem;">for {{ team.name }}</span>
+    </div>
+    <a href="/team/{{ team.id }}/chip_structures/create" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg"></i> Add New
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    {% if request.query_params.error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> {{ request.query_params.error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {% if request.query_params.msg %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill"></i> {{ request.query_params.msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {% if chip_structures %}
+    <div class="list-group">
+        {% for cs in chip_structures %}
+        <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div>
+                    <h6 class="mb-0 fw-bold">{{ cs.name }}</h6>
+                    <div class="mt-1 d-flex gap-1 overflow-auto" style="max-width: 300px;">
+                        {% for chip in cs.chips %}
+                        <div class="rounded-circle border"
+                            style="width: 20px; height: 20px; background-color: {{ chip.color }};"
+                            title="{{ chip.value }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if team.default_chip_structure_id == cs.id %}
+                <span class="badge bg-success bg-opacity-75">Default</span>
+                {% endif %}
+            </div>
+
+            <div class="d-flex gap-2">
+                {% if team.default_chip_structure_id != cs.id %}
+                <form action="/team/{{ team.id }}/chip_structures/{{ cs.id }}/set_default" method="POST"
+                    class="d-inline">
+                    <button type="submit" class="btn btn-outline-success btn-sm" title="Set as Default">
+                        <i class="bi bi-check-circle"></i> Default
+                    </button>
+                </form>
+                {% endif %}
+
+                <a href="/team/{{ team.id }}/chip_structures/{{ cs.id }}/edit" class="btn btn-outline-primary btn-sm"
+                    title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </a>
+
+                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#deleteCsModal{{ cs.id }}" title="Delete">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Delete Modal -->
+        <div class="modal fade" id="deleteCsModal{{ cs.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Delete Chip Structure</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p>Are you sure you want to delete <strong>{{ cs.name }}</strong>?</p>
+                        {% if team.default_chip_structure_id == cs.id %}
+                        <p class="text-warning fw-bold">Note: This is the default chip structure. Deleting it will leave
+                            the group with no default structure.</p>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <form action="/team/{{ team.id }}/chip_structures/{{ cs.id }}/delete" method="POST">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-stack text-muted" style="font-size: 3rem;"></i>
+        <p class="mt-3 text-muted">No chip structures found for this team.</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="/team/{{ team.id }}" class="btn btn-outline-secondary">Back to Group</a>
+    </div>
+</div>
+{% endblock %}

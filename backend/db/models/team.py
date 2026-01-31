@@ -18,7 +18,9 @@ class Team(Base):
     )
 
     games = relationship("Game", back_populates="team", cascade="all, delete-orphan")
-    chip_structure = relationship("ChipStructure", back_populates="team")
+    chip_structure = relationship("ChipStructure", back_populates="team", foreign_keys="ChipStructure.team_id")
+    default_chip_structure_id = Column(Integer, ForeignKey("chip_structure.id"), nullable=True)
+    default_chip_structure = relationship("ChipStructure", foreign_keys=[default_chip_structure_id])
 
     @property
     def users(self):

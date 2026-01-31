@@ -10,6 +10,6 @@ class ChipStructure(Base):
     name = Column(String, nullable=False)
     team_id = Column(Integer, ForeignKey("team.id"))
 
-    team = relationship("Team", back_populates="chip_structure")
+    team = relationship("Team", back_populates="chip_structure", foreign_keys=[team_id])
     games = relationship("Game", back_populates="chip_structure")
     chips = relationship("Chip", back_populates="chip_structure")

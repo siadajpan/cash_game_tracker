@@ -52,14 +52,16 @@ def get_chips_from_structure(chip_structure_id: int, db: Session) -> List[Chip]:
 
 
 def get_user_team_chip_structures_dict(current_user):
-    team_chip_structures = {}
+    team_data = {}
     for team in current_user.teams:
-        team_chip_structures[team.id] = [
-            {"id": cs.id, "name": str(cs.name)} for cs in team.chip_structure
-        ]
+        team_data[team.id] = {
+            "default_id": team.default_chip_structure_id,
+            "structures": [
+                {"id": cs.id, "name": str(cs.name)} for cs in team.chip_structure
+            ]
+        }
 
-    team_chip_structures = json.dumps(team_chip_structures)
-    return team_chip_structures
+    return json.dumps(team_data)
 
 
 def get_chip_structure_as_list(chip_structure_id: int, db: Session) -> List[dict]:
@@ -104,3 +106,65 @@ def remove_chip_from_structure(chip_id: int, db: Session) -> None:
     chip = db.get(Chip, chip_id)
     db.delete(chip)
     db.commit()
+
+
+def delete_chip_structure(chip_structure_id: int, db: Session) -> None:
+    cs = db.get(ChipStructure, chip_structure_id)
+    if cs:
+        # Check if used in any game
+        from backend.db.models.game import Game
+        game_used = db.query(Game).filter(Game.chip_structure_id == cs.id).first()
+        if game_used:
+            raise ValueError(f"Cannot delete: This chip structure is used in games.")
+
+        # Check if any chip is used in ChipAmount (cash-outs)
+        from backend.db.models.chip_amount import ChipAmount
+        chip_ids = [c.id for c in cs.chips]
+        if chip_ids:
+            used_chip = db.query(ChipAmount).filter(ChipAmount.chip_id.in_(chip_ids)).first()
+            if used_chip:
+                raise ValueError(f"Cannot delete: Chips from this structure are used in cash-out records.")
+
+        # If it's a default for any team, reset it to None
+        teams_to_reset = db.query(Team).filter(Team.default_chip_structure_id == cs.id).all()
+        for t in teams_to_reset:
+            t.default_chip_structure_id = None
+            db.add(t)
+
+        # Also delete all associated chips if not handled by cascade
+        db.query(Chip).filter(Chip.chip_structure_id == cs.id).delete()
+        db.delete(cs)
+        db.commit()
+
+
+def set_default_chip_structure(team_id: int, chip_structure_id: int, db: Session) -> None:
+    team = db.get(Team, team_id)
+    if team:
+        team.default_chip_structure_id = chip_structure_id
+        db.add(team)
+        db.commit()
+
+
+def update_chip_structure_db(
+    chip_structure_id: int, chip_structure_data: ChipStructureCreate, db: Session
+) -> Optional[ChipStructure]:
+    db_cs = db.get(ChipStructure, chip_structure_id)
+    if not db_cs:
+        return None
+
+    db_cs.name = chip_structure_data.name
+    # Remove old chips
+    db.query(Chip).filter(Chip.chip_structure_id == chip_structure_id).delete()
+
+    # Add new chips
+    for chip_data in chip_structure_data.chips:
+        chip = Chip(
+            color=chip_data.color,
+            value=chip_data.value,
+            chip_structure_id=db_cs.id,
+        )
+        db.add(chip)
+
+    db.commit()
+    db.refresh(db_cs)
+    return db_cs

@@ -42,6 +42,7 @@ from backend.db.repository.cash_out import (
 from backend.db.repository.chip_structure import (
     get_user_team_chip_structures_dict,
     list_team_chip_structures,
+    get_chip_structure,
 )
 from backend.db.repository.game import (
     create_new_game_db,
@@ -88,6 +89,31 @@ async def delete_game(
         url="/game/view_past?msg=Game deleted successfully",
         status_code=status.HTTP_302_FOUND,
     )
+
+
+@router.post("/{game_id}/update_chip_structure", name="update_game_chip_structure")
+async def update_game_chip_structure(
+    game_id: int,
+    chip_structure_id: int = Form(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+    # Verify chip structure belongs to the same team
+    cs = get_chip_structure(chip_structure_id, db)
+    if not cs or cs.team_id != game.team_id:
+        raise HTTPException(status_code=400, detail="Invalid chip structure")
+
+    game.chip_structure_id = chip_structure_id
+    db.commit()
+
+    return RedirectResponse(url=f"/game/{game.id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/create", name="create_game_form")
@@ -449,6 +475,8 @@ async def open_game(
 
     template_name = "game/view_running.html" if game.running else "game/view_ended.html"
 
+    chip_structures = list_team_chip_structures(game.team_id, db)
+
     return templates.TemplateResponse(
         template_name,
         {
@@ -461,6 +489,7 @@ async def open_game(
             "players_info": players_info,
             "requests": existing_requests,
             "invite_link": invite_link,
+            "chip_structures": chip_structures,
             "sort_by": sort,
             "order": order,
         },
