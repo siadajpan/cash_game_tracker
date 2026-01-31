@@ -62,11 +62,199 @@ from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
 from backend.schemas.user import UserCreate
 from backend.webapps.team.forms import TeamCreateForm, TeamJoinForm
+from backend.webapps.chip_structure.chip_structure_form import ChipStructureCreateForm
+from backend.db.repository.chip_structure import (
+    list_team_chip_structures,
+    delete_chip_structure,
+    set_default_chip_structure,
+    get_chip_structure,
+    create_new_chip_structure_db,
+    update_chip_structure_db,
+)
 import os
 from sqlalchemy import select
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter()
+
+
+@router.get("/{team_id}/chip_structures", name="team.manage_chip_structures")
+async def manage_chip_structures(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team or not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    chip_structures = list_team_chip_structures(team_id, db)
+    return templates.TemplateResponse(
+        "team/manage_chip_structures.html",
+        {
+            "request": request,
+            "team": team,
+            "chip_structures": chip_structures,
+        },
+    )
+
+
+@router.get("/{team_id}/chip_structures/create", name="team.create_chip_structure_form")
+async def create_cs_form(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team or not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    return templates.TemplateResponse(
+        "team/edit_chip_structure.html",
+        {"request": request, "team": team, "chip_structure": None, "form": {}},
+    )
+
+
+@router.post("/{team_id}/chip_structures/create", name="team.create_chip_structure")
+async def create_cs(
+    request: Request,
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team or not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    form = await request.form()
+    form_data = {
+        **form,
+        "color": form.getlist("color"),
+        "value": form.getlist("value"),
+        "team_id": team_id,
+        "created_by": current_user.id,
+    }
+
+    try:
+        cs_form = ChipStructureCreateForm(**form_data)
+        create_new_chip_structure_db(cs_form, db)
+        return RedirectResponse(
+            f"/team/{team_id}/chip_structures", status_code=status.HTTP_303_SEE_OTHER
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "team/edit_chip_structure.html",
+            {
+                "request": request,
+                "team": team,
+                "chip_structure": None,
+                "form": form_data,
+                "errors": [str(e)],
+            },
+        )
+
+
+@router.get("/{team_id}/chip_structures/{cs_id}/edit", name="team.edit_chip_structure_form")
+async def edit_cs_form(
+    request: Request,
+    team_id: int,
+    cs_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team or not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    cs = get_chip_structure(cs_id, db)
+    return templates.TemplateResponse(
+        "team/edit_chip_structure.html",
+        {"request": request, "team": team, "chip_structure": cs, "form": {}},
+    )
+
+
+@router.post("/{team_id}/chip_structures/{cs_id}/edit", name="team.edit_chip_structure")
+async def edit_cs(
+    request: Request,
+    team_id: int,
+    cs_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team or not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    form = await request.form()
+    form_data = {
+        **form,
+        "color": form.getlist("color"),
+        "value": form.getlist("value"),
+        "team_id": team_id,
+        "created_by": current_user.id,
+    }
+
+    try:
+        cs_form = ChipStructureCreateForm(**form_data)
+        update_chip_structure_db(cs_id, cs_form, db)
+        return RedirectResponse(
+            f"/team/{team_id}/chip_structures", status_code=status.HTTP_303_SEE_OTHER
+        )
+    except Exception as e:
+        cs = get_chip_structure(cs_id, db)
+        return templates.TemplateResponse(
+            "team/edit_chip_structure.html",
+            {
+                "request": request,
+                "team": team,
+                "chip_structure": cs,
+                "form": form_data,
+                "errors": [str(e)],
+            },
+        )
+
+
+@router.post("/{team_id}/chip_structures/{cs_id}/delete", name="team.delete_chip_structure")
+async def delete_cs(
+    team_id: int,
+    cs_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team or not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        delete_chip_structure(cs_id, db)
+        return RedirectResponse(
+            f"/team/{team_id}/chip_structures?msg=Chip structure deleted successfully",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    except ValueError as e:
+        return RedirectResponse(
+            f"/team/{team_id}/chip_structures?error={str(e)}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+
+@router.post("/{team_id}/chip_structures/{cs_id}/set_default", name="team.set_default_chip_structure")
+async def set_default_cs(
+    team_id: int,
+    cs_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    team = get_team_by_id(team_id, db)
+    if not team or not is_user_admin(current_user.id, team.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    set_default_chip_structure(team_id, cs_id, db)
+    return RedirectResponse(
+        f"/team/{team_id}/chip_structures", status_code=status.HTTP_303_SEE_OTHER
+    )
 
 
 @router.get("/create")
