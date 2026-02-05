@@ -133,4 +133,13 @@ def get_bayes_predictions(game_id: int, db: Session):
             "reliability": reliability
         })
         
+    # 6. Normalize for Heads-Up (2 players)
+    # In a zero-sum 2-player game, the probabilities of finishing positive should be complementary.
+    # We normalize them to sum to 100% to match user intuition (avg 50%).
+    if num_players == 2:
+        total_p = sum(r["win_prob"] for r in results)
+        if total_p > 0:
+            for r in results:
+                r["win_prob"] = (r["win_prob"] / total_p) * 100.0
+        
     return results
