@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from sqlite3 import IntegrityError
-
+from typing import Optional
 from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
@@ -19,6 +19,7 @@ from fastapi_mail import FastMail, MessageSchema
 from backend.webapps.auth.email_config import conf
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
+    get_current_user,
 )
 from backend.core.security import create_access_token
 from backend.core.config import TEMPLATES_DIR, settings
@@ -429,7 +430,7 @@ async def open_game(
     sort: str = "balance",
     order: str = "desc",
     db: Session = Depends(get_db),
-    user: User = Depends(get_active_user),
+    user: Optional[User] = Depends(get_current_user),
 ):
     game: Game = get_game_by_id(game_id, db)
     if not game:
@@ -437,9 +438,14 @@ async def open_game(
             url="/?msg=Game not found or deleted", status_code=status.HTTP_302_FOUND
         )
 
-    if not user_in_game(user, game):
+    if not user or not user_in_game(user, game):
         if game.running:
-            return RedirectResponse(url=f"/game/{game.id}/join")  # not in the game yet
+            # If guest/unauthenticated, they can't join normally via this check
+            if not user:
+                 # Pass through to allow viewing running game as guest
+                 pass
+            else:
+                 return RedirectResponse(url=f"/game/{game.id}/join")  # not in the game yet
         # If game is ended, allow viewing even if not a player
 
     players_info = []
@@ -503,7 +509,7 @@ async def get_game_table(
     sort: str = "balance",
     order: str = "desc",
     db: Session = Depends(get_db),
-    user: User = Depends(get_active_user),
+    user: Optional[User] = Depends(get_current_user),
 ):
     game: Game = get_game_by_id(game_id, db)
     if not game:
@@ -512,9 +518,12 @@ async def get_game_table(
         response.headers["HX-Redirect"] = "/?msg=Game ended or deleted"
         return response
 
-    if not user_in_game(user, game):
-        # Return empty or error if not in game, or just redirect (htmx follows redirects)
-        return responses.Response("")
+    if user and not user_in_game(user, game):
+        # Allow viewing table even if not in game if game is ended or if it's a running game they can join
+        pass
+    if not user:
+        # Guests can see the table
+        pass
 
     players_info = []
     existing_requests = False
@@ -532,9 +541,9 @@ async def get_game_table(
             "request": request,
             "game": game,
             "user": user,
-            "is_admin": is_user_admin(user.id, game.team_id, db),
-            "is_owner": (game.owner_id == user.id),
-            "is_book_keeper": (game.book_keeper_id == user.id),
+            "is_admin": is_user_admin(user.id, game.team_id, db) if user else False,
+            "is_owner": (game.owner_id == user.id) if user else False,
+            "is_book_keeper": (game.book_keeper_id == user.id) if user else False,
             "players_info": players_info,
             "requests": existing_requests,
             "sort_by": sort,

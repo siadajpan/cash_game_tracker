@@ -180,6 +180,24 @@ def is_user_admin(user_id: int, team_id: int, db: Session) -> bool:
     return assoc is not None and assoc.role == TeamRole.ADMIN
 
 
+def is_user_privileged_for_team(user_id: int, team_id: int, db: Session) -> bool:
+    """
+    Checks if a user is an ADMIN of the team OR is a Book Keeper for any active game in the team.
+    """
+    if is_user_admin(user_id, team_id, db):
+        return True
+
+    from backend.db.models.game import Game
+    
+    active_games_as_book_keeper = db.query(Game).filter(
+        Game.team_id == team_id,
+        Game.book_keeper_id == user_id,
+        Game.finish_time == None
+    ).count()
+    
+    return active_games_as_book_keeper > 0
+
+
 
 
 

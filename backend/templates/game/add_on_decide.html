@@ -44,13 +44,14 @@
 <!-- Approve / Decline Buttons -->
 <div class="d-flex justify-content-between mt-4">
     <div>
-        <a href="/game/{{ game_id }}" class="btn btn-outline-secondary w-100">Back</a>
+        <a href="/game/{{ game_id }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-left me-1"></i>
+            Back</a>
     </div>
     <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/decline">
-        <button type="submit" class="btn btn-danger px-4">Decline</button>
+        <button type="submit" class="btn btn-danger px-4"><i class="bi bi-x-circle me-1"></i> Decline</button>
     </form>
     <form method="POST" action="/game/{{ game_id }}/add_on/{{ add_on_request.id }}/approve">
-        <button type="submit" class="btn btn-primary px-4">Accept</button>
+        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check-circle-fill me-1"></i> Accept</button>
     </form>
 </div>
 

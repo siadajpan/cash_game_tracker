@@ -136,7 +136,7 @@
                     </span>
                     <div class="text-end">
                         <span
-                            class="badge {% if adv_stats.bayesian.reliability_score < 30 %}bg-warning text-dark{% elif adv_stats.bayesian.reliability_score < 70 %}bg-info text-dark{% else %}bg-success{% endif %}">
+                            class="badge {% if adv_stats.bayesian.sample_size < 5 %}bg-warning text-dark{% elif adv_stats.bayesian.sample_size < 15 %}bg-info text-dark{% else %}bg-success{% endif %}">
                             {{ adv_stats.bayesian.reliability_label }}
                         </span>
                         <div class="small text-muted" style="font-size: 0.7rem;">Verified by {{
@@ -253,7 +253,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Initialize Tooltips

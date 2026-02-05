@@ -1,32 +1,26 @@
 {% extends "shared/base.html" %} {% block title %}
 <title>Cash Out</title>
 {% endblock %} {% block page_heading %}
-    {% if target_player and target_player.id != user.id %}
-        Cash Out for {{ target_player.nick }}
-    {% else %}
-        Cash Out
-    {% endif %}
-{% endblock %} 
+{% if target_player and target_player.id != user.id %}
+Cash Out for {{ target_player.nick }}
+{% else %}
+Cash Out
+{% endif %}
+{% endblock %}
 
 {% block content %}
-<form method="POST" action="/game/{{ game_id }}/cash_out_by_amount{% if target_player and target_player.id != user.id %}?player_id={{ target_player.id }}{% endif %}" id="cashOutForm">
+<form method="POST"
+  action="/game/{{ game_id }}/cash_out_by_amount{% if target_player and target_player.id != user.id %}?player_id={{ target_player.id }}{% endif %}"
+  id="cashOutForm">
   <div class="form-floating mb-3">
-    <input
-      type="number"
-      step="0.01"
-      min="0"
-      required
-      class="form-control"
-      name="amount"
-      id="amount"
-      placeholder
-    />
+    <input type="number" step="0.01" min="0" required class="form-control" name="amount" id="amount" placeholder />
     <label>Cash out amount</label>
   </div>
 
   <div class="d-flex justify-content-between align-items-center mt-4">
-    <a href="/game/{{ game_id }}/cash_out{% if target_player and target_player.id != user.id %}?player_id={{ target_player.id }}{% endif %}" class="btn btn-outline-secondary">Back</a>
-    <button type="submit" class="btn btn-primary">Request Cash Out</button>
+    <a href="/game/{{ game_id }}/cash_out{% if target_player and target_player.id != user.id %}?player_id={{ target_player.id }}{% endif %}"
+      class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-right me-1"></i> Request Cash Out</button>
   </div>
 </form>
 

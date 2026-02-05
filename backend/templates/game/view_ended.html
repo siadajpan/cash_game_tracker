@@ -14,8 +14,9 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#exportStatsModal">
-                    <i class="bi bi-file-earmark-arrow-down"></i> Export Stats
+                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#predictionsModal"
+                    hx-get="/game/{{ game.id }}/predictions" hx-target="#predictionsContent">
+                    <i class="bi bi-graph-up-arrow"></i> Predictions
                 </button>
             </li>
             {% if is_admin or is_owner %}
@@ -48,9 +49,10 @@
 
     <div class="mt-3 flex-shrink-0 bg-white pt-2 d-flex">
         {% if request.query_params.return_url %}
-        <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
+        <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary"><i
+                class="bi bi-arrow-left me-1"></i> Back</a>
         {% else %}
-        <a href="/game/view_past" class="btn btn-outline-secondary">Back</a>
+        <a href="/game/view_past" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
         {% endif %}
     </div>
 </div>
@@ -67,8 +69,10 @@
                 <textarea id="statsResultText" class="form-control" rows="15" readonly></textarea>
             </div>
             <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="copyStatsToClipboard()">Copy and Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
+                        class="bi bi-x-circle me-1"></i> Close</button>
+                <button type="button" class="btn btn-primary" onclick="copyStatsToClipboard()"><i
+                        class="bi bi-clipboard me-1"></i> Copy and Close</button>
             </div>
         </div>
     </div>
@@ -112,8 +116,10 @@
                 </form>
             </div>
             <div class="modal-footer d-flex justify-content-between w-100">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
-                <button type="button" class="btn btn-primary" onclick="submitExport()">Submit</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
+                        class="bi bi-arrow-left me-1"></i> Back</button>
+                <button type="button" class="btn btn-primary" onclick="submitExport()"><i
+                        class="bi bi-check-circle-fill me-1"></i> Submit</button>
             </div>
         </div>
     </div>
@@ -148,9 +154,11 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
+                        class="bi bi-x-circle me-1"></i> Cancel</button>
                 <form action="/game/{{ game.id }}/delete" method="POST">
-                    <button type="submit" class="btn btn-danger">Delete Game</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash-fill me-1"></i> Delete
+                        Game</button>
                 </form>
             </div>
         </div>
@@ -195,6 +203,30 @@
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Predictions Modal -->
+<div class="modal fade" id="predictionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Game Predictions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="predictionsContent">
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Calculating probabilities based on player history...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i
+                        class="bi bi-x-circle me-1"></i> Close</button>
             </div>
         </div>
     </div>
