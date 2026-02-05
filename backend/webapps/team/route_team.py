@@ -57,6 +57,7 @@ from backend.db.repository.team import (
     get_team_by_name,
     remove_user_from_team,
     is_user_admin,
+    is_user_privileged_for_team,
 )
 from backend.db.session import get_db
 from backend.schemas.team import TeamCreate
@@ -86,7 +87,7 @@ async def manage_chip_structures(
     current_user: User = Depends(get_current_user_from_token),
 ):
     team = get_team_by_id(team_id, db)
-    if not team or not is_user_admin(current_user.id, team.id, db):
+    if not team or not is_user_privileged_for_team(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     chip_structures = list_team_chip_structures(team_id, db)
@@ -108,7 +109,7 @@ async def create_cs_form(
     current_user: User = Depends(get_current_user_from_token),
 ):
     team = get_team_by_id(team_id, db)
-    if not team or not is_user_admin(current_user.id, team.id, db):
+    if not team or not is_user_privileged_for_team(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     return templates.TemplateResponse(
@@ -125,7 +126,7 @@ async def create_cs(
     current_user: User = Depends(get_current_user_from_token),
 ):
     team = get_team_by_id(team_id, db)
-    if not team or not is_user_admin(current_user.id, team.id, db):
+    if not team or not is_user_privileged_for_team(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     form = await request.form()
@@ -165,7 +166,7 @@ async def edit_cs_form(
     current_user: User = Depends(get_current_user_from_token),
 ):
     team = get_team_by_id(team_id, db)
-    if not team or not is_user_admin(current_user.id, team.id, db):
+    if not team or not is_user_privileged_for_team(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     cs = get_chip_structure(cs_id, db)
@@ -184,7 +185,7 @@ async def edit_cs(
     current_user: User = Depends(get_current_user_from_token),
 ):
     team = get_team_by_id(team_id, db)
-    if not team or not is_user_admin(current_user.id, team.id, db):
+    if not team or not is_user_privileged_for_team(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     form = await request.form()
@@ -224,7 +225,7 @@ async def delete_cs(
     current_user: User = Depends(get_current_user_from_token),
 ):
     team = get_team_by_id(team_id, db)
-    if not team or not is_user_admin(current_user.id, team.id, db):
+    if not team or not is_user_privileged_for_team(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     try:
@@ -248,7 +249,7 @@ async def set_default_cs(
     current_user: User = Depends(get_current_user_from_token),
 ):
     team = get_team_by_id(team_id, db)
-    if not team or not is_user_admin(current_user.id, team.id, db):
+    if not team or not is_user_privileged_for_team(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     set_default_chip_structure(team_id, cs_id, db)
@@ -444,13 +445,11 @@ async def team_view(
 
     # Get available years
     team_games = db.query(Game).filter(Game.team_id == team_id).all()
-    print(f"DEBUG: Found {len(team_games)} games for team {team_id}")
     all_years = set()
     for g in team_games:
         if g.date:
             all_years.add(int(str(g.date)[:4]))
     available_years = sorted(list(all_years), reverse=True)
-    print(f"DEBUG: Available years: {available_years}")
 
     target_year = None
     if year and year != "all":

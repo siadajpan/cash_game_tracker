@@ -2,16 +2,16 @@
     <div class="flex-grow-1 me-3">
         <h4 class="mb-0 fw-bold text-dark">{{ game.date }}</h4>
     </div>
-    
+
     <div>
         {% if is_user_in_game or not game.running %}
-            <a href="/game/{{ game.id }}" class="btn btn-secondary">
-                Open
-            </a>
+        <a href="/game/{{ game.id }}" class="btn btn-secondary">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Open
+        </a>
         {% elif game.running %}
-            <a href="/game/{{ game.id }}/join" class="btn btn-primary">
-                Join
-            </a>
+        <a href="/game/{{ game.id }}/join" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Join
+        </a>
         {% endif %}
     </div>
 </div>

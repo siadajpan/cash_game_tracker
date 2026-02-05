@@ -1,6 +1,6 @@
 {% extends "shared/base.html" %}
 {% block title %}
-    <title>Join a game</title>
+<title>Join a game</title>
 {% endblock %}
 {% block page_heading %}Join a game{% endblock %}
 
@@ -10,17 +10,15 @@
     <input type="hidden" name="game_id" value="{{ game.id }}">
 
     <div class="form-floating mb-3">
-            <input type="number" step="0.01" required class="form-control"
-                    name="buy_in" id="buy_in"
-                    value="{{ game.default_buy_in or 0 }}"
-                    placeholder>
-            <label for="buy_in" class="form-label">Buy-in</label>
+        <input type="number" step="0.01" required class="form-control" name="buy_in" id="buy_in"
+            value="{{ game.default_buy_in or 0 }}" placeholder>
+        <label for="buy_in" class="form-label">Buy-in</label>
 
     </div>
 
     <div class="d-flex justify-content-between align-items-center">
-        <a href="/" class="btn btn-outline-secondary">Back</a>
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle-fill me-1"></i> Submit</button>
     </div>
 </form>
 

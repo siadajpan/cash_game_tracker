@@ -29,6 +29,12 @@
                 </button>
             </li>
             {% endif %}
+            <li>
+                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#predictionsModal"
+                    hx-get="/game/{{ game.id }}/predictions" hx-target="#predictionsContent">
+                    <i class="bi bi-graph-up-arrow"></i> Predictions
+                </button>
+            </li>
             {% if is_admin or is_owner or is_book_keeper %}
             <li>
                 <button class="dropdown-item" type="button" data-bs-toggle="modal"
@@ -71,15 +77,18 @@
     <div class="mt-3 flex-shrink-0 bg-white pt-2">
         <div class="d-flex justify-content-between align-items-center">
             {% if request.query_params.return_url %}
-            <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
+            <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary"><i
+                    class="bi bi-arrow-left me-1"></i> Back</a>
             {% else %}
-            <a href="/" class="btn btn-outline-secondary">Back</a>
+            <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
             {% endif %}
             <div>
-                <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary">Cash out</a>
+                <a href="/game/{{ game.id }}/cash_out" class="btn btn-primary"><i
+                        class="bi bi-box-arrow-right me-1"></i> Cash out</a>
             </div>
             <div>
-                <a href="/game/{{ game.id }}/add_on" class="btn btn-primary">Add on</a>
+                <a href="/game/{{ game.id }}/add_on" class="btn btn-primary"><i class="bi bi-plus-circle-fill me-1"></i>
+                    Add on</a>
             </div>
         </div>
     </div>
@@ -210,17 +219,42 @@
                         for all players during the cash-out.</p>
                 </div>
                 <div class="modal-footer justify-content-between">
-                    <div>
-                        <a class="btn btn-outline-info" href="/team/{{ game.team_id }}/chip_structures">
-                            <i class="bi bi-gear-wide-connected"></i> Manage
-                        </a>
-                    </div>
-                    <div>
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update</button>
-                    </div>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i
+                            class="bi bi-x-circle me-1"></i> Cancel</button>
+
+                    <a class="btn btn-outline-info"
+                        href="/team/{{ game.team_id }}/chip_structures?return_url=/game/{{ game.id }}">
+                        <i class="bi bi-gear-wide-connected"></i> Manage
+                    </a>
+
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle-fill me-1"></i>
+                        Update</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Predictions Modal -->
+<div class="modal fade" id="predictionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Game Predictions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="predictionsContent">
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Calculating probabilities based on player history...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i
+                        class="bi bi-x-circle me-1"></i> Close</button>
+            </div>
         </div>
     </div>
 </div>

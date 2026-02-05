@@ -50,16 +50,17 @@ content %}
 <div class="d-flex justify-content-between mt-4">
   <div>
     {% if request.query_params.return_url %}
-    <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary">Back</a>
+    <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary"><i
+        class="bi bi-arrow-left me-1"></i> Back</a>
     {% else %}
-    <a href="/game/{{ game_id }}" class="btn btn-outline-secondary">Back</a>
+    <a href="/game/{{ game_id }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
     {% endif %}
   </div>
   <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/decline">
-    <button type="submit" class="btn btn-danger px-4">Decline</button>
+    <button type="submit" class="btn btn-danger px-4"><i class="bi bi-x-circle me-1"></i> Decline</button>
   </form>
   <form method="POST" action="/game/{{ game_id }}/cash_out/{{ cash_out_request.id }}/approve">
-    <button type="submit" class="btn btn-primary px-4">Accept</button>
+    <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check-circle-fill me-1"></i> Accept</button>
   </form>
 </div>
 

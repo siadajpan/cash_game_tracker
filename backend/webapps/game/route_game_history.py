@@ -74,7 +74,7 @@ async def player_game_history(
 
 
     return templates.TemplateResponse(
-        "game/player_history_full.html",
+        "game/player_game_events.html",
         {
             "request": request,
             "game": game,
@@ -219,6 +219,9 @@ async def delete_event_generic(
 ):
     verify_book_keeper_access(game_id, user.id, db)
     
+    if event_type == "buy_in":
+        raise HTTPException(status_code=400, detail="Cannot delete a buy-in.")
+
     event_obj = get_event_by_type_and_id(game_id, event_type, event_id, db)
     if event_obj:
         db.delete(event_obj)
