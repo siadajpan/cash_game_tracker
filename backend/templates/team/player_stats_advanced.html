@@ -132,15 +132,19 @@
                     <span>
                         Model Reliability
                         <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;" data-bs-toggle="tooltip"
-                            title="How confident the Bayesian model is in these predictions. Confidence increases as you play more games."></i>
+                            title="Recent games have more weight. If you haven't played in a while, predictions will regress toward team average due to lower effective sample size."></i>
                     </span>
                     <div class="text-end">
                         <span
                             class="badge {% if adv_stats.bayesian.sample_size < 5 %}bg-warning text-dark{% elif adv_stats.bayesian.sample_size < 15 %}bg-info text-dark{% else %}bg-success{% endif %}">
                             {{ adv_stats.bayesian.reliability_label }}
                         </span>
-                        <div class="small text-muted" style="font-size: 0.7rem;">Verified by {{
-                            adv_stats.bayesian.sample_size }} games</div>
+                        <div class="small text-muted" style="font-size: 0.7rem;">
+                            Based on {{ adv_stats.bayesian.sample_size }} games
+                            {% if adv_stats.bayesian.effective_sample_size < adv_stats.bayesian.sample_size * 0.8 %}
+                                <br>({{ "%.1f"|format(adv_stats.bayesian.effective_sample_size) }} weighted)
+                                {% endif %}
+                        </div>
                     </div>
                 </li>
             </ul>
@@ -227,7 +231,7 @@
                 <li class="list-group-item d-flex justify-content-between">
                     <span>Win Share <i class="bi bi-info-circle text-muted ms-1" style="font-size: 0.8rem;"
                             data-bs-toggle="tooltip"
-                            title="Your Total Balance / Sum of All OTHER Winners' Profits in games you played. Measures dominance."></i></span>
+                            title="Your Total Balance / Sum of All Positive Balances in games you played. Measures a share of total win."></i></span>
                     <strong>{{ "%.1f"|format(adv_stats.win_share_pct) }}%</strong>
                 </li>
             </ul>
