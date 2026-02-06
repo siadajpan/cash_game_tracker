@@ -622,6 +622,47 @@ async def _get_player_stats_context(
     from collections import defaultdict
     import math
     from datetime import datetime, timedelta
+    
+    def get_time_weight(game_date, current_date=None):
+        """
+        Calculate time-based weight for a game based on how long ago it was played.
+        
+        Goals:
+        - Games from last 6 months: weight ≈ 0.95-1.0 (nearly full weight)
+        - Games from 1-2 years ago: weight ≈ 0.4-0.6
+        - Games from 3+ years ago: weight ≈ 0.2 (5x less important than recent)
+        
+        Uses exponential decay with a grace period for recent games.
+        """
+        if current_date is None:
+            current_date = datetime.now().date()
+        
+        # Handle string dates (convert from 'YYYY-MM-DD' format)
+        if isinstance(game_date, str):
+            game_date = datetime.strptime(game_date, '%Y-%m-%d').date()
+        # Handle datetime objects
+        elif isinstance(game_date, datetime):
+            game_date = game_date.date()
+        
+        # Handle current_date conversion
+        if isinstance(current_date, str):
+            current_date = datetime.strptime(current_date, '%Y-%m-%d').date()
+        elif isinstance(current_date, datetime):
+            current_date = current_date.date()
+            
+        days_ago = (current_date - game_date).days
+        
+        # Parameters tuned to meet requirements
+        recent_threshold_days = 180  # 6 months - minimal decay within this period
+        decay_rate = 0.0018  # Controls decay rate after threshold (tuned for ~5x difference at 3 years)
+        
+        if days_ago <= recent_threshold_days:
+            # Recent games: minimal decay (95-100% weight)
+            return 1.0 - (days_ago / recent_threshold_days) * 0.05
+        else:
+            # Older games: exponential decay
+            excess_days = days_ago - recent_threshold_days
+            return 0.95 * math.exp(-decay_rate * excess_days)
 
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
@@ -779,6 +820,35 @@ async def _get_player_stats_context(
     avg_balance = total_balance / games_count if games_count else 0
     avg_buyin_val = total_investment / games_count if games_count else 0
     
+    # --- Time-weighted statistics for Bayesian analysis ---
+    # Calculate weighted average balance and weighted variance
+    # Recent games have more influence on predictions
+    total_weight = 0.0
+    weighted_balance_sum = 0.0
+    
+    for g in games_history:
+        game = g["game"]
+        weight = get_time_weight(game.date)
+        g["weight"] = weight  # Store for later use
+        
+        total_weight += weight
+        weighted_balance_sum += weight * g["balance"]
+    
+    # Weighted average balance (used in Bayesian likelihood)
+    weighted_avg_balance = weighted_balance_sum / total_weight if total_weight > 0 else avg_balance
+    
+    # Weighted variance and standard deviation
+    weighted_variance_sum = 0.0
+    for g in games_history:
+        weighted_variance_sum += g["weight"] * ((g["balance"] - weighted_avg_balance) ** 2)
+    
+    weighted_variance = weighted_variance_sum / total_weight if total_weight > 0 else 0
+    weighted_std_dev = math.sqrt(weighted_variance)
+    
+    # Effective sample size (accounts for time-based weighting)
+    # This is used as 'n' in the Bayesian calculation
+    effective_n_games = total_weight
+    
     # Calculate durations for winrate
     total_hours = 0
     for g in games_history:
@@ -790,7 +860,7 @@ async def _get_player_stats_context(
     winrate = total_balance / total_hours if total_hours > 0 else 0
 
     if games_history:
-        # Variance
+        # Non-weighted variance (for display purposes)
         variance = sum((g["balance"] - avg_balance) ** 2 for g in games_history) / len(
             games_history
         )
@@ -871,12 +941,10 @@ async def _get_player_stats_context(
         my_gids = g_map.keys()
         
         # Win Share: my balance vs other winners sum of balance
-        total_winnings_in_my_games = sum(game_pos_sum.get(gid, 0) for gid in my_gids)
-        my_positive_profits = sum(max(0, g_map.get(gid, 0)) for gid in my_gids)
-        others_winnings = total_winnings_in_my_games - my_positive_profits
+        total_winnings_in_all_games = sum(game_pos_sum.values())
         
-        if others_winnings > 0:
-            win_share_p = (t_bal / others_winnings * 100)
+        if total_winnings_in_all_games > 0:
+            win_share_p = t_bal / total_winnings_in_all_games * 100
         else:
             win_share_p = 100.0 if t_bal > 0 else 0.0
         
@@ -1000,14 +1068,32 @@ async def _get_player_stats_context(
         volatility_label = "N/A"
 
     # --- Bayesian Analysis ---
-    # Prior
-    prior_mean = adv_stats_team["avg_balance"]
-    prior_sigma = avg_team_std_dev if avg_team_std_dev > 0 else (avg_buyin_val if avg_buyin_val > 0 else 100)
+    # Prior: Use team average with higher variance for new players
+    # If no team average exists, use mean=0 with std=3*buy-in
     
-    # Likelihood
-    likelihood_mean = avg_balance
-    likelihood_sigma = std_dev if std_dev > 0 else prior_sigma
-    n_games = games_count
+    # Determine base buy-in for variance calculation
+    base_buyin = avg_buyin_val if avg_buyin_val > 0 else 100
+    
+    # Check if we have meaningful team statistics
+    if adv_stats_team["avg_balance"] != 0 or len(team_aggregates["avg_profit"]) > 2:
+        # Team average exists - use it as prior mean with higher variance
+        prior_mean = adv_stats_team["avg_balance"]
+        # Use higher variance (3x) for the prior to avoid overconfidence for new players
+        if avg_team_std_dev > 0:
+            prior_sigma = avg_team_std_dev * 3.0
+        else:
+            prior_sigma = base_buyin * 3.0
+    else:
+        # No meaningful team average - use neutral prior
+        prior_mean = 0.0
+        prior_sigma = base_buyin * 3.0
+    
+    
+    # Likelihood (use time-weighted statistics for more accurate predictions)
+    # Recent games have more influence on the likelihood
+    likelihood_mean = weighted_avg_balance
+    likelihood_sigma = weighted_std_dev if weighted_std_dev > 0 else prior_sigma
+    n_games = effective_n_games  # Use effective sample size accounting for time weights
     
     if prior_sigma > 0 and likelihood_sigma > 0:
         prior_var = prior_sigma ** 2
@@ -1079,7 +1165,8 @@ async def _get_player_stats_context(
         "style_desc": style_desc,
         "reliability_score": reliability,
         "reliability_label": reliability_desc,
-        "sample_size": n_games,
+        "sample_size": games_count,  # Display actual number of games (integer)
+        "effective_sample_size": n_games,  # Time-weighted effective sample size (float)
         "actual_std_dev": std_dev,
         "volatility_index": volatility_index,
         "team_avg_vol_idx": avg_team_vol_idx,

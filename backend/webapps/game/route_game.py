@@ -915,3 +915,50 @@ async def remove_player_remotely(
     response = responses.Response()
     response.headers["HX-Refresh"] = "true"
     return response
+
+
+@router.get("/{game_id}/edit_players", name="get_edit_players")
+async def get_edit_players(
+    request: Request,
+    game_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    """Combined endpoint for editing players - shows both current and available players"""
+    game = get_game_by_id(game_id, db)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or game.book_keeper_id == user.id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keepers can manage players")
+
+    # Get current players (excluding owner)
+    players = [p for p in game.players if p.id != game.owner_id]
+    players.sort(key=lambda p: p.nick.lower() if p.nick else "")
+
+    # Get all approved members of the team
+    team_members = (
+        db.query(User)
+        .join(UserTeam)
+        .filter(
+            UserTeam.team_id == game.team_id,
+            UserTeam.status == PlayerRequestStatus.APPROVED,
+        )
+        .all()
+    )
+
+    # Filter out players already in the game
+    game_player_ids = [p.id for p in game.players]
+    available_players = [p for p in team_members if p.id not in game_player_ids]
+    available_players.sort(key=lambda p: p.nick.lower() if p.nick else "")
+
+    return templates.TemplateResponse(
+        "components/edit_players_list.html",
+        {
+            "request": request,
+            "game": game,
+            "players": players,
+            "available_players": available_players,
+        },
+    )
+
