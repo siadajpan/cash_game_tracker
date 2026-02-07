@@ -3,6 +3,8 @@ import sys
 from backend.db.session import engine
 import backend.db.base as _  # noqa, ensures all models are imported
 from backend.db.base_class import Base
+from backend.db.models.player_request_status import PlayerRequestStatusEnum
+from backend.db.models.team_role import TeamRoleEnum
 
 
 def drop_all():
@@ -15,6 +17,13 @@ def drop_all():
 def create_all():
     print(f"Creating all tables in: {engine.url}")
     with engine.begin() as conn:
+        # Create ENUM types first
+        print("Creating ENUM types...")
+        PlayerRequestStatusEnum.create(bind=conn, checkfirst=True)
+        TeamRoleEnum.create(bind=conn, checkfirst=True)
+        print("ENUM types created.")
+        
+        # Then create tables
         Base.metadata.create_all(bind=conn)
     print("Done. All tables created.")
 
