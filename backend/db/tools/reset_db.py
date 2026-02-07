@@ -9,19 +9,42 @@ from backend.db.models.team_role import TeamRoleEnum
 
 
 def drop_all():
-    """Drop all tables and ENUM types."""
+    """Drop all tables and ENUM types using CASCADE to handle circular dependencies."""
     print(f"Dropping all tables from: {engine.url}")
     with engine.begin() as conn:
-        # Drop all tables first
-        Base.metadata.drop_all(bind=conn)
-        print("All tables dropped.")
+        # Use CASCADE to handle circular foreign key dependencies
+        # This is necessary because chip_structure and team have circular FKs
+        print("Dropping all tables with CASCADE...")
+        try:
+            # Get all table names
+            from sqlalchemy import inspect
+            inspector = inspect(conn)
+            tables = inspector.get_table_names()
+            
+            if tables:
+                # Drop each table with CASCADE
+                for table in tables:
+                    try:
+                        conn.execute(text(f'DROP TABLE IF EXISTS "{table}" CASCADE;'))
+                    except Exception as e:
+                        print(f"Warning: Could not drop table {table}: {e}")
+                print(f"✓ Dropped {len(tables)} tables.")
+            else:
+                print("No tables to drop.")
+        except Exception as e:
+            print(f"Warning during table drop: {e}")
+            # Fallback: try Base.metadata.drop_all anyway
+            try:
+                Base.metadata.drop_all(bind=conn)
+            except Exception as e2:
+                print(f"Could not use metadata.drop_all: {e2}")
         
         # Drop ENUM types (they persist even after tables are dropped)
         print("Dropping ENUM types...")
         try:
             conn.execute(text("DROP TYPE IF EXISTS playerrequeststatus CASCADE;"))
             conn.execute(text("DROP TYPE IF EXISTS teamrole CASCADE;"))
-            print("ENUM types dropped.")
+            print("✓ ENUM types dropped.")
         except Exception as e:
             print(f"Warning: Could not drop ENUM types: {e}")
     
