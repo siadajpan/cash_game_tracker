@@ -1603,6 +1603,8 @@ def _calculate_team_stats(team, year, db):
     rankings_profit = []
     sorted_w = []
     sorted_l = []
+    most_volatile = []
+    the_rocks = []
 
     if game_ids:
         bis = db.query(BuyIn).filter(BuyIn.game_id.in_(game_ids)).all()
