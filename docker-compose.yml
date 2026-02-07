@@ -5,8 +5,9 @@ services:
     container_name: cashgame_app
     restart: always
     env_file: .env
+    extra_hosts: ["host.docker.internal:host-gateway"]
     ports:
-      - "80:8000"
+      - "8000:8000"
     volumes:
       - .:/app
     command: >
