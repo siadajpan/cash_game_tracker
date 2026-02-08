@@ -941,10 +941,16 @@ async def _get_player_stats_context(
         my_gids = g_map.keys()
         
         # Win Share: my balance vs other winners sum of balance
-        total_winnings_in_all_games = sum(game_pos_sum.values())
+        # Calculate total positive balances for all OTHER players
+        other_players_total_winnings = 0.0
+        for other_uid, other_g_map in p_net.items():
+            if other_uid != uid:  # Exclude current player
+                other_balance = sum(other_g_map.values())
+                if other_balance > 0:
+                    other_players_total_winnings += other_balance
         
-        if total_winnings_in_all_games > 0:
-            win_share_p = t_bal / total_winnings_in_all_games * 100
+        if other_players_total_winnings > 0:
+            win_share_p = t_bal / (t_bal + other_players_total_winnings) * 100
         else:
             win_share_p = 100.0 if t_bal > 0 else 0.0
         

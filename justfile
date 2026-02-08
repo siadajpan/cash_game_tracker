@@ -19,7 +19,7 @@ start:
 
 reset_db:
 	@echo "--- Resetting database ---"
-	poetry run python backend/db/tools/reset_db.py
+	poetry run python backend/db/tools/nuclear_reset.py
 
 start_local:
 	@echo "--- Starting local server ---"
