@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy to Raspberry Pi
 
 on:
   push:
@@ -7,16 +7,27 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /home/ubuntu/cash_game_tracker
-            git pull
-            sudo docker compose down
-            sudo docker compose up -d
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy
+        run: |
+          # The runner is already in the project workspace (checked out code)
+          # But if we want to update the RUNNING instance which might be elsewhere, 
+          # or if the runner IS the deployment target path:
+          
+          # Option A: The runner IS in the project directory? No, runner has its own _work/ dir.
+          # We likely want to deploy to a specific location (e.g. ~/cash_game_tracker) OR just run from here?
+          # If we run from here (runner workspace), we just need to bring up containers.
+          # But previous setup implied specific path. Let's stick to deploying to the specific known path 
+          # to avoid multiple copies/state issues if volumes are host-mounted.
+          
+          # Access the target directory
+          cd ${{ secrets.PI_DEPLOY_PATH }}
+          
+          # Pull latest (since we are not using the runner's checkout for the actual run location)
+          echo "--- Rebuilding and restarting containers ---"
+          make update
+
