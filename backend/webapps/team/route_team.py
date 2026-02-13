@@ -1539,6 +1539,104 @@ async def team_advanced_stats(
     )
 
 
+
+@router.get("/{team_id}/games", name="team_games_history")
+async def team_games_history(
+    request: Request,
+    team_id: int,
+    limit: int = 10000,
+    sort: str = "date",
+    order: str = "desc",
+    db: Session = Depends(get_db),
+    user: User = Depends(get_active_user),
+):
+    from backend.db.repository.game import (
+        get_user_team_games,
+        get_user_past_games_stats_bulk,
+    )
+
+    team = get_team_by_id(team_id, db)
+    if not team:
+        return RedirectResponse(url="/")
+
+    # Check permissions (must be member or superuser)
+    if (
+        user.id not in [m.id for m in team.users]
+        and not user.is_superuser
+    ):
+        return RedirectResponse(url="/")
+
+    # Get team games (we reuse get_user_team_games but need ALL games for the team)
+    # Actually get_user_team_games gets games user played in.
+    # We want ALL games for the team, regardless of participation?
+    # Requirement: "show the previous games of that team"
+    # Usually "past games" means games relevant to me, but "team games" implies all.
+    # Let's show all finished games for the team.
+    
+    query = db.query(Game).filter(Game.team_id == team_id, Game.running == False).order_by(Game.date.desc())
+    all_team_games = query.all()
+    total_count = len(all_team_games)
+    
+    # We need stats. user_past_games_stats_bulk calculates "my_balance".
+    # For a general team view, "my_balance" is still relevant for the viewing user.
+    # So we can reuse that bulk calculator.
+    
+    game_ids = [g.id for g in all_team_games]
+    bulk_stats = get_user_past_games_stats_bulk(user.id, game_ids, db)
+
+    games_data = []
+    for game in all_team_games:
+        s = bulk_stats.get(
+            game.id, {"total_pot": 0.0, "my_balance": 0.0, "players_count": 0}
+        )
+        games_data.append(
+            {
+                "id": game.id,
+                "date": game.date,
+                "start_time": game.start_time,
+                "players_count": s["players_count"],
+                "total_pot": s["total_pot"],
+                "my_balance": s["my_balance"],
+            }
+        )
+
+    # Sorting
+    reverse = order == "desc"
+    if sort == "date":
+        games_data.sort(
+            key=lambda x: (x["date"], x["start_time"] or datetime.min.time()),
+            reverse=reverse,
+        )
+    elif sort == "players":
+        games_data.sort(key=lambda x: x["players_count"], reverse=reverse)
+    elif sort == "pot":
+        games_data.sort(key=lambda x: x["total_pot"], reverse=reverse)
+    elif sort == "balance":
+        games_data.sort(key=lambda x: x["my_balance"], reverse=reverse)
+    else:
+        games_data.sort(
+            key=lambda x: (x["date"], x["start_time"] or datetime.min.time()),
+            reverse=True,
+        )
+
+    # Slicing
+    visible_games = games_data[:limit]
+
+    return templates.TemplateResponse(
+        "team/team_games.html",
+        {
+            "request": request,
+            "team": team,
+            "games_data": visible_games,
+            "games_count": total_count,
+            "visible_count": len(visible_games),
+            "limit": limit,
+            "sort_by": sort,
+            "order": order,
+        },
+    )
+
+
 def _calculate_team_stats(team, year, db):
     # Filter games
     query = db.query(Game).filter(Game.team_id == team.id)
