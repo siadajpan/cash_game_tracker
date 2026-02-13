@@ -1,5 +1,7 @@
+
 from datetime import timedelta
 import uuid
+import unicodedata
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, status
@@ -12,12 +14,13 @@ from backend.core.config import settings, TEMPLATES_DIR
 from backend.db.session import get_db
 from backend.db.models.team import Team
 from backend.db.models.game import Game
-from backend.db.repository.user import create_new_user
+from backend.db.repository.user import create_new_user, get_user_by_email
 from backend.db.repository.team import join_team, get_team_by_id
 from backend.db.repository.game import get_game_by_id, add_user_to_game
 from backend.db.repository.buy_in import add_user_buy_in
 from backend.schemas.user import UserCreate
 from backend.apis.v1.route_login import add_new_access_token
+from backend.core.hashing import Hasher
 
 router = APIRouter(include_in_schema=False)
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
@@ -95,33 +98,60 @@ async def guest_join(
     owner_nick = game.owner.nick if game.owner else "the host"
 
     try:
-        # 1. Create a guest user
-        # Generate a random email and password since they are required fields
-        random_suffix = str(uuid.uuid4())[:8]
-        guest_email = f"guest_{random_suffix}@invitation.host"
-        guest_password = str(uuid.uuid4())
+        # 1. Logic for Guest User
+        # Normalize nick to create a safe ASCII string for email
+        # replace non-ascii characters with close matches (e.g. ł -> l)
+        normalized_nick = unicodedata.normalize('NFD', nick.lower().replace('ł', 'l').replace('Ł', 'L'))
+        ascii_nick = "".join(c for c in normalized_nick if unicodedata.category(c) != 'Mn').replace(' ', '_')
+        
+        # Email format: {lowercase_nick}_{group_search_code}@over-bet.com
+        guest_email = f"{ascii_nick}_{team.search_code.lower()}@over-bet.com"
+        guest_password = "guest123"
 
-        user_create = UserCreate(
-            email=guest_email,
-            nick=nick,
-            password=guest_password,
-            repeat_password=guest_password,
-        )
+        # Check if user exists
+        existing_user = get_user_by_email(guest_email, db)
+        
+        if existing_user:
+             # If user exists, we use them.
+             # Check if we should update their password? The requirement says "password is guest123".
+             # If they changed it, we might lock them out if we don't reset it, or we rely on them knowing it.
+             # Given this is a "guest" flow often used for quick join, resetting password or ensuring it works 
+             # might be desired, but let's stick to using the existing user.
+             # Updating password to ensure `guest123` works for this flow seems safer for "guest" experience.
+             # But if it's a real user who just happens to have this email, we shouldn't reset.
+             # The email pattern implies generated guest users.
+             # Let's verify password matches, if not, update it? 
+             # Actually, simpler: just use this user. We need to log them in. 
+             # To log them in properly with `add_new_access_token`, we just need the user object.
+             # We don't strictly need to verify password if we are "auto-joining" them via token.
+             new_user = existing_user
+             
+             # Ensure active if they were deactivated?
+             if not new_user.is_active:
+                 new_user.is_active = True
+                 db.add(new_user)
+                 db.commit()
 
-        # Check if nick exists in this context? unique constraint is on email usually, but nick might need check.
-        # For now relying on standard create.
-        # NOTE: create_new_user might default is_active to False. We need to force it to True.
+        else:
+            # Create new user
+            user_create = UserCreate(
+                email=guest_email,
+                nick=nick,
+                password=guest_password,
+                repeat_password=guest_password,
+            )
 
-        new_user = create_new_user(user_create, db)
-        # Force active since they are a guest joining via invite
-        new_user.is_active = True
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+            new_user = create_new_user(user_create, db)
+            # Force active since they are a guest joining via invite
+            new_user.is_active = True
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
 
         # 2. Add to Team
         # Check if already in team? (Unlikely for new user)
-        join_team(team, new_user, db)
+        if new_user not in team.users:
+            join_team(team, new_user, db)
 
         # 3. Log them in
         response = RedirectResponse(
