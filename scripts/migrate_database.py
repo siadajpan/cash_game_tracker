@@ -334,24 +334,28 @@ def main():
         print("\n💻 Running on host machine")
     
     # Database configuration
-    source_db_name = "tdd"  # Old database name
+    source_db_name = "tdd"  # Old database name on the host
     target_db_name = os.getenv("POSTGRES_DB", "cashgame_tracker")
     
-    # Container names (used when running inside Docker)
-    source_container = "no_pain_db"
-    target_container = "cashgame_db"
+    # Source: PostgreSQL on the HOST machine (not in a container)
+    # Target: PostgreSQL in Docker container (cashgame_db)
+    user = os.getenv("POSTGRES_USER", "admin")
+    password = os.getenv("POSTGRES_PASSWORD", "admin")
     
-    # Build database URLs
-    source_url = get_database_url("5432", source_db_name, source_container if in_docker else None)
-    target_url = get_database_url("5434", target_db_name, target_container if in_docker else None)
-    
-    # Display info
     if in_docker:
-        print(f"\nSource Database: {source_container}:5432/{source_db_name}")
-        print(f"Target Database: {target_container}:5432/{target_db_name}")
+        # Running inside Docker, need to access:
+        # - Host's PostgreSQL (source) via host.docker.internal or host gateway
+        # - Another container's PostgreSQL (target) via container name
+        source_url = f"postgresql://{user}:{password}@host.docker.internal:5432/{source_db_name}"
+        target_url = f"postgresql://{user}:{password}@cashgame_db:5432/{target_db_name}"
+        print(f"\nSource Database: host.docker.internal:5432/{source_db_name} (Host PostgreSQL)")
+        print(f"Target Database: cashgame_db:5432/{target_db_name} (Docker container)")
     else:
-        print(f"\nSource Database: localhost:5432/{source_db_name}")
-        print(f"Target Database: localhost:5434/{target_db_name}")
+        # Running on host, can access both via localhost
+        source_url = f"postgresql://{user}:{password}@localhost:5432/{source_db_name}"
+        target_url = f"postgresql://{user}:{password}@localhost:5434/{target_db_name}"
+        print(f"\nSource Database: localhost:5432/{source_db_name} (Host PostgreSQL)")
+        print(f"Target Database: localhost:5434/{target_db_name} (Docker container)")
     
     # Create engines
     try:
