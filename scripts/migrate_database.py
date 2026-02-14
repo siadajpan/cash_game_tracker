@@ -201,6 +201,52 @@ def dump_and_restore_database(source_url: str, target_url: str, dry_run: bool = 
     return True
 
 
+def get_table_dependency_order(base_metadata):
+    """
+    Get tables in dependency order (parent tables first, child tables last)
+    using topological sort based on foreign key relationships
+    """
+    from collections import defaultdict, deque
+    
+    # Build dependency graph
+    graph = defaultdict(set)  # table -> tables that depend on it
+    in_degree = defaultdict(int)  # table -> number of dependencies
+    
+    all_tables = set(base_metadata.tables.keys())
+    
+    # Initialize in_degree for all tables
+    for table_name in all_tables:
+        in_degree[table_name] = 0
+    
+    # Build the graph from foreign keys
+    for table_name, table in base_metadata.tables.items():
+        for fk in table.foreign_keys:
+            parent_table = fk.column.table.name
+            if parent_table != table_name:  # Ignore self-references
+                graph[parent_table].add(table_name)
+                in_degree[table_name] += 1
+    
+    # Topological sort using Kahn's algorithm
+    queue = deque([t for t in all_tables if in_degree[t] == 0])
+    sorted_tables = []
+    
+    while queue:
+        table = queue.popleft()
+        sorted_tables.append(table)
+        
+        for dependent in graph[table]:
+            in_degree[dependent] -= 1
+            if in_degree[dependent] == 0:
+                queue.append(dependent)
+    
+    # Check for circular dependencies
+    if len(sorted_tables) != len(all_tables):
+        print("⚠️  Warning: Circular dependencies detected, using original order")
+        return list(all_tables)
+    
+    return sorted_tables
+
+
 def migrate_using_sqlalchemy(source_engine, target_engine, dry_run: bool = False):
     """
     Alternative migration method using SQLAlchemy
@@ -209,15 +255,24 @@ def migrate_using_sqlalchemy(source_engine, target_engine, dry_run: bool = False
     print("\n⚠️  pg_dump/psql not available. Using SQLAlchemy migration method.")
     print("   This method may not preserve all database features (sequences, triggers, etc.)")
     
-    # Get table lists
+    # Import all models to get metadata
+    from backend.db.base import Base
+    
+    # Get tables in dependency order
+    sorted_tables = get_table_dependency_order(Base.metadata)
+    
+    # Get actual tables that exist in source
     source_tables = get_table_list(source_engine)
     
-    if not source_tables:
+    # Filter sorted tables to only include those that exist in source
+    tables_to_migrate = [t for t in sorted_tables if t in source_tables]
+    
+    if not tables_to_migrate:
         print("✗ No tables found in source database")
         return False
     
-    print(f"\n📋 Tables to migrate: {len(source_tables)}")
-    for table in source_tables:
+    print(f"\n📋 Tables to migrate (in dependency order): {len(tables_to_migrate)}")
+    for table in tables_to_migrate:
         count = get_row_count(source_engine, table)
         print(f"  - {table}: {count} rows")
     
@@ -225,15 +280,52 @@ def migrate_using_sqlalchemy(source_engine, target_engine, dry_run: bool = False
         print("\n[DRY RUN] No actual migration performed.")
         return True
     
-    # Import all models to ensure tables are created
-    from backend.db.base import Base
-    Base.metadata.create_all(bind=target_engine)
+    # Ensure ENUMs and tables are created in target
+    print("\n📋 Setting up target database schema...")
+    
+    with target_engine.begin() as conn:
+        # Create ENUM types first (required by the tables)
+        print("  Creating ENUM types...")
+        try:
+            from backend.db.models.player_request_status import PlayerRequestStatusEnum
+            from backend.db.models.team_role import TeamRoleEnum
+            
+            PlayerRequestStatusEnum.create(bind=conn, checkfirst=True)
+            TeamRoleEnum.create(bind=conn, checkfirst=True)
+            print("  ✓ ENUM types created")
+        except Exception as e:
+            print(f"  ⚠️  ENUM creation note: {e}")
+            print("  Continuing with table creation...")
+        
+        # Then create tables
+        print("  Creating tables...")
+        Base.metadata.create_all(bind=conn)
+        print("  ✓ Tables created")
     
     print("\n📦 Migrating data...")
     
     with source_engine.connect() as source_conn:
         with target_engine.connect() as target_conn:
-            for table_name in source_tables:
+            # Temporarily disable foreign key checks for smoother migration
+            try:
+                target_conn.execute(text("SET session_replication_role = 'replica';"))
+                target_conn.commit()
+                print("  ✓ Temporarily disabled foreign key checks")
+            except:
+                print("  ⚠️  Could not disable foreign key checks, proceeding anyway")
+            
+            # Clear all tables ONCE at the beginning (to avoid CASCADE issues during migration)
+            print("\n  Clearing existing data from all tables...")
+            for table_name in reversed(tables_to_migrate):  # Reverse order to respect dependencies
+                try:
+                    target_conn.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
+                except Exception as e:
+                    print(f"    Note: Could not truncate {table_name}: {e}")
+            target_conn.commit()
+            print("  ✓ All tables cleared")
+            
+            # Now migrate data table by table
+            for table_name in tables_to_migrate:
                 print(f"\n  Migrating table: {table_name}")
                 
                 try:
@@ -246,11 +338,7 @@ def migrate_using_sqlalchemy(source_engine, target_engine, dry_run: bool = False
                         print(f"    ✓ Table is empty, skipping")
                         continue
                     
-                    # Clear target table
-                    target_conn.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
-                    target_conn.commit()
-                    
-                    # Insert rows into target
+                    # Insert rows into target (tables already cleared at the beginning)
                     column_names = ", ".join([f'"{col}"' for col in columns])
                     placeholders = ", ".join([f":{col}" for col in columns])
                     
@@ -269,6 +357,14 @@ def migrate_using_sqlalchemy(source_engine, target_engine, dry_run: bool = False
                     print(f"    ✗ Error migrating {table_name}: {e}")
                     target_conn.rollback()
                     continue
+            
+            # Re-enable foreign key checks
+            try:
+                target_conn.execute(text("SET session_replication_role = 'origin';"))
+                target_conn.commit()
+                print("\n  ✓ Re-enabled foreign key checks")
+            except:
+                pass
     
     print("\n✓ Migration completed")
     return True
