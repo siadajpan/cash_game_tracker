@@ -2,113 +2,136 @@
 
 This directory contains scripts for managing your cash game tracker database.
 
-## Setup & Migration
+## Available Scripts
 
-### `setup_database.py` - Quick Setup (Recommended)
-Interactive script that sets up everything for you.
+Currently, there are no standalone scripts in this directory. Database management is handled through the backend tools.
+
+## Database Management
+
+All database operations are available through the backend tools:
+
+### Reset Database
+
+**WARNING: This will delete all data!**
 
 ```bash
-python scripts/setup_database.py
+# Full reset (drop and recreate everything)
+poetry run python backend/db/tools/reset_db.py reset
+
+# Drop tables and ENUMs only
+poetry run python backend/db/tools/reset_db.py drop
+
+# Create tables and ENUMs only
+poetry run python backend/db/tools/reset_db.py create
 ```
 
-**What it does:**
-- ✓ Checks if Docker is running
-- ✓ Creates `.env.docker` if needed
-- ✓ Starts the database container
-- ✓ Optionally runs the migration
+### Verify Schema
 
-### `migrate_database.py` - Data Migration
-Migrates data from the old database (localhost:5433) to the new one (localhost:5434).
+Check if all expected tables and columns exist:
 
 ```bash
-# Dry run (see what will happen without doing it)
-python scripts/migrate_database.py --dry-run
-
-# Actual migration
-python scripts/migrate_database.py
-
-# Skip confirmation prompt
-python scripts/migrate_database.py --skip-confirmation
-
-# Force SQLAlchemy method (if pg_dump fails)
-python scripts/migrate_database.py --use-sqlalchemy
+poetry run python backend/db/tools/verify_schema.py
 ```
 
-**What it does:**
-- ✓ Dumps data from old database
-- ✓ Restores to new database
-- ✓ Verifies migration was successful
-- ✓ Shows detailed progress
+### Check Tables
 
-## Diagnostics
-
-### `check_databases.py` - Connection Check
-Tests connectivity to both old and new databases.
+List all tables in the database:
 
 ```bash
-python scripts/check_databases.py
+poetry run python backend/db/tools/check_tables.py
 ```
 
-**What it shows:**
-- ✓ Connection status for both databases
-- ✓ PostgreSQL version
-- ✓ Number of tables
-- ✓ Sample table names
+## Docker Database Access
 
-## Workflow Examples
+If you're using Docker, you can access the database directly:
 
-### First Time Setup
 ```bash
-# 1. Quick setup (recommended)
-python scripts/setup_database.py
+# Connect to the database
+docker exec -it cashgame_db psql -U admin -d cashgame_tracker
 
-# 2. Or manual setup
-docker-compose up -d db
-python scripts/migrate_database.py
+# Run a query
+docker exec cashgame_db psql -U admin -d cashgame_tracker -c "SELECT COUNT(*) FROM \"user\";"
 
-# 3. Verify everything works
-python scripts/check_databases.py
+# Backup the database
+docker exec cashgame_db pg_dump -U admin -d cashgame_tracker > backup.sql
+
+# Restore from backup
+cat backup.sql | docker exec -i cashgame_db psql -U admin -d cashgame_tracker
 ```
 
-### Troubleshooting
+## Backup & Restore
+
+### Create Backup
+
 ```bash
-# Check if databases are accessible
-python scripts/check_databases.py
+# Using Docker
+docker exec cashgame_db pg_dump -U admin -d cashgame_tracker -F c -f /tmp/backup.dump
+docker cp cashgame_db:/tmp/backup.dump ./backup_$(date +%Y%m%d).dump
 
-# Test migration without actually doing it
-python scripts/migrate_database.py --dry-run
-
-# Force alternative migration method
-python scripts/migrate_database.py --use-sqlalchemy
+# Or compress it
+docker exec cashgame_db pg_dump -U admin -d cashgame_tracker | gzip > backup_$(date +%Y%m%d).sql.gz
 ```
 
-### Regular Operations
+### Restore from Backup
+
 ```bash
-# Start database only
-docker-compose up -d db
+# From custom format backup
+docker cp ./backup.dump cashgame_db:/tmp/backup.dump
+docker exec cashgame_db pg_restore -U admin -d cashgame_tracker -c /tmp/backup.dump
 
-# Start entire application
-docker-compose up -d
+# From SQL backup
+cat backup.sql | docker exec -i cashgame_db psql -U admin -d cashgame_tracker
 
-# View logs
-docker-compose logs -f db
+# From compressed backup
+gunzip -c backup.sql.gz | docker exec -i cashgame_db psql -U admin -d cashgame_tracker
+```
 
-# Stop everything
-docker-compose down
+## Database Configuration
 
-# Stop and remove volumes (careful!)
+The database configuration is managed through environment variables:
+
+- **`.env`** - For local development
+- **`.env.docker`** - For Docker deployment
+
+Key variables:
+```bash
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=admin
+POSTGRES_SERVER=localhost  # or 'db' in Docker
+POSTGRES_PORT=5434        # Docker mapped port
+POSTGRES_DB=cashgame_tracker
+```
+
+## Troubleshooting
+
+### Can't connect to database
+
+```bash
+# Check if database container is running
+docker ps | grep cashgame_db
+
+# Check database logs
+docker logs cashgame_db
+
+# Restart database
+docker-compose restart db
+```
+
+### Need to recreate database
+
+```bash
+# Stop and remove everything
 docker-compose down -v
+
+# Start fresh
+docker-compose up -d db
+
+# Initialize schema
+poetry run python backend/db/tools/reset_db.py create
 ```
 
-## Environment Files
+## Documentation
 
-The scripts use these environment files:
-
-- **`.env`** - For local development (POSTGRES_SERVER=localhost, POSTGRES_PORT=5434)
-- **`.env.docker`** - For Docker deployment (POSTGRES_SERVER=db, POSTGRES_PORT=5432)
-
-## Need Help?
-
-See the complete documentation:
-- **Setup guide**: `docs/DATABASE_MIGRATION.md`
-- **Summary**: `docs/DATABASE_SEPARATION_SUMMARY.md`
+For more information, see:
+- `backend/db/tools/README.md` - Database tools documentation
+- `README.md` - Main project documentation
