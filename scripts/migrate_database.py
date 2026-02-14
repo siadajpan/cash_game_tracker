@@ -280,8 +280,27 @@ def migrate_using_sqlalchemy(source_engine, target_engine, dry_run: bool = False
         print("\n[DRY RUN] No actual migration performed.")
         return True
     
-    # Ensure tables are created in target
-    Base.metadata.create_all(bind=target_engine)
+    # Ensure ENUMs and tables are created in target
+    print("\n📋 Setting up target database schema...")
+    
+    with target_engine.begin() as conn:
+        # Create ENUM types first (required by the tables)
+        print("  Creating ENUM types...")
+        try:
+            from backend.db.models.player_request_status import PlayerRequestStatusEnum
+            from backend.db.models.team_role import TeamRoleEnum
+            
+            PlayerRequestStatusEnum.create(bind=conn, checkfirst=True)
+            TeamRoleEnum.create(bind=conn, checkfirst=True)
+            print("  ✓ ENUM types created")
+        except Exception as e:
+            print(f"  ⚠️  ENUM creation note: {e}")
+            print("  Continuing with table creation...")
+        
+        # Then create tables
+        print("  Creating tables...")
+        Base.metadata.create_all(bind=conn)
+        print("  ✓ Tables created")
     
     print("\n📦 Migrating data...")
     
