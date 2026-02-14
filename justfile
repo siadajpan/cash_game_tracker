@@ -21,9 +21,16 @@ reset_db:
 	@echo "--- Resetting database ---"
 	poetry run python backend/db/tools/nuclear_reset.py
 
+# Initialize local SQLite database (run this first time)
+init_local_db:
+	@echo "--- Initializing local SQLite database ---"
+	$env:USE_SQLITE="true"; poetry run python backend/db/tools/reset_db.py create
+
+# Start local development server with SQLite (no Docker needed)
 start_local:
-	@echo "--- Starting local server ---"
-	poetry run uvicorn --host 0.0.0.0 --port 8000 main:app --reload
+	@echo "--- Starting local server with SQLite ---"
+	@echo "Note: If database doesn't exist, run 'just init_local_db' first"
+	$env:USE_SQLITE="true"; poetry run uvicorn --host 0.0.0.0 --port 8000 main:app --reload
 
 
 # Default target runs both
