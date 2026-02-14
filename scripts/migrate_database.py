@@ -314,6 +314,17 @@ def migrate_using_sqlalchemy(source_engine, target_engine, dry_run: bool = False
             except:
                 print("  ⚠️  Could not disable foreign key checks, proceeding anyway")
             
+            # Clear all tables ONCE at the beginning (to avoid CASCADE issues during migration)
+            print("\n  Clearing existing data from all tables...")
+            for table_name in reversed(tables_to_migrate):  # Reverse order to respect dependencies
+                try:
+                    target_conn.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
+                except Exception as e:
+                    print(f"    Note: Could not truncate {table_name}: {e}")
+            target_conn.commit()
+            print("  ✓ All tables cleared")
+            
+            # Now migrate data table by table
             for table_name in tables_to_migrate:
                 print(f"\n  Migrating table: {table_name}")
                 
@@ -327,11 +338,7 @@ def migrate_using_sqlalchemy(source_engine, target_engine, dry_run: bool = False
                         print(f"    ✓ Table is empty, skipping")
                         continue
                     
-                    # Clear target table
-                    target_conn.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE'))
-                    target_conn.commit()
-                    
-                    # Insert rows into target
+                    # Insert rows into target (tables already cleared at the beginning)
                     column_names = ", ".join([f'"{col}"' for col in columns])
                     placeholders = ", ".join([f":{col}" for col in columns])
                     
