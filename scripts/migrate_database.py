@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Database Migration Script
-Migrates data from the old database (localhost:5433) to the new database (localhost:5434)
+Migrates data from the old database (localhost:5432) to the new database (localhost:5434)
 
 Usage:
     python scripts/migrate_database.py [--dry-run] [--skip-confirmation]
@@ -29,12 +29,42 @@ env_path = project_root / ".env"
 load_dotenv(dotenv_path=env_path)
 
 
-def get_database_url(port: str, db_name: str) -> str:
-    """Construct database URL"""
+def is_running_in_docker() -> bool:
+    """Check if the script is running inside a Docker container"""
+    # Check for .dockerenv file (most reliable method)
+    if Path("/.dockerenv").exists():
+        return True
+    
+    # Check cgroup (alternative method)
+    try:
+        with open('/proc/1/cgroup', 'rt') as f:
+            return 'docker' in f.read()
+    except:
+        pass
+    
+    return False
+
+
+def get_database_url(port: str, db_name: str, container_name: str = None) -> str:
+    """
+    Construct database URL
+    
+    Args:
+        port: Port number (used when connecting from host)
+        db_name: Database name
+        container_name: Docker container name (used when connecting from inside Docker)
+    """
     user = os.getenv("POSTGRES_USER", "admin")
     password = os.getenv("POSTGRES_PASSWORD", "admin")
-    server = os.getenv("POSTGRES_SERVER", "localhost")
-    return f"postgresql://{user}:{password}@{server}:{port}/{db_name}"
+    
+    # When running inside Docker, connect to other containers by name
+    if is_running_in_docker() and container_name:
+        # Inside Docker, use container name and internal port 5432
+        return f"postgresql://{user}:{password}@{container_name}:5432/{db_name}"
+    else:
+        # Outside Docker, use localhost and the mapped port
+        server = os.getenv("POSTGRES_SERVER", "localhost")
+        return f"postgresql://{user}:{password}@{server}:{port}/{db_name}"
 
 
 def check_connection(engine, db_name: str) -> bool:
@@ -296,15 +326,32 @@ def main():
     print("DATABASE MIGRATION SCRIPT")
     print("="*80)
     
-    # Database URLs
+    # Detect environment
+    in_docker = is_running_in_docker()
+    if in_docker:
+        print("\n🐳 Running inside Docker container")
+    else:
+        print("\n💻 Running on host machine")
+    
+    # Database configuration
     source_db_name = "tdd"  # Old database name
     target_db_name = os.getenv("POSTGRES_DB", "cashgame_tracker")
     
-    source_url = get_database_url("5433", source_db_name)
-    target_url = get_database_url("5434", target_db_name)
+    # Container names (used when running inside Docker)
+    source_container = "no_pain_db"
+    target_container = "cashgame_db"
     
-    print(f"\nSource Database: localhost:5433/{source_db_name}")
-    print(f"Target Database: localhost:5434/{target_db_name}")
+    # Build database URLs
+    source_url = get_database_url("5432", source_db_name, source_container if in_docker else None)
+    target_url = get_database_url("5434", target_db_name, target_container if in_docker else None)
+    
+    # Display info
+    if in_docker:
+        print(f"\nSource Database: {source_container}:5432/{source_db_name}")
+        print(f"Target Database: {target_container}:5432/{target_db_name}")
+    else:
+        print(f"\nSource Database: localhost:5432/{source_db_name}")
+        print(f"Target Database: localhost:5434/{target_db_name}")
     
     # Create engines
     try:
@@ -321,7 +368,7 @@ def main():
     
     if not check_connection(source_engine, "source database"):
         print("\n✗ Cannot proceed without source database connection")
-        print("  Make sure the old database is running on localhost:5433")
+        print("  Make sure the old database is running on localhost:5432")
         return 1
     
     if not check_connection(target_engine, "target database"):
