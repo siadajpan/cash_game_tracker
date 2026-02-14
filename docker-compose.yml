@@ -10,6 +10,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - cashgame_postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql # Auto-create database on first run
     ports:
       - "5434:5432" # Map to 5434 on host to avoid conflicts
     healthcheck:
