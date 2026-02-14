@@ -949,10 +949,11 @@ async def _get_player_stats_context(
                 if other_balance > 0:
                     other_players_total_winnings += other_balance
         
-        if other_players_total_winnings > 0:
-            win_share_p = t_bal / (t_bal + other_players_total_winnings) * 100
+        if t_bal > 0:
+            total_winners = t_bal + other_players_total_winnings
+            win_share_p = (t_bal / total_winners * 100) if total_winners > 0 else 0.0
         else:
-            win_share_p = 100.0 if t_bal > 0 else 0.0
+            win_share_p = 0.0
         
         # Hourly
         my_hours = sum(g_durations.get(gid, 0) for gid in my_gids)
