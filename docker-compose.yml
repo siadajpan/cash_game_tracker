@@ -27,6 +27,8 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Allow access to host services on Linux
     depends_on:
       db:
         condition: service_healthy
