@@ -1,17 +1,37 @@
 services:
 
+  db:
+    image: postgres:15-alpine
+    container_name: cashgame_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - cashgame_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432" # Map to 5434 on host to avoid conflicts
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   app:
     build: .
     container_name: cashgame_app
     restart: always
-    env_file: .env
+    env_file: .env.docker
     ports:
       - "80:8000"
     volumes:
       - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
     command: >
-      poetry run gunicorn -k uvicorn.workers.UvicornWorker
-      --bind 0.0.0.0:8000
-      --workers 4
-      --forwarded-allow-ips "*"
-      main:app
+      poetry run gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 4 --forwarded-allow-ips "*" main:app
+
+volumes:
+  cashgame_postgres_data:
