@@ -1,127 +1,165 @@
-# Running Migration on Raspberry Pi
+# Migration from Host PostgreSQL to Docker Container
 
-Since both databases are running in Docker on your Raspberry Pi, you have two options for running the migration:
+## Important: Understanding Your Setup
 
-## Option 1: Run Inside Docker (Recommended ✅)
+Your setup:
+- **Source**: PostgreSQL running **directly on Raspberry Pi** at `localhost:5432/tdd`
+- **Target**: PostgreSQL in Docker container `cashgame_db` at port `5434` (mapped)
+- **no_pain_db**: Completely separate container (unrelated to this migration)
 
-This is the easiest since the script will automatically detect it's in Docker and connect to both database containers:
+## Running the Migration on Raspberry Pi
 
-```bash
-sudo docker compose run --rm -e PYTHONPATH=. app poetry run python scripts/migrate_database.py --dry-run
-```
+### Step 1: Enable Host Access from Docker
 
-After verifying with dry-run, run the actual migration:
-
-```bash
-sudo docker compose run --rm -e PYTHONPATH=. app poetry run python scripts/migrate_database.py
-```
-
-**What this does:**
-- Runs the migration script inside a temporary container
-- The script detects it's running in Docker
-- Connects to `no_pain_db` container (source)
-- Connects to `cashgame_db` container (target)
-- Uses Docker network for communication
-
-## Option 2: Run on Host (If Python is installed)
-
-If you have Python and psycopg2 installed on your Raspberry Pi:
+On Linux (Raspberry Pi), Docker containers need special configuration to access the host's PostgreSQL. Add this to your docker-compose command:
 
 ```bash
-# Install dependencies first
-pip install python-dotenv sqlalchemy psycopg2-binary
-
-# Run migration
-python scripts/migrate_database.py --dry-run
-python scripts/migrate_database.py
+sudo docker compose run --rm \
+  --add-host=host.docker.internal:host-gateway \
+  -e PYTHONPATH=. \
+  app poetry run python scripts/migrate_database.py --dry-run
 ```
 
-## What Changed in the Migration Script
+The `--add-host=host.docker.internal:host-gateway` flag allows the container to reach the host's PostgreSQL.
 
-The script now:
-1. ✅ **Detects if running inside Docker** (checks for `/.dockerenv`)
-2. ✅ **Adjusts connection parameters automatically**:
-   - Inside Docker: connects to `no_pain_db:5432` and `cashgame_db:5432`
-   - Outside Docker: connects to `localhost:5433` and `localhost:5434`
-3. ✅ **Works in both environments** without manual configuration
+### Step 2: Ensure Host PostgreSQL Accepts Connections
+
+Your host PostgreSQL must accept connections from Docker containers. Check:
+
+```bash
+# Find PostgreSQL config
+sudo find /etc -name "postgresql.conf" 2>/dev/null
+
+# Edit the config
+sudo nano /etc/postgresql/*/main/postgresql.conf
+
+# Make sure this line is present (or set to '*'):
+listen_addresses = '*'
+
+# Also check pg_hba.conf
+sudo nano /etc/postgresql/*/main/pg_hba.conf
+
+# Add this line to allow Docker network:
+host    all             all             172.17.0.0/16           md5
+```
+
+Then restart PostgreSQL:
+
+```bash
+sudo systemctl restart postgresql
+```
+
+### Step 3: Run the Migration
+
+**Dry run first:**
+
+```bash
+sudo docker compose run --rm \
+  --add-host=host.docker.internal:host-gateway \
+  -e PYTHONPATH=. \
+  app poetry run python scripts/migrate_database.py --dry-run
+```
+
+**Actual migration:**
+
+```bash
+sudo docker compose run --rm \
+  --add-host=host.docker.internal:host-gateway \
+  -e PYTHONPATH=. \
+  app poetry run python scripts/migrate_database.py
+```
+
+## Alternative: Run Directly on Raspberry Pi
+
+If the Docker approach is complex, you can run the script directly on the Raspberry Pi (outside Docker):
+
+```bash
+# Install Python dependencies on the host
+pip3 install python-dotenv sqlalchemy psycopg2-binary
+
+# Run the migration
+python3 scripts/migrate_database.py --dry-run
+python3 scripts/migrate_database.py
+```
+
+When running on the host, it connects to:
+- Source: `localhost:5432/tdd` (host PostgreSQL)
+- Target: `localhost:5434/cashgame_tracker` (Docker container via port mapping)
+
+## Verification
+
+After migration, verify both databases:
+
+```bash
+# Check source (host PostgreSQL)
+psql -h localhost -p 5432 -U admin -d tdd -c "SELECT COUNT(*) FROM users;"
+
+# Check target (Docker container)
+sudo docker exec -it cashgame_db psql -U admin -d cashgame_tracker -c "SELECT COUNT(*) FROM users;"
+```
+
+The counts should match!
+
+## Diagram
+
+```
+┌─────────────────────────────────────────────┐
+│           Raspberry Pi (Host)               │
+│                                             │
+│  ┌──────────────────────────────────────┐  │
+│  │ PostgreSQL (port 5432)               │  │
+│  │ Database: tdd                        │  │
+│  │ ← SOURCE (your original data)        │  │
+│  └──────────────────────────────────────┘  │
+│                                             │
+│  ┌──────────────────────────────────────┐  │
+│  │ Docker Containers                    │  │
+│  │                                      │  │
+│  │  ┌────────────────────────────────┐ │  │
+│  │  │ cashgame_db (port 5434→5432)   │ │  │
+│  │  │ Database: cashgame_tracker     │ │  │
+│  │  │ ← TARGET (new isolated DB)     │ │  │
+│  │  └────────────────────────────────┘ │  │
+│  │                                      │  │
+│  │  ┌────────────────────────────────┐ │  │
+│  │  │ no_pain_db (port 5433→5432)    │ │  │
+│  │  │ Database: no_pain_db           │ │  │
+│  │  │ (unrelated, separate app)      │ │  │
+│  │  └────────────────────────────────┘ │  │
+│  └──────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
+```
 
 ## Troubleshooting
 
-### Error: "Connection refused"
+### "Connection refused" to host.docker.internal
 
-This means the databases aren't reachable. Check:
-
-```bash
-# Verify both databases are running
-sudo docker ps
-
-# You should see:
-# - no_pain_db (port 5433)
-# - cashgame_db (port 5434)
-```
-
-### Error: "No such container"
-
-Make sure you're running from the correct directory:
+Try finding the host gateway IP manually:
 
 ```bash
-cd /path/to/cash_game_tracker
-sudo docker compose run --rm -e PYTHONPATH=. app poetry run python scripts/migrate_database.py --dry-run
+# Get Docker gateway IP
+ip addr show docker0
+
+# Or use this in the docker run command instead:
+--add-host=host.docker.internal:172.17.0.1
 ```
 
-### Network Issues
+### PostgreSQL Authentication Failed
 
-Both database containers must be on the same Docker network. Check:
+Make sure the credentials match in:
+1. Your host PostgreSQL
+2. Your `.env` file
+3. Both should use the same `POSTGRES_USER` and `POSTGRES_PASSWORD`
+
+### Alternative: Use Host Network Mode
+
+If `host.docker.internal` doesn't work, use host network mode:
 
 ```bash
-sudo docker network ls
-sudo docker network inspect cash_game_tracker_default
+sudo docker compose run --rm \
+  --network=host \
+  -e PYTHONPATH=. \
+  app poetry run python scripts/migrate_database.py
 ```
 
-## After Migration
-
-Once migration is complete:
-
-1. **Test the application**:
-   ```bash
-   sudo docker compose up -d
-   # Visit http://localhost:80
-   ```
-
-2. **Verify data**:
-   ```bash
-   # Connect to new database
-   sudo docker exec -it cashgame_db psql -U admin -d cashgame_tracker
-   
-   # Check tables
-   \dt
-   
-   # Check some data
-   SELECT COUNT(*) FROM users;
-   SELECT COUNT(*) FROM games;
-   \q
-   ```
-
-3. **Your no_pain app** continues running unaffected on port 8001
-
-## Quick Reference
-
-| Command | Purpose |
-|---------|---------|
-| `sudo docker compose up -d db` | Start just the database |
-| `sudo docker compose up -d` | Start everything |
-| `sudo docker compose ps` | Check status |
-| `sudo docker compose logs db` | View database logs |
-| `sudo docker exec -it cashgame_db psql -U admin -d cashgame_tracker` | Connect to database |
-
-## Environment Variables
-
-The migration script uses `.env` settings automatically. The key variables are:
-
-```bash
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=admin
-POSTGRES_DB=cashgame_tracker
-```
-
-These are used by both the migration script and Docker containers.
+With `--network=host`, the container uses the host's network, so `localhost:5432` directly accesses the host's PostgreSQL.
