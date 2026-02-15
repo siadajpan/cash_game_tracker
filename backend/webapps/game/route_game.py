@@ -289,7 +289,7 @@ async def join_game_form(
     game = get_game_by_id(game_id, db)
     # TODO Add checking if user is allowed to enter that game (if he edits href)
     if user_in_game(user, game):
-        return RedirectResponse(url=f"/{game.id}")  # already in game
+        return RedirectResponse(url=f"/game/{game.id}")  # already in game
     return templates.TemplateResponse(
         "game/join.html", {"request": request, "game": game}
     )
