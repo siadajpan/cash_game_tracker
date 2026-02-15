@@ -69,6 +69,9 @@ async def guest_join_form(request: Request, token: str, db: Session = Depends(ge
     )
 
 
+from sqlalchemy.exc import IntegrityError
+
+
 @router.post("/join", name="guest_join")
 async def guest_join(
     request: Request,
@@ -113,17 +116,6 @@ async def guest_join(
         
         if existing_user:
              # If user exists, we use them.
-             # Check if we should update their password? The requirement says "password is guest123".
-             # If they changed it, we might lock them out if we don't reset it, or we rely on them knowing it.
-             # Given this is a "guest" flow often used for quick join, resetting password or ensuring it works 
-             # might be desired, but let's stick to using the existing user.
-             # Updating password to ensure `guest123` works for this flow seems safer for "guest" experience.
-             # But if it's a real user who just happens to have this email, we shouldn't reset.
-             # The email pattern implies generated guest users.
-             # Let's verify password matches, if not, update it? 
-             # Actually, simpler: just use this user. We need to log them in. 
-             # To log them in properly with `add_new_access_token`, we just need the user object.
-             # We don't strictly need to verify password if we are "auto-joining" them via token.
              new_user = existing_user
              
              # Ensure active if they were deactivated?
@@ -160,6 +152,23 @@ async def guest_join(
         response, _ = add_new_access_token(response, new_user)
 
         return response
+
+    except IntegrityError:
+        error_msg = (
+            f"Nick ({nick}) already exists in this group. "
+            f"If you want to use it, please log in with {guest_email}, the default password is guest123. "
+            "If you want to create a new guest account use a different nick."
+        )
+        return templates.TemplateResponse(
+            "guest/join.html",
+            {
+                "request": request,
+                "token": token,
+                "game": game,
+                "owner_nick": owner_nick,
+                "errors": [error_msg],
+            },
+        )
 
     except Exception as e:
         print(f"Error in guest_join: {e}")  # Log to server console
