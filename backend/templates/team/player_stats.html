@@ -179,7 +179,7 @@
                     <td class="ps-3 border-bottom-0 py-2">
                         <a href="/game/{{ info.game.id }}?return_url=/team/{{ team.id }}/player/{{ player.id }}"
                             class="text-decoration-none text-dark fw-normal stretched-link">
-                            {{ info.game.date }}
+                            {{ info.game.start_time.strftime('%Y-%m-%d') if info.game.start_time else info.game.date }}
                         </a>
                     </td>
                     <td class="text-center border-bottom-0 py-2">
