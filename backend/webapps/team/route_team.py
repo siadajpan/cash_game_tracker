@@ -1236,7 +1236,7 @@ async def _get_player_stats_context(
     for g in chart_data_src:
         running_bal += g["balance"]
         chart_points.append({
-            "date": str(g["game"].date),
+            "date": g["game"].start_time.strftime('%Y-%m-%d') if g["game"].start_time else str(g["game"].date),
             "balance": running_bal
         })
 
