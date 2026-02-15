@@ -157,7 +157,6 @@
 {% endwith %}
 {% endif %}
 <!-- Summary Section (Matching Player Stats Style) -->
-{% if stats.games_count >= 5 %}
 <div class="d-flex justify-content-between mb-3 px-2 mt-3">
     <div class="text-center" style="flex: 1;">
         <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Players</small>
@@ -173,7 +172,6 @@
                 style="font-size: 0.6em;">days</small></span>
     </div>
 </div>
-{% endif %}
 <div id="team-view-container" class="d-flex flex-column" style="max-height: 60vh;">
     <div class="table-responsive overflow-auto" style="min-height: 0;">
         <table class="table table-hover table-hover-custom align-middle mb-0">
@@ -245,16 +243,15 @@
         </table>
     </div>
 
-    <div class="mt-3 flex-shrink-0 bg-white pt-2 d-flex justify-content-between align-items-center">
+    <div class="mt-3 flex-shrink-0 bg-white pt-2 d-flex justify-content-between align-items-center"
+        style="display: flex !important; visibility: visible !important;">
         <a href="/?tab=groups" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
-        {% if stats.games_count >= 5 %}
         <a href="/team/{{ team.id }}/games" class="btn btn-outline-secondary">
             <i class="bi bi-clock-history me-1"></i> Previous Games
         </a>
         <a href="/team/{{ team.id }}/stats?year={{ selected_year }}" class="btn btn-outline-primary">
             <i class="bi bi-bar-chart-fill me-1"></i> Group Stats
         </a>
-        {% endif %}
     </div>
 </div>
 

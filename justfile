@@ -26,11 +26,16 @@ init_local_db:
 	@echo "--- Initializing local SQLite database ---"
 	$env:USE_SQLITE="true"; poetry run python backend/db/tools/reset_db.py create
 
-# Start local development server with SQLite (no Docker needed)
+# Start local development server with SQLite (no Docker required)
 start_local:
 	@echo "--- Starting local server with SQLite ---"
 	@echo "Note: If database doesn't exist, run 'just init_local_db' first"
 	$env:USE_SQLITE="true"; poetry run uvicorn --host 0.0.0.0 --port 8000 main:app --reload
+
+# Start production fix for sequences (Must be run on the production server)
+fix_sequences:
+	@echo "--- Fixing Database Sequences (Production) ---"
+	sudo docker-compose exec app poetry run python backend/scripts/fix_sequences.py
 
 
 # Default target runs both
