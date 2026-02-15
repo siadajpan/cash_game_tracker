@@ -155,13 +155,28 @@ async def create_game(
     form = await request.form()
     errors = []
     try:
+        start_time_val = form.get("start_time")
+        game_date = form.get("date")
+        
+        # If date is missing but start_time is present, extract date from start_time
+        if not game_date and start_time_val:
+            try:
+                # start_time format is typically YYYY-MM-DDTHH:MM
+                game_date = start_time_val.split("T")[0]
+            except Exception:
+                pass
+        
+        # Fallback to today if still empty
+        if not game_date:
+            game_date = str(datetime.today().date())
+
         new_game_data = GameCreate(
-            date=form.get("date") or str(datetime.today().date()),
+            date=game_date,
             default_buy_in=float(form.get("default_buy_in", 0)),
             running=True,
             team_id=form.get("team_id"),
             chip_structure_id=form.get("chip_structure_id"),
-            start_time=form.get("start_time"),
+            start_time=start_time_val,
         )
         # Check if the team exists separately
         team = get_team_by_id(new_game_data.team_id, db)

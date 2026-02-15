@@ -1,12 +1,12 @@
 {% extends "shared/base.html" %}
 {% block title %}
-<title>Game {{ game.date }} (Ended)</title>
+<title>Game {{ game.start_time.strftime('%Y-%m-%d') if game.start_time else game.date }} (Ended)</title>
 {% endblock %}
 {% block page_heading %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="page-title">Game {{ game.date }}</div>
+    <div class="page-title">Game {{ game.start_time.strftime('%Y-%m-%d') if game.start_time else game.date }}</div>
     <div class="dropdown">
         <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false">
