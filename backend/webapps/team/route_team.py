@@ -812,7 +812,10 @@ async def _get_player_stats_context(
         })
 
         # Monthly Aggregation
-        m_key = str(games_map[gid].date)[:7]
+        if games_map[gid].start_time:
+             m_key = games_map[gid].start_time.strftime('%Y-%m')
+        else:
+             m_key = str(games_map[gid].date)[:7]
         monthly_balances[m_key]["balance"] += bal
         monthly_balances[m_key]["count"] += 1
 
@@ -828,7 +831,8 @@ async def _get_player_stats_context(
     
     for g in games_history:
         game = g["game"]
-        weight = get_time_weight(game.date)
+        game_date_val = game.start_time.date() if game.start_time else game.date
+        weight = get_time_weight(game_date_val)
         g["weight"] = weight  # Store for later use
         
         total_weight += weight
@@ -1232,7 +1236,7 @@ async def _get_player_stats_context(
     for g in chart_data_src:
         running_bal += g["balance"]
         chart_points.append({
-            "date": str(g["game"].date),
+            "date": g["game"].start_time.strftime('%Y-%m-%d') if g["game"].start_time else str(g["game"].date),
             "balance": running_bal
         })
 
