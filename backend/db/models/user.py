@@ -7,7 +7,7 @@ from backend.db.base_class import Base
 class User(Base):
     __tablename__ = "user"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(200), nullable=False, unique=True)
+    nick_id = Column(String(200), nullable=False, unique=True)
     hashed_password = Column(String(200), nullable=False)
     is_superuser = Column(Boolean(), default=False)
     is_active = Column(Boolean(), default=False)

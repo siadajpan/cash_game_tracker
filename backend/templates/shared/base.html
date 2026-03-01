@@ -30,7 +30,7 @@
 
     {% if user and not user.is_active %}
     <div class="alert alert-warning text-center" style="margin-bottom: 0;">
-        <strong>Action Required:</strong> Please verify your email ({{ user.email }}).
+        <strong>Action Required:</strong> Please verify your email ({{ user.nick_id }}).
         Some features are restricted until you do.
         <a href="/resend-verification" class="alert-link">Resend link</a>
     </div>

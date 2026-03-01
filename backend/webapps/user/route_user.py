@@ -9,7 +9,7 @@ from backend.schemas.user import UserShow
 from backend.apis.v1.route_login import get_current_user_from_token
 from backend.core.config import TEMPLATES_DIR
 from backend.webapps.user.forms import UserProfileForm
-from backend.db.repository.user import get_user_by_email, update_user_password
+from backend.db.repository.user import get_user_by_nick_id, update_user_password
 from backend.core.hashing import Hasher
 
 router = APIRouter(include_in_schema=False)
@@ -42,16 +42,16 @@ async def profile_update(
     await form.load_data()
 
     if await form.is_valid():
-        # Check email uniqueness if changed
-        if form.email != user.email:
-            existing_user = get_user_by_email(form.email, db)
+        # Check nick_id uniqueness if changed
+        if form.nick_id != user.nick_id:
+            existing_user = get_user_by_nick_id(form.nick_id, db)
             if existing_user and existing_user.id != user.id:
-                form.errors.append("Email already registered.")
+                form.errors.append("Nick ID already registered.")
 
         if not form.errors:
             # Update fields
             user.nick = form.nick
-            user.email = form.email
+            user.nick_id = form.nick_id
 
             if form.password:
                 user.hashed_password = Hasher.get_password_hash(form.password)

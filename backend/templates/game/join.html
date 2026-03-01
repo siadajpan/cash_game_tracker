@@ -1,8 +1,8 @@
 {% extends "shared/base.html" %}
 {% block title %}
-<title>Join a game</title>
+<title>Join Game {{ "%06d" | format(game.id) }}</title>
 {% endblock %}
-{% block page_heading %}Join a game{% endblock %}
+{% block page_heading %}Join Game {{ "%06d" | format(game.id) }}{% endblock %}
 
 {% block content %}
 <form method="POST" action="/game/{{ game.id }}/join">

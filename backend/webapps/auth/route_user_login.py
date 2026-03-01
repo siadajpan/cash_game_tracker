@@ -15,7 +15,7 @@ from backend.apis.v1.route_login import login_for_access_token
 from backend.core.config import TEMPLATES_DIR
 from backend.db.repository.user import (
     create_new_user,
-    get_user_by_email,
+    get_user_by_nick_id,
     update_user_password,
 )
 from backend.db.session import get_db
@@ -45,19 +45,19 @@ async def forgot_password(
     form = await request.form()
     email = form.get("email")
 
-    user = get_user_by_email(email, db=db)
+    user = get_user_by_nick_id(email, db=db)
     if user:
         # Generate reset token (15 mins)
         reset_token_expires = timedelta(minutes=15)
         reset_token = create_access_token(
-            data={"sub": user.email, "type": "password_reset"},
+            data={"sub": user.nick_id, "type": "password_reset"},
             expires_delta=reset_token_expires,
         )
 
         from backend.webapps.auth.route_verify import send_reset_password_email
 
         background_tasks.add_task(
-            send_reset_password_email, user.email, user.nick, reset_token
+            send_reset_password_email, user.nick_id, user.nick, reset_token
         )
 
     # Always return success to prevent email enumeration
@@ -130,7 +130,7 @@ async def reset_password(request: Request, db: Session = Depends(get_db)):
             )
 
         # Update password
-        user = get_user_by_email(email, db=db)
+        user = get_user_by_nick_id(email, db=db)
         if not user:
             raise ValueError("User not found")
 
@@ -155,49 +155,49 @@ async def reset_password(request: Request, db: Session = Depends(get_db)):
         )
 
 
-@router.get("/register/")
-async def register_form(request: Request):
-    return templates.TemplateResponse("auth/register.html", {"request": request})
+@router.get("/welcome")
+async def welcome_form(request: Request):
+    return templates.TemplateResponse("auth/welcome.html", {"request": request})
 
 
-@router.post("/register/")
-async def register(
-    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+@router.post("/welcome")
+async def welcome(
+    request: Request, db: Session = Depends(get_db)
 ):
     form = await request.form()
     errors = []
     try:
-        new_user_data = UserCreate(
-            email=form.get("email"),
-            nick=form.get("nick"),
-            password=form.get("password"),
-        )
+        nick = form.get("nick")
+        if not nick:
+            raise ValueError("Nick is required")
 
-        if not form.get("tos_agreement"):
-            raise ValueError("You must agree to the Terms of Service to register.")
+        import random
+        digits = f"{random.randint(0, 9999):04d}"
+        nick_id = f"{nick}_{digits}"
+
+        new_user_data = UserCreate(
+            nick_id=nick_id,
+            nick=nick,
+            password="guest123",
+        )
 
         new_user = create_new_user(user=new_user_data, db=db)
-        verif_token = create_verification_token(new_user.id, db)
-        background_tasks.add_task(
-            send_verification_email, new_user.email, new_user.nick, verif_token
-        )
+        new_user.is_active = True
+        db.commit()
 
-        response = templates.TemplateResponse(
-            "auth/verify_notice.html",
-            {"request": request, "email": new_user.email, "nick": new_user.nick},
-        )
+        response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
         response, access_token = add_new_access_token(response, new_user)
         return response
 
     except ValueError as e:
         errors.append(str(e))
     except IntegrityError as e:
-        errors.append(f"User with that e-mail already exists.")
+        errors.append(f"User with that nick already exists.")
     except Exception as e:
         errors.append(f"Unexpected error: {e}")
 
     return templates.TemplateResponse(
-        "auth/register.html", {"request": request, "form": form, "errors": errors}
+        "auth/welcome.html", {"request": request, "form": form, "errors": errors}
     )
 
 
@@ -206,7 +206,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
     errors = []
     try:
-        form_data = LoginForm(username=form.get("email"), password=form.get("password"))
+        form_data = LoginForm(username=form.get("nick"), password=form.get("password"))
 
         response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
         login_for_access_token(response=response, form_data=form_data, db=db)
@@ -216,7 +216,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
         # Catch Pydantic validation errors
         errors.extend([err["msg"] for err in e.errors()])
     except HTTPException:
-        errors.append("Incorrect Email or password")
+        errors.append("Incorrect Nick or password")
 
     return templates.TemplateResponse(
         "auth/login.html", {"request": request, "form": form, "errors": errors}
@@ -286,7 +286,7 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
             raise ValueError("Google did not return an email address.")
 
         # 3. Check if user exists
-        user = get_user_by_email(email, db)
+        user = get_user_by_nick_id(email, db)
 
         if not user:
             # Create a temporary token containing the email to secure the next step
@@ -317,7 +317,7 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
 
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.email}, expires_delta=access_token_expires
+            data={"sub": user.nick_id}, expires_delta=access_token_expires
         )
         response.set_cookie(
             key="access_token", value=f"Bearer {access_token}", httponly=True
@@ -369,7 +369,7 @@ async def finish_google_registration(request: Request, db: Session = Depends(get
 
         # Create user
         random_password = secrets.token_urlsafe(16)
-        new_user_data = UserCreate(email=email, nick=nick, password=random_password)
+        new_user_data = UserCreate(nick_id=email, nick=nick, password=random_password)
         user = create_new_user(user=new_user_data, db=db)
         user.is_active = True
         db.commit()
@@ -378,7 +378,7 @@ async def finish_google_registration(request: Request, db: Session = Depends(get
         response = responses.RedirectResponse("/", status_code=status.HTTP_302_FOUND)
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.email}, expires_delta=access_token_expires
+            data={"sub": user.nick_id}, expires_delta=access_token_expires
         )
         response.set_cookie(
             key="access_token", value=f"Bearer {access_token}", httponly=True

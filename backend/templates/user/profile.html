@@ -15,11 +15,11 @@
         <label>Nickname</label>
       </div>
 
-      <!-- Email -->
+      <!-- Nick ID -->
       <div class="form-floating mb-3">
-        <input type="email" required placeholder="Email address" name="email" value="{{ form.email or user.email }}"
-          class="form-control" />
-        <label>Email address</label>
+        <input type="text" required placeholder="Nick ID" name="nick_id" value="{{ form.nick_id or user.nick_id }}"
+          class="form-control" readonly />
+        <label>Nick ID</label>
       </div>
 
       <hr class="my-4">
