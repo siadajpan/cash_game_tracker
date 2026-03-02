@@ -25,7 +25,7 @@
             {{ event.time[11:16] if event.time|length >= 16 else event.time }}
         </span>
 
-        {% if can_edit %}
+        {% if can_edit and game.running %}
         <div class="d-flex align-items-center gap-2">
             <!-- Edit Button -->
             <button class="btn btn-light shadow-sm text-primary p-2 border rounded lh-1"

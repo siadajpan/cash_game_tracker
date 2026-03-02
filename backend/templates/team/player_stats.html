@@ -128,7 +128,7 @@
     </div>
 
     <!-- Balance Chart -->
-    <div class="mb-4 px-2" style="height: 250px;">
+    <div class="mb-4 px-2 flex-shrink-0" style="height: 140px; min-height: 140px;">
         <canvas id="balanceChart"></canvas>
     </div>
 
@@ -311,7 +311,7 @@
                         max: maxBalance + padding,
                         beginAtZero: false,
                         grid: { borderDash: [2, 4], color: '#e9ecef' },
-                        ticks: { callback: function (value) { return value; } }
+                        ticks: { callback: function (value) { return Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 }); } }
                     },
                     x: {
                         grid: { display: false },
