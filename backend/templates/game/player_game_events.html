@@ -10,9 +10,9 @@
 {% block content %}
 
 <div>
-    <!-- Header with Title and Dropdown -->
+    <!-- Header with Title and Profile Link -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="page-title">Game Events: {{ player.nick }}</div>
+        <div class="page-title">Events: {{ player.nick }}</div>
 
         <div>
             <a href="/team/{{ game.team_id }}/player/{{ player.id }}?year=all&return_url=/game/{{ game.id }}/player/{{ player.id }}/history"
@@ -22,20 +22,6 @@
         </div>
     </div>
 
-    <!-- Summary Stats -->
-    <div class="d-flex justify-content-between mb-3 px-2">
-        <div class="text-center" style="flex: 1;">
-            <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Money In</small>
-            <span class="fs-5 fw-medium text-dark">{{ total_money_in }}</span>
-        </div>
-        {% if total_money_out > 0 %}
-        <div class="text-center" style="flex: 1;">
-            <small class="text-uppercase text-muted d-block" style="font-size: 0.7rem;">Balance</small>
-            <span class="fs-5 fw-medium text-success">{{ total_money_out - total_money_in }}</span>
-        </div>
-        {% endif %}
-    </div>
-
     <!-- History List -->
     <ul class="list-group list-group-flush" id="historyList">
         {% for event in events %}
@@ -43,119 +29,164 @@
         {% endfor %}
     </ul>
 
+</div>
+
+<!-- Spacer to prevent list items overriding bottom toolbar -->
+<div style="height: 120px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
     {% if can_edit %}
-    <!-- Add New Event Section -->
-    <div class="mt-4">
-        <!-- Main Toolbar -->
-        <div id="mainToolbar" class="d-flex gap-2 justify-content-between">
-            <div>
-                {% if request.query_params.return_url %}
-                <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary w-100"><i
-                        class="bi bi-arrow-left me-1"></i> Back</a>
-                {% else %}
-                <a href="/game/{{ game.id }}" class="btn btn-outline-secondary w-100"><i
-                        class="bi bi-arrow-left me-1"></i> Back</a>
-                {% endif %}
-            </div>
 
-            <div>
-                <button type="button" class="btn btn-primary w-100" onclick="showSection('cashoutSection')">
-                    <i class="bi bi-box-arrow-right me-1"></i> Cash-out
-                </button>
-            </div>
-            <div>
-                <button type="button" class="btn btn-primary w-100" onclick="showSection('addonSection')">
-                    <i class="bi bi-plus-circle-fill me-1"></i> Add-on
-                </button>
-            </div>
-        </div>
+    <!-- Main Toolbar -->
+    <div id="mainToolbar" class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+        {% if request.query_params.return_url %}
+        <a href="{{ request.query_params.return_url }}"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Back</span>
+        </a>
+        {% else %}
+        <a href="/game/{{ game.id }}"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Back</span>
+        </a>
+        {% endif %}
 
-        <!-- Add-on Section (Hidden) -->
-        <div id="addonSection" class="d-none mt-2">
+        <button type="button" data-bs-toggle="modal" data-bs-target="#cashoutModal"
+            class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <i class="bi bi-box-arrow-right mb-1 fs-4 text-white"></i>
+            <span class="small fw-bold text-white" style="font-size: 0.8rem;">Cash out</span>
+        </button>
 
-            <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
-                <button type="button" class="btn btn-link text-decoration-none p-0 me-2"
-                    onclick="showSection('mainToolbar')">
-                    <i class="bi bi-arrow-left fs-4 text-dark"></i>
-                </button>
-                <!-- Manual Add Section -->
-                <form hx-post="/game/{{ game.id }}/add_on?player_id={{ player.id }}" hx-target="#historyList"
-                    hx-swap="none" class="d-flex gap-2 flex-grow-1" style="min-width: 0;">
-                    <input type="number" class="form-control" name="add_on" step="0.01" required placeholder="Amount"
-                        style="min-width: 50px;">
-                    <button type="submit" class="btn btn-primary" style="min-width: 100px;">
-                        <i class="bi bi-plus-lg me-1"></i> Add
-                    </button>
-                </form>
-
-                <span class="text-muted fw-bold me-4 ms-4">OR</span>
-                <!-- Quick Add Button -->
-
-                <form hx-post="/game/{{ game.id }}/add_on?player_id={{ player.id }}" hx-target="#historyList"
-                    hx-swap="none" class="flex-grow-1">
-                    <input type="hidden" name="add_on" value="{{ game.default_buy_in }}">
-                    <button type="submit" class="btn btn-warning w-100 py-2">
-                        +{{ game.default_buy_in }}
-                    </button>
-                </form>
-
-            </div>
-        </div>
-
-        <!-- Cash-out Section (Hidden) -->
-        <div id="cashoutSection" class="d-none mt-2">
-            <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
-                <button type="button" class="btn btn-link text-decoration-none p-0 me-2"
-                    onclick="showSection('mainToolbar')">
-                    <i class="bi bi-arrow-left fs-4 text-dark"></i>
-                </button>
-
-                <form hx-post="/game/{{ game.id }}/cash_out_by_amount?player_id={{ player.id }}"
-                    hx-target="#historyList" hx-swap="none" class="d-flex gap-2 flex-grow-1">
-                    <input type="number" class="form-control" name="amount" step="0.01" required placeholder="Amount"
-                        style="min-width: 50px;">
-                    <button type="submit" class="btn btn-primary" style="min-width: 100px;">
-                        <i class="bi bi-box-arrow-right me-1"></i> Cash Out
-                    </button>
-                </form>
-            </div>
-        </div>
+        <button type="button" data-bs-toggle="modal" data-bs-target="#addonModal"
+            class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <i class="bi bi-plus-circle-fill mb-1 fs-4 text-white"></i>
+            <span class="small fw-bold text-white" style="font-size: 0.8rem;">Add-on</span>
+        </button>
     </div>
     {% else %}
-    <div class="mt-4">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
         {% if request.query_params.return_url %}
-        <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary"><i
-                class="bi bi-arrow-left me-1"></i> Back</a>
+        <a href="{{ request.query_params.return_url }}"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Back</span>
+        </a>
         {% else %}
-        <a href="/game/{{ game.id }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
+        <a href="/game/{{ game.id }}"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Back</span>
+        </a>
         {% endif %}
     </div>
     {% endif %}
+</div>
+
+<!-- Add-on Modal -->
+<div class="modal fade" id="addonModal" tabindex="-1" aria-labelledby="addonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addonModalLabel">Record Add-on</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form hx-post="/game/{{ game.id }}/add_on?player_id={{ player.id }}" hx-target="#historyList"
+                    hx-swap="none" class="mb-4">
+                    <div class="form-floating mb-3">
+                        <input type="number" step="0.01" min="0" required class="form-control" name="add_on"
+                            id="historyAddonAmountInput" placeholder="Amount" />
+                        <label>Custom Amount</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold" style="border-radius: 12px;">
+                        <i class="bi bi-plus-lg me-1"></i> Add-on
+                    </button>
+                </form>
+
+                <div class="text-center mb-4 position-relative">
+                    <hr class="text-muted">
+                    <span class="bg-white px-2 text-muted fw-bold position-absolute start-50 top-50 translate-middle"
+                        style="font-size: 0.8rem;">OR</span>
+                </div>
+
+                <form hx-post="/game/{{ game.id }}/add_on?player_id={{ player.id }}" hx-target="#historyList"
+                    hx-swap="none">
+                    <input type="hidden" name="add_on" value="{{ game.default_buy_in }}">
+                    <button type="submit" class="btn btn-warning w-100 py-3 fw-bold shadow-sm"
+                        style="border-radius: 12px;">
+                        Quick +{{ game.default_buy_in }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cash out Modal -->
+<div class="modal fade" id="cashoutModal" tabindex="-1" aria-labelledby="cashoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cashoutModalLabel">Record Cash out</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form hx-post="/game/{{ game.id }}/cash_out_by_amount?player_id={{ player.id }}"
+                    hx-target="#historyList" hx-swap="none">
+                    <div class="form-floating mb-3">
+                        <input type="number" step="0.01" min="0" required class="form-control" name="amount"
+                            id="historyCashoutAmountInput" placeholder="Amount" />
+                        <label>End Cash Amount</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold" style="border-radius: 12px;">
+                        <i class="bi bi-box-arrow-right me-1"></i> Cash out
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
     // Simple reload on success for now to refresh the list cleanly
     document.body.addEventListener('htmx:afterRequest', function (evt) {
         if (evt.detail.successful) {
-            // If it was an add or edit, we might want to reload to verify state/sorting
             if (evt.detail.elt.tagName === 'FORM') {
                 setTimeout(() => window.location.reload(), 100);
             }
         }
     });
 
-    function showSection(sectionId) {
-        // Hide all sections
-        document.getElementById('mainToolbar').classList.add('d-none');
-        document.getElementById('addonSection').classList.add('d-none');
-        document.getElementById('cashoutSection').classList.add('d-none');
+    // Focus inputs on modal open
+    const addonModal = document.getElementById('addonModal');
+    if (addonModal) {
+        addonModal.addEventListener('shown.bs.modal', function () {
+            const input = document.getElementById('historyAddonAmountInput');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        });
+    }
 
-        // Show target section and ensure flex is restored for toolbar if needed
-        const target = document.getElementById(sectionId);
-        target.classList.remove('d-none');
-        if (sectionId === 'mainToolbar') {
-            target.classList.add('d-flex');
-        }
+    const cashoutModal = document.getElementById('cashoutModal');
+    if (cashoutModal) {
+        cashoutModal.addEventListener('shown.bs.modal', function () {
+            const input = document.getElementById('historyCashoutAmountInput');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        });
     }
 
     // Handle Delete Modal

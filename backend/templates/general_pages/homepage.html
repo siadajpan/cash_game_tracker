@@ -13,25 +13,11 @@
 
 {% set team_count = user.teams | length %}
 
-<div
-    class="d-flex flex-column flex-md-row-reverse justify-content-between align-items-stretch align-items-md-end gap-3 mt-3 mb-3 border-bottom-desktop">
-    <!-- TABS -->
-    <div class="d-flex gap-4 border-bottom-mobile mb-0" id="pills-tab" role="tablist">
-        <button
-            class="btn btn-link text-decoration-none px-0 rounded-0 shadow-none nav-custom-tab {% if not request.query_params.tab or request.query_params.tab == 'games' %}active{% endif %}"
-            id="pills-games-tab" data-bs-toggle="pill" data-bs-target="#pills-games" type="button" role="tab"
-            aria-controls="pills-games" aria-selected="true">Games</button>
-        <button
-            class="btn btn-link text-decoration-none px-0 rounded-0 shadow-none nav-custom-tab {% if request.query_params.tab == 'groups' %}active{% endif %}"
-            id="pills-groups-tab" data-bs-toggle="pill" data-bs-target="#pills-groups" type="button" role="tab"
-            aria-controls="pills-groups" aria-selected="false">Groups</button>
-    </div>
-
+<div class="mt-3 mb-3 border-bottom-desktop">
     <!-- TITLES CONTAINER -->
     <div>
         <!-- Games Title -->
-        <div id="header-games"
-            class="{% if not request.query_params.tab or request.query_params.tab == 'games' %}{% else %}d-none{% endif %}">
+        <div id="header-games">
             {% set game_count = running_games | length %}
             {% if game_count > 0 %}
             {% if game_count == 1 %}
@@ -43,101 +29,57 @@
             <h2 class="display-6 mb-0">No running games</h2>
             {% endif %}
         </div>
-
-        <!-- Groups Title -->
-        <div id="header-groups" class="{% if request.query_params.tab == 'groups' %}{% else %}d-none{% endif %}">
-            {% if team_count == 1 %}
-            <h2 class="display-6 mb-0">My group</h2>
-            {% else %}
-            <h2 class="display-6 mb-0">My groups</h2>
-            {% endif %}
-        </div>
     </div>
-
-
 </div>
 
-<div class="tab-content" id="pills-tabContent">
-    <!-- GAMES TAB -->
-    <div class="tab-pane fade {% if not request.query_params.tab or request.query_params.tab == 'games' %}show active{% endif %}"
-        id="pills-games" role="tabpanel" aria-labelledby="pills-games-tab" tabindex="0">
-        {% set game_count = running_games | length %}
+<div>
+    {% set game_count = running_games | length %}
 
-        {% if game_count > 0 %}
-        <ul class="list-group list-group-flush mb-3">
-            {% for game in running_games %}
-            <li class="list-group-item">
-                {% set is_user_in_game = user in game.players %}
-                {% with game=game %}
-                {% include "game/game_list_view.html" %}
-                {% endwith %}
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <div class="alert alert-info mt-3" role="alert">
-            <p class="mb-0 lead"> There are no running games in your groups. Click the button below to start one! </p>
-        </div>
-        {% endif %}
-
-        <div class="mt-4">
-            <div class="row g-3">
-                <div class="col-12 col-md-6">
-                    <form
-                        onsubmit="event.preventDefault(); const code = document.getElementById('gameCodeInput').value; if(code) { window.location.href = '/game/' + parseInt(code, 10) + '/join'; }">
-                        <div class="input-group">
-                            <input type="text" id="gameCodeInput" class="form-control" placeholder="6-digit game code"
-                                pattern="\d{1,6}" required>
-                            <button class="btn btn-outline-primary" type="submit">Join</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-12 col-md-6 d-flex justify-content-md-end gap-2">
-                    <a href="/game/view_past" class="btn btn-outline-secondary flex-grow-1 flex-md-grow-0"><i
-                            class="bi bi-clock-history me-1"></i> Past games </a>
-                    {% if user.is_active %}
-                    <a href="/game/create" class="btn btn-primary flex-grow-1 flex-md-grow-0"><i
-                            class="bi bi-plus-lg me-1"></i> Create a game </a>
-                    {% else %}
-                    <span class="d-inline-block flex-grow-1 flex-md-grow-0" tabindex="0" data-bs-toggle="tooltip"
-                        title="Please verify your email to create a game">
-                        <button class="btn btn-primary w-100" type="button" disabled style="pointer-events: none;">
-                            Create a game
-                        </button>
-                    </span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    {% if game_count > 0 %}
+    <ul class="list-group list-group-flush mb-3">
+        {% for game in running_games %}
+        <li class="list-group-item">
+            {% set is_user_in_game = user in game.players %}
+            {% with game=game %}
+            {% include "game/game_list_view.html" %}
+            {% endwith %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="alert alert-info mt-3" role="alert">
+        <p class="mb-0 lead"> There are no running games among people you've played with. Click the button below to
+            start one! </p>
     </div>
+    {% endif %}
 
-    <!-- GROUPS TAB -->
-    <div class="tab-pane fade {% if request.query_params.tab == 'groups' %}show active{% endif %}" id="pills-groups"
-        role="tabpanel" aria-labelledby="pills-groups-tab" tabindex="0">
-
-        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3 mt-1 mb-3">
-            {% for team in user.teams %}
-            <div class="col">
-                <a href="/team/{{ team.id }}" class="text-decoration-none">
-                    {% include "team/team_list_view.html" %}
-                </a>
+    <div class="mt-4">
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <form
+                    onsubmit="event.preventDefault(); const code = document.getElementById('gameCodeInput').value; if(code) { window.location.href = '/game/' + parseInt(code, 10) + '/join'; }">
+                    <div class="input-group">
+                        <input type="text" id="gameCodeInput" class="form-control" placeholder="6-digit game code"
+                            pattern="\d{1,6}" required>
+                        <button class="btn btn-outline-primary" type="submit">Join</button>
+                    </div>
+                </form>
             </div>
-            {% endfor %}
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <a href="/team/join" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-in-right me-1"></i> Join an
-                Existing Group </a>
-            {% if user.is_active %}
-            <a href="/team/create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Create a Group </a>
-            {% else %}
-            <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip"
-                title="Please verify your email to create a group">
-                <button class="btn btn-primary" type="button" disabled style="pointer-events: none;">
-                    Create a Group
-                </button>
-            </span>
-            {% endif %}
+            <div class="col-12 col-md-6 d-flex justify-content-md-end gap-2">
+                <a href="/game/view_past" class="btn btn-outline-secondary flex-grow-1 flex-md-grow-0"><i
+                        class="bi bi-clock-history me-1"></i> Past games </a>
+                {% if user.is_active %}
+                <a href="/game/create" class="btn btn-primary flex-grow-1 flex-md-grow-0"><i
+                        class="bi bi-plus-lg me-1"></i> Create a game </a>
+                {% else %}
+                <span class="d-inline-block flex-grow-1 flex-md-grow-0" tabindex="0" data-bs-toggle="tooltip"
+                    title="Please verify your email to create a game">
+                    <button class="btn btn-primary w-100" type="button" disabled style="pointer-events: none;">
+                        Create a game
+                    </button>
+                </span>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -156,18 +98,5 @@
             }
         }
     }, 10000); // every 10 seconds
-
-    const triggerTabList = document.querySelectorAll('#pills-tab button')
-    triggerTabList.forEach(triggerEl => {
-        triggerEl.addEventListener('shown.bs.tab', event => {
-            if (event.target.id === 'pills-games-tab') {
-                document.getElementById('header-games').classList.remove('d-none');
-                document.getElementById('header-groups').classList.add('d-none');
-            } else {
-                document.getElementById('header-games').classList.add('d-none');
-                document.getElementById('header-groups').classList.remove('d-none');
-            }
-        })
-    })
 </script>
 {% endblock %}

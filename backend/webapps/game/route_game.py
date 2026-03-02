@@ -442,8 +442,8 @@ def sort_players_game_info(players_info, sort, order):
 async def open_game(
     request: Request,
     game_id: int,
-    sort: str = "balance",
-    order: str = "desc",
+    sort: str = "player",
+    order: str = "asc",
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(get_current_user),
 ):
@@ -521,8 +521,8 @@ async def open_game(
 async def get_game_table(
     request: Request,
     game_id: int,
-    sort: str = "balance",
-    order: str = "desc",
+    sort: str = "player",
+    order: str = "asc",
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(get_current_user),
 ):

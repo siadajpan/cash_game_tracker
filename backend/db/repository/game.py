@@ -241,6 +241,34 @@ def get_user_past_games_count(user: User, db: Session) -> int:
         .count()
     )
 
+def get_running_games_for_user(user: User, db: Session) -> List[Game]:
+    """
+    Returns all running games where at least one participant is someone 
+    the user has played with (or is currently playing with), or the user is the owner.
+    """
+    # Subquery for games the user is/was part of
+    user_game_ids = db.query(UserGame.game_id).filter(UserGame.user_id == user.id)
+    
+    # Subquery for users that have played in any of those games
+    known_user_ids = db.query(UserGame.user_id).filter(UserGame.game_id.in_(user_game_ids))
+
+    # Fetch all running games that have a known user, or the user is the owner
+    running_games = (
+        db.query(Game)
+        .outerjoin(UserGame)
+        .filter(Game.running == True)
+        .filter(
+            (UserGame.user_id.in_(known_user_ids)) | 
+            (UserGame.user_id == user.id) | 
+            (Game.owner_id == user.id)
+        )
+        .distinct()
+        .order_by(Game.date.desc())
+        .all()
+    )
+    return running_games
+
+
 
 from sqlalchemy import func
 from collections import defaultdict

@@ -2,43 +2,43 @@
     id="event-row-{{ event.type }}-{{ event.id }}">
 
     <!-- Left: Type -->
-    <div class="d-flex align-items-center" style="min-width: 80px;">
-        <span class="fw-bold small">
+    <div class="d-flex align-items-center" style="min-width: 90px;">
+        <span class="fw-bold fs-6">
             {% if event.type == 'buy_in' %}Buy-in
             {% elif event.type == 'add_on' %}
             Add-on
             {% if event.status == 'DECLINED' %}
             <span class="text-danger ms-1" style="font-size: 0.75rem;">(Declined)</span>
             {% endif %}
-            {% elif event.type == 'cash_out' %}Cash-out{% endif %}
+            {% elif event.type == 'cash_out' %}Cash out{% endif %}
         </span>
     </div>
 
     <!-- Center: Amount -->
     <div class="flex-grow-1 text-center">
-        <span class="fw-bold fs-6">{{ event.amount }}</span>
+        <span class="fw-bold fs-4">{{ event.amount }}</span>
     </div>
 
     <!-- Right: Time and Actions -->
-    <div class="text-end d-flex align-items-center justify-content-end" style="min-width: 140px;">
-        <span class="text-muted small me-3" style="font-size: 0.85rem;">
+    <div class="text-end d-flex align-items-center justify-content-end" style="min-width: 160px;">
+        <span class="text-muted fw-semibold me-3" style="font-size: 0.9rem;">
             {{ event.time[11:16] if event.time|length >= 16 else event.time }}
         </span>
 
         {% if can_edit %}
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-2">
             <!-- Edit Button -->
-            <button class="btn btn-link text-primary p-0 border-0 lh-1 me-2"
+            <button class="btn btn-light shadow-sm text-primary p-2 border rounded lh-1"
                 hx-get="/game/{{ game.id }}/{{ event.type }}/{{ event.id }}/edit_row"
                 hx-target="#event-row-{{ event.type }}-{{ event.id }}" hx-swap="outerHTML" title="Edit">
-                <i class="bi bi-pencil" style="font-size: 0.9rem;"></i>
+                <i class="bi bi-pencil fs-4"></i>
             </button>
             <!-- Delete Button -->
             {% if event.type != 'buy_in' %}
-            <button class="btn btn-link text-danger p-0 border-0 lh-1" data-bs-toggle="modal"
+            <button class="btn btn-light shadow-sm text-danger p-2 border rounded lh-1" data-bs-toggle="modal"
                 data-bs-target="#deleteEventModal" data-delete-url="/game/{{ game.id }}/{{ event.type }}/{{ event.id }}"
                 data-target-id="#event-row-{{ event.type }}-{{ event.id }}" title="Delete">
-                <i class="bi bi-trash" style="font-size: 0.9rem;"></i>
+                <i class="bi bi-trash fs-4"></i>
             </button>
             {% endif %}
         </div>

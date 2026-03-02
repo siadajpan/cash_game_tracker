@@ -1,56 +1,110 @@
 <!-- Players Grid -->
-<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-3">
-    {% for info in players_info %}
-    <div class="col">
+{% set p_len = players_info|length %}
+{% if p_len <= 4 %} {% set grid_min="135px" %} {% elif p_len <=9 %} {% set grid_min="110px" %} {% else %} {% set
+    grid_min="90px" %} {% endif %} <style>
+    .players-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax({{ grid_min }}, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    justify-content: center;
+    }
+    .player-tile-card {
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin: 0 auto;
+    max-width: 200px;
+    }
+    .player-tile-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0.4rem;
+    container-type: inline-size;
+    }
+    .tile-name {
+    font-size: min(1.1rem, max(0.85rem, 15cqw));
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
+    }
+    .tile-stats {
+    font-size: min(0.95rem, max(0.75rem, 12cqw));
+    line-height: 1.25;
+    }
+    .tile-bal {
+    font-size: min(1.2rem, max(0.9rem, 16cqw));
+    line-height: 1;
+    }
+    .tile-bal-label {
+    font-size: min(0.8rem, max(0.65rem, 10cqw));
+    line-height: 1;
+    }
+    .tile-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.25rem;
+    }
+    </style>
+
+    <div class="players-grid-container">
+        {% for info in players_info %}
         <div
-            class="card h-100 shadow-sm position-relative {{ 'border-primary' if user and info.player.id == user.id else '' }}">
+            class="card shadow-sm position-relative player-tile-card {{ 'border-primary' if user and info.player.id == user.id else '' }}">
             <div class="card-body">
+                <!-- Top: Name -->
                 <a href="/game/{{ game.id }}/player/{{ info.player.id }}/history"
-                    class="text-decoration-none text-dark fw-bold stretched-link fs-5 d-flex align-items-center mb-2 text-truncate">
+                    class="text-decoration-none text-dark fw-bold stretched-link d-flex justify-content-center align-items-center mb-1 mt-2 flex-wrap tile-name text-truncate text-center"
+                    style="line-height: 1;">
                     {{ info.player.nick }}
                     {% if info.owner %}
-                    <span class="badge bg-dark fw-normal ms-2" style="font-size: 0.6rem;">Host</span>
+                    <span class="badge bg-dark fw-normal ms-1" style="font-size: 0.5rem;">Host</span>
                     {% endif %}
                     {% if info.is_book_keeper and not info.owner %}
-                    <span class="badge bg-secondary fw-normal ms-2" style="font-size: 0.6rem;">Bookkeeper</span>
+                    <span class="badge bg-secondary fw-normal ms-1" style="font-size: 0.5rem;">Bk</span>
                     {% endif %}
                 </a>
 
-                <div class="d-flex justify-content-between mb-2">
-                    <div class="fs-6 position-relative text-start" style="z-index: 5;">
-                        <span class="text-muted small">In:</span>
-                        {% if game.running and info.request_type == 'add_on' %}
-                        {% if user in info.can_approve %}
-                        <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger ms-1 py-0 px-1"
-                            title="{{ info.request_text }}">
-                            <i class="bi bi-exclamation-circle-fill"></i> Add-on
-                        </a>
-                        {% else %}
-                        <span class="badge bg-secondary ms-1" title="{{ info.request_text }}">Add-on</span>
-                        {% endif %}
-                        {% else %}
-                        <span class="fw-semibold ms-1">
+                <!-- Middle: Stats -->
+                <div class="d-flex flex-column tile-stats justify-content-center" style="flex: 1;">
+                    <div class="d-flex justify-content-between align-items-center w-100 position-relative mb-1">
+                        <span class="text-muted pe-1">In:</span>
+                        <span class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end">
+                            {% if game.running and info.request_type == 'add_on' %}
+                            {% if user in info.can_approve %}
+                            <a href="{{ info.request_href }}"
+                                class="btn btn-outline-danger tile-badge ms-1 position-relative" style="z-index: 5;"
+                                title="{{ info.request_text }}">
+                                <i class="bi bi-exclamation-circle-fill"></i> Add
+                            </a>
+                            {% else %}
+                            <span class="badge bg-secondary tile-badge ms-1"
+                                title="{{ info.request_text }}">Add-on</span>
+                            {% endif %}
+                            {% else %}
                             {% if info.money_in % 1 %}
                             {{ "%.2f"|format(info.money_in) }}
                             {% else %}
                             {{ info.money_in|int }}
                             {% endif %}
+                            {% endif %}
                         </span>
-                        {% endif %}
                     </div>
-                    <div class="fs-6 position-relative text-end" style="z-index: 5;">
-                        <span class="text-muted small">Out:</span>
-                        {% if game.running and info.request_type == 'cash_out' %}
-                        {% if user in info.can_approve %}
-                        <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger ms-1 py-0 px-1"
-                            title="{{ info.request_text }}">
-                            <i class="bi bi-exclamation-circle-fill"></i> Cash-out
-                        </a>
-                        {% else %}
-                        <span class="badge bg-secondary ms-1" title="{{ info.request_text }}">Cash-out</span>
-                        {% endif %}
-                        {% else %}
-                        <span class="fw-semibold ms-1">
+                    <div class="d-flex justify-content-between align-items-center w-100 position-relative">
+                        <span class="text-muted pe-1">Out:</span>
+                        <span class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end">
+                            {% if game.running and info.request_type == 'cash_out' %}
+                            {% if user in info.can_approve %}
+                            <a href="{{ info.request_href }}"
+                                class="btn btn-outline-danger tile-badge ms-1 position-relative" style="z-index: 5;"
+                                title="{{ info.request_text }}">
+                                <i class="bi bi-exclamation-circle-fill"></i> Cash
+                            </a>
+                            {% else %}
+                            <span class="badge bg-secondary tile-badge ms-1" title="{{ info.request_text }}">Cash
+                                out</span>
+                            {% endif %}
+                            {% else %}
                             {% if info.money_out is not none %}
                             {% if info.money_out % 1 %}
                             {{ "%.2f"|format(info.money_out) }}
@@ -60,21 +114,22 @@
                             {% else %}
                             -
                             {% endif %}
+                            {% endif %}
                         </span>
-                        {% endif %}
                     </div>
                 </div>
 
+                <!-- Bottom: Balance -->
                 {% if not game.running or show_balance %}
-                <div class="d-flex justify-content-between align-items-end pt-2 mt-2 border-top position-relative">
-                    <span class="text-muted small">Balance</span>
-                    <span class="fw-bold fs-5 {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                <div class="d-flex justify-content-between align-items-end pt-1 mt-auto border-top position-relative">
+                    <span class="text-muted tile-bal-label">Bal</span>
+                    <span
+                        class="fw-bold tile-bal {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
                         {{ "%.2f"|format(info.balance) }}
                     </span>
                 </div>
                 {% endif %}
             </div>
         </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>

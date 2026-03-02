@@ -285,7 +285,7 @@ async def cash_out_approve(
         return RedirectResponse(url=f"/{game.id}/join")  # not in the game yet
 
     if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
-        raise HTTPException(status_code=403, detail="Only admins, the game owner, or the bookkeeper can approve cash-outs")
+        raise HTTPException(status_code=403, detail="Only admins, the game owner, or the bookkeeper can approve cash outs")
     action = (
         PlayerRequestStatus.APPROVED
         if action == "approve"

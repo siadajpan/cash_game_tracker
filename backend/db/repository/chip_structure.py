@@ -117,13 +117,13 @@ def delete_chip_structure(chip_structure_id: int, db: Session) -> None:
         if game_used:
             raise ValueError(f"Cannot delete: This chip structure is used in games.")
 
-        # Check if any chip is used in ChipAmount (cash-outs)
+        # Check if any chip is used in ChipAmount (cash outs)
         from backend.db.models.chip_amount import ChipAmount
         chip_ids = [c.id for c in cs.chips]
         if chip_ids:
             used_chip = db.query(ChipAmount).filter(ChipAmount.chip_id.in_(chip_ids)).first()
             if used_chip:
-                raise ValueError(f"Cannot delete: Chips from this structure are used in cash-out records.")
+                raise ValueError(f"Cannot delete: Chips from this structure are used in cash out records.")
 
         # If it's a default for any team, reset it to None
         teams_to_reset = db.query(Team).filter(Team.default_chip_structure_id == cs.id).all()

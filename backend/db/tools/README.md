@@ -202,7 +202,7 @@ All tables defined in `backend/db/models/`:
 - `user_game_association` - User-game relationships
 - `buy_in` - Buy-in records
 - `add_on` - Add-on records
-- `cash_out` - Cash-out records
+- `cash_out` - Cash out records
 - `chip_structure` - Chip structures
 - `chip` - Chip definitions
 - `chip_amount` - Chip amounts
