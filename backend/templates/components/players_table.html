@@ -25,12 +25,12 @@
     container-type: inline-size;
     }
     .tile-name {
-    font-size: min(1.1rem, max(0.85rem, 15cqw));
+    font-size: min(1.3rem, max(1.0rem, 18cqw));
     line-height: 1.1;
     margin-bottom: 0.25rem;
     }
     .tile-stats {
-    font-size: min(0.95rem, max(0.75rem, 12cqw));
+    font-size: min(1.1rem, max(0.85rem, 15cqw));
     line-height: 1.25;
     }
     .tile-bal {
@@ -45,12 +45,40 @@
     font-size: 0.65rem;
     padding: 0.15rem 0.25rem;
     }
+    .tile-action-btn {
+    font-size: 0.9rem;
+    padding: 0.3rem 0.5rem;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 6px;
+    }
+    @keyframes highlightUpdate {
+    0% { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border-color: rgba(0,0,0,.125); background-color: #ffffff;
+    }
+    25% { box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); border-color: #0d6efd; background-color: rgba(13, 110,
+    253, 0.03); }
+    100% { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border-color: rgba(0,0,0,.125); background-color:
+    #ffffff; }
+    }
+    .tile-highlight-animation {
+    animation: highlightUpdate 1s ease-out forwards;
+    }
+    @keyframes textHighlightUpdate {
+    0% { transform: scale(1); color: inherit; }
+    25% { transform: scale(1.15); color: #0d6efd; }
+    100% { transform: scale(1); color: inherit; }
+    }
+    .text-highlight-animation {
+    animation: textHighlightUpdate 1s ease-out forwards;
+    display: inline-block;
+    transform-origin: right center;
+    }
     </style>
 
     <div class="players-grid-container">
         {% for info in players_info %}
         <div
-            class="card shadow-sm position-relative player-tile-card {{ 'border-primary' if user and info.player.id == user.id else '' }}">
+            class="card shadow-sm position-relative player-tile-card {{ 'border-primary' if user and info.player.id == user.id else '' }} {{ 'tile-highlight-animation' if request.query_params.highlight_player == info.player.id|string else '' }}">
             <div class="card-body">
                 <!-- Top: Name -->
                 <a href="/game/{{ game.id }}/player/{{ info.player.id }}/history"
@@ -67,14 +95,15 @@
 
                 <!-- Middle: Stats -->
                 <div class="d-flex flex-column tile-stats justify-content-center" style="flex: 1;">
-                    <div class="d-flex justify-content-between align-items-center w-100 position-relative mb-1">
+                    <div class="d-flex justify-content-center align-items-center w-100 position-relative mb-1">
                         <span class="text-muted pe-1">In:</span>
-                        <span class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end">
+                        <span
+                            class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end {{ 'text-highlight-animation' if request.query_params.highlight_player == info.player.id|string and request.query_params.action == 'add_on' else '' }}">
                             {% if game.running and info.request_type == 'add_on' %}
                             {% if user in info.can_approve %}
                             <a href="{{ info.request_href }}"
-                                class="btn btn-outline-danger tile-badge ms-1 position-relative" style="z-index: 5;"
-                                title="{{ info.request_text }}">
+                                class="btn btn-danger tile-action-btn ms-1 position-relative shadow-sm"
+                                style="z-index: 5;" title="{{ info.request_text }}">
                                 <i class="bi bi-exclamation-circle-fill"></i> Add
                             </a>
                             {% else %}
@@ -90,14 +119,16 @@
                             {% endif %}
                         </span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center w-100 position-relative">
+                    {% if (game.running and info.request_type == 'cash_out') or info.money_out is not none %}
+                    <div class="d-flex justify-content-center align-items-center w-100 position-relative">
                         <span class="text-muted pe-1">Out:</span>
-                        <span class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end">
+                        <span
+                            class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end {{ 'text-highlight-animation' if request.query_params.highlight_player == info.player.id|string and request.query_params.action == 'cash_out' else '' }}">
                             {% if game.running and info.request_type == 'cash_out' %}
                             {% if user in info.can_approve %}
                             <a href="{{ info.request_href }}"
-                                class="btn btn-outline-danger tile-badge ms-1 position-relative" style="z-index: 5;"
-                                title="{{ info.request_text }}">
+                                class="btn btn-danger tile-action-btn ms-1 position-relative shadow-sm"
+                                style="z-index: 5;" title="{{ info.request_text }}">
                                 <i class="bi bi-exclamation-circle-fill"></i> Cash
                             </a>
                             {% else %}
@@ -105,18 +136,15 @@
                                 out</span>
                             {% endif %}
                             {% else %}
-                            {% if info.money_out is not none %}
                             {% if info.money_out % 1 %}
                             {{ "%.2f"|format(info.money_out) }}
                             {% else %}
                             {{ info.money_out|int }}
                             {% endif %}
-                            {% else %}
-                            -
-                            {% endif %}
                             {% endif %}
                         </span>
                     </div>
+                    {% endif %}
                 </div>
 
                 <!-- Bottom: Balance -->

@@ -99,7 +99,7 @@ async def add_on(
         if auto_approve:
             update_add_on_status(addon, PlayerRequestStatus.APPROVED, db, user)
             
-        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+        return RedirectResponse(url=f"/game/{game.id}?highlight_player={target_player.id}&action=add_on", status_code=303)
     except ValueError:
         errors.append("Invalid add-on")
     except IntegrityError:

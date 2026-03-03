@@ -180,7 +180,7 @@ async def cash_out(
             update_cash_out_status(cashout, PlayerRequestStatus.APPROVED, db, user)
             
         # Redirect to the game page
-        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+        return RedirectResponse(url=f"/game/{game.id}?highlight_player={target_player.id}&action=cash_out", status_code=303)
 
     except IntegrityError:
         errors.append(
@@ -245,7 +245,7 @@ async def cash_out_by_amount(
         if auto_approve:
             update_cash_out_status(cashout, PlayerRequestStatus.APPROVED, db, user)
             
-        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+        return RedirectResponse(url=f"/game/{game.id}?highlight_player={target_player.id}&action=cash_out", status_code=303)
     except ValidationError as e:
         print("catching error")
         errors.extend([err["msg"] for err in e.errors()])

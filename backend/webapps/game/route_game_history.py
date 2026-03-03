@@ -64,11 +64,11 @@ async def player_game_history(
     for bi in buy_ins:
         events.append({"type": "buy_in", "obj": bi, "time": bi.time, "amount": bi.amount, "id": bi.id})
     for ao in add_ons:
-        if ao.status == "APPROVED":
-            events.append({"type": "add_on", "obj": ao, "time": ao.time, "amount": ao.amount, "id": ao.id, "status": ao.status})
+        if ao.status in ("APPROVED", "REQUESTED", PlayerRequestStatus.APPROVED, PlayerRequestStatus.REQUESTED):
+            events.append({"type": "add_on", "obj": ao, "time": ao.time, "amount": ao.amount, "id": ao.id, "status": getattr(ao.status, "value", ao.status)})
     for co in cash_outs:
-        if co.status == "APPROVED":
-            events.append({"type": "cash_out", "obj": co, "time": co.time, "amount": co.amount, "id": co.id, "status": co.status})
+        if co.status in ("APPROVED", "REQUESTED", PlayerRequestStatus.APPROVED, PlayerRequestStatus.REQUESTED):
+            events.append({"type": "cash_out", "obj": co, "time": co.time, "amount": co.amount, "id": co.id, "status": getattr(co.status, "value", co.status)})
 
     events.sort(key=lambda x: x["time"] or "")
 

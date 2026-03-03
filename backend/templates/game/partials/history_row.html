@@ -4,13 +4,26 @@
     <!-- Left: Type -->
     <div class="d-flex align-items-center" style="min-width: 90px;">
         <span class="fw-bold fs-6">
-            {% if event.type == 'buy_in' %}Buy-in
+            {% if event.type == 'buy_in' %}
+            <i class="bi bi-door-open-fill text-success fs-5 me-1" style="vertical-align: middle;"></i> <span
+                style="vertical-align: middle;">Buy-in</span>
             {% elif event.type == 'add_on' %}
-            Add-on
+            <i class="bi bi-plus-circle-fill text-warning fs-5 me-1" style="vertical-align: middle;"></i> <span
+                style="vertical-align: middle;">Add-on</span>
             {% if event.status == 'DECLINED' %}
-            <span class="text-danger ms-1" style="font-size: 0.75rem;">(Declined)</span>
+            <span class="text-danger ms-1" style="font-size: 0.75rem; vertical-align: middle;">(Declined)</span>
+            {% elif event.status == 'REQUESTED' %}
+            <span class="text-warning ms-1" style="font-size: 0.75rem; vertical-align: middle;">(Pending)</span>
             {% endif %}
-            {% elif event.type == 'cash_out' %}Cash out{% endif %}
+            {% elif event.type == 'cash_out' %}
+            <i class="bi bi-box-arrow-right text-primary fs-5 me-1" style="vertical-align: middle;"></i> <span
+                style="vertical-align: middle;">Cash out</span>
+            {% if event.status == 'DECLINED' %}
+            <span class="text-danger ms-1" style="font-size: 0.75rem; vertical-align: middle;">(Declined)</span>
+            {% elif event.status == 'REQUESTED' %}
+            <span class="text-warning ms-1" style="font-size: 0.75rem; vertical-align: middle;">(Pending)</span>
+            {% endif %}
+            {% endif %}
         </span>
     </div>
 
@@ -25,6 +38,22 @@
             {{ event.time[11:16] if event.time|length >= 16 else event.time }}
         </span>
 
+        {% if event.status == 'REQUESTED' %}
+        {% if can_edit and game.running %}
+        <div class="d-flex align-items-center gap-2">
+            <form action="/game/{{ game.id }}/{{ event.type }}/{{ event.id }}/approve" method="POST" class="m-0">
+                <button type="submit" class="btn btn-success shadow-sm p-2 border rounded lh-1" title="Approve">
+                    <i class="bi bi-check-lg fs-4"></i>
+                </button>
+            </form>
+            <form action="/game/{{ game.id }}/{{ event.type }}/{{ event.id }}/decline" method="POST" class="m-0">
+                <button type="submit" class="btn btn-danger shadow-sm p-2 border rounded lh-1" title="Decline">
+                    <i class="bi bi-x-lg fs-4"></i>
+                </button>
+            </form>
+        </div>
+        {% endif %}
+        {% else %}
         {% if can_edit and game.running %}
         <div class="d-flex align-items-center gap-2">
             <!-- Edit Button -->
@@ -42,6 +71,7 @@
             </button>
             {% endif %}
         </div>
+        {% endif %}
         {% endif %}
     </div>
 </li>
