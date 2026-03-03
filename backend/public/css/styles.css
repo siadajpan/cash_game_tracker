@@ -39,3 +39,24 @@
     border-bottom: 1px solid #dee2e6;
   }
 }
+
+/* Larger dropdown items */
+.dropdown-menu .dropdown-item {
+  padding: 0.8rem 0.8rem;
+  font-size: 1.1rem;
+  display: flex !important;
+  align-items: center;
+}
+
+.dropdown-menu .dropdown-item i {
+  font-size: 1.25rem;
+  margin-right: 0.75rem;
+  width: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-menu .dropdown-divider {
+  margin: 0.5rem 0;
+}

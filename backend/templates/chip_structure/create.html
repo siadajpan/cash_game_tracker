@@ -27,17 +27,32 @@ block content %}
   </div>
 
   <!-- Add Chip Button -->
-  <div class="mb-3 text-center">
-    <button type="button" id="addChip" class="btn btn-secondary">
-      <i class="bi bi-plus-lg"></i> Add Chip
+  <div class="mb-5 text-center px-2">
+    <button type="button" id="addChip" class="btn btn-outline-primary py-2 px-4 rounded-pill shadow-sm">
+      <i class="bi bi-plus-circle me-1"></i> Add Another Chip
     </button>
   </div>
 
-  <!-- Submit & Back Buttons -->
-  <div class="d-flex justify-content-between">
-    <a href="/game/create" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
-    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle-fill me-1"></i> Save Chip
-      Structure</button>
+  <!-- Spacer to avoid content being hidden by footer -->
+  <div style="height: 120px;"></div>
+
+  <!-- Fixed Bottom Navigation -->
+  <div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+      <a href="/game/create"
+        class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+        <i class="bi bi-x-circle mb-1 fs-4 text-secondary"></i>
+        <span class="small fw-bold text-secondary" style="font-size: 1rem;">Cancel</span>
+      </a>
+
+      <button type="submit"
+        class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+        <i class="bi bi-check-circle-fill mb-1 fs-4 text-white"></i>
+        <span class="small fw-bold text-white" style="font-size: 1rem;">Save Structure</span>
+      </button>
+    </div>
   </div>
 </form>
 

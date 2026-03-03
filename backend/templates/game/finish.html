@@ -2,56 +2,80 @@
 {% block title %}
 <title>Finish Game</title>
 {% endblock %}
-{% block page_heading %}Finish Game{% endblock %}
+{% block page_heading %}<span class="fs-2 fw-bold">Finish Game</span>{% endblock %}
 
 {% block content %}
 
-<!-- Players table -->
-<!-- Players table -->
-{% include "components/players_table.html" %}
+<!-- Content Area -->
+<div class="mb-4">
+    <!-- Players table -->
+    {% with is_finish_page=True %}
+    {% include "components/players_table.html" %}
+    {% endwith %}
 
-<!-- Warnings -->
-{% if not all_cashed_out %}
-<div class="alert alert-warning">
-    Not all players have cashed out yet. Players who haven't cashed out will have a cash out value of 0.
-</div>
-{% endif %}
-
-{% if sum_warning %}
-<div class="alert alert-warning">
-    Total Buy-ins ({{ total_buy_in }}) do not equal total Cash Outs ({{ total_cash_out }}).<br>
-    {% if total_buy_in > total_cash_out %}
-    Money left: {{ total_buy_in - total_cash_out }}
-    {% else %}
-    Money missing: {{ total_cash_out - total_buy_in }}
+    <!-- Warnings -->
+    {% if sum_warning %}
+    <div class="alert alert-warning mt-3 mb-1 py-2" style="font-size: 0.85rem;">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        Total Buy-ins ({{ total_buy_in|int if total_buy_in == total_buy_in|int else "%.2f"|format(total_buy_in) }})
+        do not equal total Cash Outs ({{ total_cash_out|int if total_cash_out == total_cash_out|int else
+        "%.2f"|format(total_cash_out) }}).<br>
+        <strong>
+            {% if total_buy_in > total_cash_out %}
+            Money left in pot: {{ (total_buy_in - total_cash_out)|int if (total_buy_in - total_cash_out) ==
+            (total_buy_in - total_cash_out)|int else "%.2f"|format(total_buy_in - total_cash_out) }}
+            {% else %}
+            Money missing: {{ (total_cash_out - total_buy_in)|int if (total_cash_out - total_buy_in) ==
+            (total_cash_out - total_buy_in)|int else "%.2f"|format(total_cash_out - total_buy_in) }}
+            {% endif %}
+        </strong>
+    </div>
     {% endif %}
 </div>
-{% endif %}
-<form method="POST" action="/game/{{ game.id }}/finish">
-    <!-- Finish Time (Split) -->
-    <div class="row mb-3">
-        <div class="col-6">
-            <input type="text" required class="form-control" id="date_part" placeholder="dd/mm/yyyy" />
-            <label for="date_part">Finish Date</label>
-        </div>
-        <div class="col-6">
-            <div class="form-floating">
-                <select id="time_part" class="form-select" required aria-label="Finish Time">
-                    <!-- Options populated by JS -->
-                </select>
-                <label for="time_part">Finish Time</label>
-            </div>
-        </div>
-    </div>
 
-    <input type="hidden" name="finish_time" id="final_finish_time" />
-    <div class="d-flex justify-content-between mt-3">
-        <a href="/game/{{ game.id }}" class="btn btn-outline-secondary px-4"><i class="bi bi-arrow-left me-1"></i>
-            Back</a>
-        <button type="submit" class="btn btn-primary px-5"><i class="bi bi-check-circle-fill me-1"></i> Finish
-            Game</button>
+<!-- Extra Spacer to ensure all content can be scrolled above the fixed bottom bar -->
+<div style="height: 250px;"></div>
+
+<!-- Fixed Bottom Navigation with Form -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-3 px-3 shadow" style="z-index: 1030;">
+    <div class="container p-0" style="max-width: 800px;">
+        <form method="POST" action="/game/{{ game.id }}/finish">
+            <!-- Finish Time (Split) -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <input type="text" required class="form-control" id="date_part" placeholder="dd/mm/yyyy" />
+                    <label for="date_part" class="form-label small text-muted mb-1" style="font-size: 0.75rem;">Finish
+                        Date</label>
+                </div>
+                <div class="col-6">
+                    <div class="form-floating">
+                        <select id="time_part" class="form-select form-select-sm" required aria-label="Finish Time">
+                            <!-- Options populated by JS -->
+                        </select>
+                        <label for="time_part" style="font-size: 0.8rem;">Finish Time</label>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="finish_time" id="final_finish_time" />
+
+            <div class="d-flex gap-3 justify-content-center">
+                <a href="/game/{{ game.id }}"
+                    class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; min-width: 100px;">
+                    <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+                    <span class="small fw-bold text-secondary" style="font-size: 1rem;">Back</span>
+                </a>
+
+                <button type="submit"
+                    class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca); min-width: 100px;">
+                    <i class="bi bi-check-circle-fill mb-1 fs-4 text-white"></i>
+                    <span class="small fw-bold text-white" style="font-size: 1rem;">Finish Game</span>
+                </button>
+            </div>
+        </form>
     </div>
-</form>
 </div>
 {% endblock %}
 

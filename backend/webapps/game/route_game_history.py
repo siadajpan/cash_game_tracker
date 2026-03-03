@@ -70,7 +70,7 @@ async def player_game_history(
         if co.status in ("APPROVED", "REQUESTED", PlayerRequestStatus.APPROVED, PlayerRequestStatus.REQUESTED):
             events.append({"type": "cash_out", "obj": co, "time": co.time, "amount": co.amount, "id": co.id, "status": getattr(co.status, "value", co.status)})
 
-    events.sort(key=lambda x: x["time"] or "")
+    events.sort(key=lambda x: x["time"] or "", reverse=True)
 
 
     return templates.TemplateResponse(

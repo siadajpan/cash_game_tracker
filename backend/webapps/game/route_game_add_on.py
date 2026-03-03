@@ -190,8 +190,8 @@ async def finish_game_view(
     if not game:
         return RedirectResponse(url="/")
 
-    # Check admin or owner
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
+    # Check admin, owner, or book keeper
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         return RedirectResponse(url=f"/game/{game.id}")
 
     players_info = []
@@ -223,9 +223,12 @@ async def finish_game_view(
         players_info.append(
             {
                 "player": player,
+                "owner": player.id == game.owner_id,
+                "is_book_keeper": player.id == game.book_keeper_id,
                 "money_in": money_in,
                 "money_out": cash_out,
                 "balance": balance,
+                "has_cashed_out": len(cash_outs) > 0,
             }
         )
 

@@ -8,9 +8,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="page-title">Game {{ game.start_time.strftime('%Y-%m-%d') if game.start_time else game.date }}</div>
     <div class="dropdown">
-        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+        <button class="btn btn-lg btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false">
-            <i class="bi bi-gear-fill"></i>
+            <i class="bi bi-gear-fill fs-4"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
             <li>
@@ -42,15 +42,12 @@
     </div>
 </div>
 
-<div id="game-view-container" class="d-flex flex-column" style="max-height: 60vh;">
-    <div class="overflow-y-scroll overflow-x-hidden pe-2" style="min-height: 0;">
-        {% include "components/players_table.html" %}
-    </div>
-
+<div class="mb-3">
+    {% include "components/players_table.html" %}
 </div>
 
 <!-- Spacer to prevent content from hiding behind fixed bottom nav -->
-<div style="height: 90px;"></div>
+<div style="height: 120px;"></div>
 
 <!-- Fixed Bottom Navigation -->
 <div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
@@ -131,11 +128,20 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer d-flex justify-content-between w-100">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
-                        class="bi bi-arrow-left me-1"></i> Back</button>
-                <button type="button" class="btn btn-primary" onclick="submitExport()"><i
-                        class="bi bi-check-circle-fill me-1"></i> Submit</button>
+            <div class="modal-footer d-flex gap-2 w-100">
+                <button type="button"
+                    class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;" data-bs-dismiss="modal">
+                    <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+                    <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Back</span>
+                </button>
+                <button type="button"
+                    class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);"
+                    onclick="submitExport()">
+                    <i class="bi bi-check-circle-fill mb-1 fs-4 text-white"></i>
+                    <span class="small fw-bold text-white" style="font-size: 0.9rem;">Submit</span>
+                </button>
             </div>
         </div>
     </div>

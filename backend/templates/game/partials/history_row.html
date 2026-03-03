@@ -6,10 +6,10 @@
         <span class="fw-bold fs-6">
             {% if event.type == 'buy_in' %}
             <i class="bi bi-door-open-fill text-success fs-5 me-1" style="vertical-align: middle;"></i> <span
-                style="vertical-align: middle;">Buy-in</span>
+                style="vertical-align: middle;">Buy in</span>
             {% elif event.type == 'add_on' %}
             <i class="bi bi-plus-circle-fill text-warning fs-5 me-1" style="vertical-align: middle;"></i> <span
-                style="vertical-align: middle;">Add-on</span>
+                style="vertical-align: middle;">Add on</span>
             {% if event.status == 'DECLINED' %}
             <span class="text-danger ms-1" style="font-size: 0.75rem; vertical-align: middle;">(Declined)</span>
             {% elif event.status == 'REQUESTED' %}

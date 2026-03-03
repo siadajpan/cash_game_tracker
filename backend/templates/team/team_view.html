@@ -11,7 +11,7 @@
 
     <div class="d-flex gap-2">
         <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            <button class="btn btn-lg btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
             </button>
@@ -32,9 +32,9 @@
 
         {% if is_admin %}
         <div class="dropdown">
-            <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            <button class="btn btn-lg btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
-                <i class="bi bi-gear-fill"></i>
+                <i class="bi bi-gear-fill fs-4"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
                 <li>

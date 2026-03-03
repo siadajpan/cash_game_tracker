@@ -79,9 +79,9 @@ async def delete_game(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         raise HTTPException(
-            status_code=403, detail="Only admins or the game owner can delete the game"
+            status_code=403, detail="Only admins, game owner, or book keeper can delete the game"
         )
 
     delete_game_by_id(game_id, db)
@@ -580,6 +580,12 @@ async def finish_game_view(
     if not user:
         return RedirectResponse(url="/", status_code=303)
 
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins, the game owner, or the book keeper can finish the game.",
+        )
+
     form = await request.form()
     finish_time = form.get("finish_time")
 
@@ -598,7 +604,7 @@ async def get_assign_book_keeper_list(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         raise HTTPException(status_code=403, detail="Insufficient permissions (Only admins or game owner)")
 
     # Get players currently in the game
@@ -626,7 +632,7 @@ async def assign_book_keeper(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         raise HTTPException(status_code=403, detail="Insufficient permissions (Only admins or game owner)")
 
     # Verify user is in the game
@@ -786,8 +792,8 @@ async def get_add_player_list(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise HTTPException(status_code=403, detail="Only admins or game owner can add players")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     # Get all approved members of the team
     team_members = (
@@ -827,8 +833,8 @@ async def add_player_remotely(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise HTTPException(status_code=403, detail="Only admins or game owner can add players")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     target_user = db.query(User).filter(User.id == player_id).first()
     if not target_user:
@@ -873,8 +879,8 @@ async def get_remove_player_list(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise HTTPException(status_code=403, detail="Only admins or game owner can remove players")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     # Filter out the host/owner if desired, or just list everyone
     players = [p for p in game.players if p.id != game.owner_id]
@@ -901,8 +907,8 @@ async def remove_player_remotely(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise HTTPException(status_code=403, detail="Only admins or game owner can remove players")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     if player_id == game.owner_id:
         raise HTTPException(status_code=400, detail="Cannot remove game owner")

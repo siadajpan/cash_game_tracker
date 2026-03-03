@@ -7,13 +7,13 @@
     {% if players %}
     <ul class="list-group list-group-flush">
         {% for player in players %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 fs-5">
             <span>{{ player.nick }}</span>
 
             {% if game.book_keeper_id == player.id %}
-            <span class="badge bg-success rounded-pill">Current</span>
+            <span class="badge bg-success rounded-pill px-3 py-2">Current</span>
             {% else %}
-            <button type="button" class="btn btn-sm btn-primary" hx-post="/game/{{ game.id }}/book_keeper"
+            <button type="button" class="btn btn-primary" hx-post="/game/{{ game.id }}/book_keeper"
                 hx-vals='{"user_id": {{ player.id }}}' hx-target="#assignBookKeeperContent">
                 <i class="bi bi-check-circle-fill me-1"></i> Assign
             </button>
