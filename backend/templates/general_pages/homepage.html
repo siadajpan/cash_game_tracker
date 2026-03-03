@@ -58,29 +58,56 @@
             <div class="col-12 col-md-6">
                 <form
                     onsubmit="event.preventDefault(); const code = document.getElementById('gameCodeInput').value; if(code) { window.location.href = '/game/' + parseInt(code, 10) + '/join'; }">
-                    <div class="input-group">
-                        <input type="text" id="gameCodeInput" class="form-control" placeholder="6-digit game code"
-                            pattern="\d{1,6}" required>
-                        <button class="btn btn-outline-primary" type="submit">Join</button>
+                    <div class="input-group input-group-lg">
+                        <input type="text" id="gameCodeInput" class="form-control form-control-lg fs-5"
+                            placeholder="6-digit game code" pattern="\d{1,6}" required>
+                        <button class="btn btn-outline-primary btn-lg fs-5" type="submit">Join</button>
                     </div>
                 </form>
             </div>
             <div class="col-12 col-md-6 d-flex justify-content-md-end gap-2">
-                <a href="/game/view_past" class="btn btn-outline-secondary flex-grow-1 flex-md-grow-0"><i
-                        class="bi bi-clock-history me-1"></i> Past games </a>
                 {% if user.is_active %}
-                <a href="/game/create" class="btn btn-primary flex-grow-1 flex-md-grow-0"><i
-                        class="bi bi-plus-lg me-1"></i> Create a game </a>
+                <a href="/game/create" class="btn btn-primary btn-lg flex-grow-1 fs-5"><i
+                        class="bi bi-plus-lg me-1"></i> Create a
+                    game </a>
                 {% else %}
-                <span class="d-inline-block flex-grow-1 flex-md-grow-0" tabindex="0" data-bs-toggle="tooltip"
+                <span class="d-inline-block flex-grow-1" tabindex="0" data-bs-toggle="tooltip"
                     title="Please verify your email to create a game">
-                    <button class="btn btn-primary w-100" type="button" disabled style="pointer-events: none;">
+                    <button class="btn btn-primary btn-lg w-100 fs-5" type="button" disabled
+                        style="pointer-events: none;">
                         Create a game
                     </button>
                 </span>
                 {% endif %}
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+<div style="height: 150px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+        <a href="/"
+            class="btn btn-primary shadow-sm d-flex flex-column align-items-center justify-content-center border-0 shadow"
+            style="width: 80px; padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <i class="bi bi-house mb-1 fs-4 text-white"></i>
+            <span class="small fw-bold text-white" style="font-size: 0.8rem;">Home</span>
+        </a>
+        <a href="/game/view_past"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-clock-history mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">My past games</span>
+        </a>
+        <a href="/my_group"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-people mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">My group</span>
+        </a>
     </div>
 </div>
 

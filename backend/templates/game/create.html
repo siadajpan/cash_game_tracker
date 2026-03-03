@@ -3,15 +3,17 @@
 {% endblock %} {% block page_heading %}Create your game{% endblock %} {% block
 content %}
 <form method="POST" action="/game/create">
-  <!-- Team selector -->
-  <div class="mb-3">{% include "team/users_team_dropdown.html" %}</div>
-
-  <!-- Chip structure -->
+  <!-- Group selection removed based on user request --> <!-- Chip structure -->
   <div class="form-floating mb-3">
     <select name="chip_structure_id" id="chip_structure_id" required class="form-select">
-      <option value="" disabled selected>
-        -- Choose a chip structure --
-      </option>
+      <option value="" disabled selected>-- Choose a chip structure --</option>
+      {% for cs in user_chip_structures %}
+      <option value="{{ cs.id }}">{{ cs.name }}</option>
+      {% endfor %}
+      {% if user_chip_structures %}
+      <option disabled>────────────────</option>
+      {% endif %}
+      <option value="create_new">➕ Create new chip values...</option>
     </select>
     <label for="chip_structure_id" class="form-label">Chip Structure</label>
   </div>
@@ -42,18 +44,29 @@ content %}
   <!-- Hidden input for the actual submission -->
   <input type="hidden" name="start_time" id="final_start_time" value="{{ form.start_time }}" />
 
-  <!-- Form buttons -->
-  <div class="d-flex justify-content-between align-items-center">
-    <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
-    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle-fill me-1"></i> Submit</button>
+  <!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+  <div style="height: 150px;"></div>
+
+  <!-- Fixed Bottom Navigation -->
+  <div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+      <a href="/"
+        class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+        <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+        <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Back</span>
+      </a>
+      <button type="submit"
+        class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+        <i class="bi bi-check-circle-fill mb-1 fs-4 text-white"></i>
+        <span class="small fw-bold text-white" style="font-size: 0.9rem;">Create</span>
+      </button>
+    </div>
   </div>
 </form>
 {% endblock %} {% block scripts %}
 <script>
-  // Preload all chip structures from server
-  const teamChipStructures = {{ team_chip_structures | default ('{}') | safe  }};
-  console.log("Loaded teamChipStructures:", teamChipStructures);
-
   document.addEventListener('DOMContentLoaded', function () {
     // --- Time Picker Logic ---
     const datePart = document.getElementById('date_part');
@@ -160,59 +173,18 @@ content %}
     }
 
     // --- End Time Picker Logic ---
-    const chipSelect = document.getElementById('chip_structure_id');
-
-    if (!chipSelect) return;
-
-    function updateChipDropdown(teamId) {
-      console.log("Updating chip dropdown for teamId:", teamId);
-      const teamData = teamChipStructures[teamId] || { default_id: null, structures: [] };
-      const chipStructures = teamData.structures;
-      const defaultId = teamData.default_id;
-      console.log("chipStructures found:", chipStructures);
-
-      // Clear existing options
-      chipSelect.innerHTML = '';
-
-      // If no default and multiple options, add placeholder
-      if (!defaultId && chipStructures.length !== 1) {
-        chipSelect.innerHTML = `<option value="" disabled selected>Select a chip values</option>`;
-      }
-
-      chipStructures.forEach((cs) => {
-        const option = document.createElement('option');
-        option.value = cs.id;
-        option.textContent = cs.name;
-
-        // Select if it's default OR if it's the only one
-        if (cs.id == defaultId || (chipStructures.length === 1 && !defaultId)) {
-          option.selected = true;
-        }
-        chipSelect.appendChild(option);
-      });
-
-      // Add separator and 'Create New' option
-      if (chipStructures.length > 0) {
-        const separator = document.createElement('option');
-        separator.disabled = true;
-        separator.textContent = '────────────────';
-        chipSelect.appendChild(separator);
-      }
-
-      const createOption = document.createElement('option');
-      createOption.value = "create_new";
-      createOption.textContent = "➕ Create new chip values...";
-      chipSelect.appendChild(createOption);
-    }
 
     // Handle chip structure selection (for "Create new..." redirection)
-    chipSelect.addEventListener('change', function () {
-      if (this.value === 'create_new') {
-        window.location.href = '/chip_structure/create';
-        // Reset selection to avoid stuck state if they come back
-        this.value = "";
-      }
-    });
+    const chipSelect = document.getElementById('chip_structure_id');
+    if (chipSelect) {
+      chipSelect.addEventListener('change', function () {
+        if (this.value === 'create_new') {
+          // You can also append team_id=null or similar if needed
+          window.location.href = '/chip_structure/create';
+          this.value = "";
+        }
+      });
+    }
 
     // Ensure start_time is updated before submission
     const form = document.querySelector('form');
@@ -221,23 +193,6 @@ content %}
         updateFinalInput();
         console.log("Final submission value for start_time:", finalInput.value);
       });
-    }
-
-    // Multi-team: listen to select change
-    // Use querySelector for reliability since ID might be shared or hidden
-    const teamInput = document.querySelector('[name="team_id"]');
-    if (teamInput) {
-      if (teamInput.tagName === 'SELECT') {
-        teamInput.addEventListener('change', () => {
-          console.log("Team selection changed to:", teamInput.value);
-          updateChipDropdown(teamInput.value);
-        });
-        // Initial load
-        updateChipDropdown(teamInput.value);
-      } else {
-        console.log("Single team (hidden) detected:", teamInput.value);
-        updateChipDropdown(teamInput.value);
-      }
     }
   });
 </script>

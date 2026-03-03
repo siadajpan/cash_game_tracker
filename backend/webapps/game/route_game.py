@@ -119,12 +119,18 @@ async def update_game_chip_structure(
 
 @router.get("/create", name="create_game_form")
 async def create_game_form(
-    request: Request, current_user: User = Depends(get_active_user)
+    request: Request, 
+    current_user: User = Depends(get_active_user),
+    db: Session = Depends(get_db)
 ):
     """
     Renders the game creation form, populating team choices and default values.
     """
-    team_chip_structures = get_user_team_chip_structures_dict(current_user)
+    # Get all chip structures from games the user has played in
+    games = db.query(Game).join(UserGame).filter(UserGame.user_id == current_user.id).all()
+    unique_cs = {g.chip_structure for g in games if g.chip_structure}
+    user_chip_structures = sorted(list(unique_cs), key=lambda x: str(x.name))
+
     # Round time to nearest 15 minutes
     now = datetime.now()
     minute = now.minute
@@ -134,8 +140,7 @@ async def create_game_form(
     context = {
         "request": request,
         "errors": [],
-        "user_teams": current_user.teams,
-        "team_chip_structures": team_chip_structures,
+        "user_chip_structures": user_chip_structures,
         "form": {
             "default_buy_in": 0.0,
             "date": "",
@@ -170,18 +175,23 @@ async def create_game(
         if not game_date:
             game_date = str(datetime.today().date())
 
+        # Validate team manually if provided, but default to None
+        team_id = form.get("team_id")
+        if team_id:
+            team = get_team_by_id(team_id, db)
+            if not team:
+                raise ValueError("Selected team does not exist.")
+        else:
+            team_id = None
+
         new_game_data = GameCreate(
             date=game_date,
             default_buy_in=float(form.get("default_buy_in", 0)),
             running=True,
-            team_id=form.get("team_id"),
+            team_id=team_id,
             chip_structure_id=form.get("chip_structure_id"),
             start_time=start_time_val,
         )
-        # Check if the team exists separately
-        team = get_team_by_id(new_game_data.team_id, db)
-        if not team:
-            raise ValueError("Selected team does not exist.")
 
         # If all good, save to DB
         game = create_new_game_db(game=new_game_data, current_user=current_user, db=db)
@@ -203,7 +213,10 @@ async def create_game(
         errors.append("Database integrity error occurred.")
     except Exception as e:
         errors.append(f"Unexpected error: {e}")
-    team_chip_structures = get_user_team_chip_structures_dict(current_user)
+    # Refresh chip structures in case of error
+    games = db.query(Game).join(UserGame).filter(UserGame.user_id == current_user.id).all()
+    unique_cs = {g.chip_structure for g in games if g.chip_structure}
+    user_chip_structures = sorted(list(unique_cs), key=lambda x: str(x.name))
 
     # Render back with errors
     return templates.TemplateResponse(
@@ -211,9 +224,8 @@ async def create_game(
         {
             "request": request,
             "errors": errors,
-            "team_chip_structures": team_chip_structures,
+            "user_chip_structures": user_chip_structures,
             "form": form,
-            "user_teams": current_user.teams,
         },
     )
 

@@ -8,7 +8,7 @@ class GameCreate(BaseModel):
     date: str
     default_buy_in: float
     running: bool
-    team_id: str
+    team_id: Optional[str] = None
     chip_structure_id: Optional[str]
     start_time: Optional[datetime] = None
 

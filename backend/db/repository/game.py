@@ -205,16 +205,11 @@ def delete_game_by_id(game_id: int, db: Session) -> bool:
 
 def get_user_past_games(user: User, db: Session, limit: int = None) -> List[Game]:
     """
-    Returns list of past (not running) games for all teams the user belongs to.
+    Returns list of past (not running) games the user has played in.
     """
-    team_ids = [team.id for team in user.teams]
-    if not team_ids:
-        return []
-
     query = (
         db.query(Game)
         .join(UserGame)
-        .filter(Game.team_id.in_(team_ids))
         .filter(UserGame.user_id == user.id)
         .filter(Game.running == False)
         .order_by(Game.date.desc())
@@ -228,15 +223,12 @@ def get_user_past_games(user: User, db: Session, limit: int = None) -> List[Game
 
 def get_user_past_games_count(user: User, db: Session) -> int:
     """
-    Returns count of past (not running) games for all teams the user belongs to.
+    Returns count of past (not running) games the user has played in.
     """
-    team_ids = [team.id for team in user.teams]
-    if not team_ids:
-        return 0
-
     return (
         db.query(Game)
-        .filter(Game.team_id.in_(team_ids))
+        .join(UserGame)
+        .filter(UserGame.user_id == user.id)
         .filter(Game.running == False)
         .count()
     )

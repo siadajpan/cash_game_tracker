@@ -72,17 +72,41 @@
         </table>
     </div>
 
-    <div class="mt-3 flex-shrink-0 bg-white pt-2 d-flex justify-content-between align-items-center">
-        <div>
-            <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
-        </div>
+    <div class="mt-3 flex-shrink-0 bg-white pt-2 d-flex justify-content-end align-items-center mb-4">
         {% if visible_count < games_count %} <div>
-            <span class="text-muted me-2 small">Showing {{ visible_count }} of {{ games_count }} games</span>
+            <span class="text-muted small">Showing {{ visible_count }} of {{ games_count }} games</span>
             <a href="?limit=10000&sort={{ sort_by }}&order={{ order }}" class="btn btn-link pe-0"><i
                     class="bi bi-list-ul me-1"></i> Show All</a>
     </div>
     {% endif %}
 </div>
+</div>
+
+<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+<div style="height: 150px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+        <a href="/" class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center border"
+            style="width: 80px; padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-house mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Home</span>
+        </a>
+        <a href="/game/view_past"
+            class="btn btn-primary shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <i class="bi bi-clock-history mb-1 fs-4 text-white"></i>
+            <span class="small fw-bold text-white" style="font-size: 0.9rem;">My past games</span>
+        </a>
+        <a href="/my_group"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-people mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">My group</span>
+        </a>
+    </div>
 </div>
 {% endblock %}
 
