@@ -14,15 +14,17 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#predictionsModal"
-                    hx-get="/game/{{ game.id }}/predictions" hx-target="#predictionsContent">
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
+                    data-bs-target="#predictionsModal" hx-get="/game/{{ game.id }}/predictions"
+                    hx-target="#predictionsContent">
                     <i class="bi bi-graph-up-arrow"></i> Predictions
                 </button>
             </li>
             {% if is_admin or is_owner %}
             <li>
-                <button class="dropdown-item" type="button" hx-get="/game/{{ game.id }}/book_keeper"
-                    hx-target="#assignBookKeeperContent" data-bs-toggle="modal" data-bs-target="#assignBookKeeperModal">
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button"
+                    hx-get="/game/{{ game.id }}/book_keeper" hx-target="#assignBookKeeperContent" data-bs-toggle="modal"
+                    data-bs-target="#assignBookKeeperModal">
                     <i class="bi bi-person-badge"></i> Assign Book Keeper
                 </button>
             </li>
@@ -32,8 +34,8 @@
                 <hr class="dropdown-divider">
             </li>
             <li>
-                <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
-                    data-bs-target="#deleteGameModal">
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6 text-danger" type="button"
+                    data-bs-toggle="modal" data-bs-target="#deleteGameModal">
                     <i class="bi bi-trash-fill"></i> Delete Game
                 </button>
             </li>

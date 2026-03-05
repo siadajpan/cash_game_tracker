@@ -9,11 +9,7 @@ block content %}
     <input type="text" class="form-control" id="name" name="name" placeholder="Name" value="{{form.name}}" required />
     <label>Name</label>
   </div>
-  <!-- Team Selector -->
-  <div class="mb-3">
-    {% with selected_team_id=form.team_id %} {% include
-    "team/users_team_dropdown.html" %} {% endwith %}
-  </div>
+
   <!-- Chip Rows -->
   <div class="row mb-3" id="chipRows">
     <div class="chip-row d-flex align-items-start gap-2 mb-2">

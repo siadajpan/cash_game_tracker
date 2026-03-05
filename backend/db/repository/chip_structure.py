@@ -19,7 +19,9 @@ def create_new_chip_structure_db(
     chip_structure: ChipStructureCreate, db: Session = Depends(get_db)
 ):
     new_chip_structure = ChipStructure(
-        team_id=chip_structure.team_id, name=chip_structure.name
+        team_id=chip_structure.team_id,
+        name=chip_structure.name,
+        owner_id=chip_structure.owner_id
     )
     db.add(new_chip_structure)
     db.commit()
@@ -77,6 +79,24 @@ def list_team_chip_structures(team_id: int, db: Session) -> List[Type[ChipStruct
     items = db.query(ChipStructure).filter(ChipStructure.team_id == team_id).all()
 
     return items
+
+
+def get_user_selectable_chip_structures(user_id: int, db: Session) -> List[ChipStructure]:
+    from backend.db.models.game import Game
+    from backend.db.models.user_game import UserGame
+
+    # Get from games they participated in
+    past_games = db.query(Game).join(UserGame).filter(UserGame.user_id == user_id).all()
+    unique_cs = {g.chip_structure for g in past_games if g.chip_structure}
+
+    # Add owned structures
+    user_owned = db.query(ChipStructure).filter(ChipStructure.owner_id == user_id).all()
+    unique_cs.update(user_owned)
+
+    # Convert to list and sort by name
+    result = list(unique_cs)
+    result.sort(key=lambda x: str(x.name))
+    return result
 
 
 def list_game_chip_structure(game_id: int, db: Session) -> Type[ChipStructure]:

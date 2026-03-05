@@ -54,30 +54,45 @@
     {% endif %}
 
     <div class="mt-4">
-        <div class="row g-3">
-            <div class="col-12 col-md-6">
+        <div class="row g-3 align-items-center">
+            <!-- Join Game Section -->
+            <div class="col-12 col-md-5">
                 <form
                     onsubmit="event.preventDefault(); const code = document.getElementById('gameCodeInput').value; if(code) { window.location.href = '/game/' + parseInt(code, 10) + '/join'; }">
-                    <div class="input-group input-group-lg">
-                        <input type="text" id="gameCodeInput" class="form-control form-control-lg fs-5"
-                            placeholder="6-digit game code" pattern="\d{1,6}" required>
-                        <button class="btn btn-outline-primary btn-lg fs-5" type="submit">Join</button>
+                    <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border">
+                        <input type="text" id="gameCodeInput" class="form-control border-0 fs-5 py-3"
+                            placeholder="6-digit code" pattern="\d{1,6}" required>
+                        <button class="btn btn-white bg-white border-0 text-primary fw-bold px-4"
+                            type="submit">Join</button>
                     </div>
                 </form>
             </div>
-            <div class="col-12 col-md-6 d-flex justify-content-md-end gap-2">
+
+            <!-- OR Separator -->
+            <div class="col-12 col-md-2 text-center py-2 py-md-0 position-relative">
+                <div class="d-none d-md-block position-absolute"
+                    style="top: -20px; bottom: -20px; left: 50%; width: 1px; background: linear-gradient(to bottom, transparent, #dee2e6, transparent); transform: translateX(-50%);">
+                </div>
+                <span class="bg-white px-3 fw-bold text-muted small position-relative"
+                    style="z-index: 2; letter-spacing: 1px;">OR</span>
+            </div>
+
+            <!-- Create Game Section -->
+            <div class="col-12 col-md-5 d-flex justify-content-md-start">
                 {% if user.is_active %}
-                <a href="/game/create" class="btn btn-primary btn-lg flex-grow-1 fs-5"><i
-                        class="bi bi-plus-lg me-1"></i> Create a
-                    game </a>
+                <a href="/game/create"
+                    class="btn btn-primary btn-lg w-100 py-3 fs-5 border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-center"
+                    style="background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+                    <i class="bi bi-plus-circle me-2"></i> Create a game
+                </a>
                 {% else %}
-                <span class="d-inline-block flex-grow-1" tabindex="0" data-bs-toggle="tooltip"
+                <div class="w-100" tabindex="0" data-bs-toggle="tooltip"
                     title="Please verify your email to create a game">
-                    <button class="btn btn-primary btn-lg w-100 fs-5" type="button" disabled
-                        style="pointer-events: none;">
+                    <button class="btn btn-primary btn-lg w-100 py-3 fs-5 opacity-50 border-0 rounded-3" type="button"
+                        disabled style="pointer-events: none;">
                         Create a game
                     </button>
-                </span>
+                </div>
                 {% endif %}
             </div>
         </div>

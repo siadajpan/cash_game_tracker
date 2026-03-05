@@ -12,49 +12,53 @@
             aria-expanded="false">
             <i class="bi bi-gear-fill fs-4"></i>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow">
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 p-2" style="min-width: 220px;">
             {% if is_admin or is_owner or is_book_keeper %}
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#editPlayersModal"
-                    hx-get="/game/{{ game.id }}/edit_players" hx-target="#edit-players-container">
-                    <i class="bi bi-people-fill"></i> Edit Players
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
+                    data-bs-target="#editPlayersModal" hx-get="/game/{{ game.id }}/edit_players"
+                    hx-target="#edit-players-container">
+                    <i class="bi bi-people-fill me-2 text-primary"></i> Edit Players
                 </button>
             </li>
             {% endif %}
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#qrCodeModal">
-                    <i class="bi bi-qr-code"></i> Show Guest QR
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
+                    data-bs-target="#qrCodeModal">
+                    <i class="bi bi-qr-code me-2 text-primary"></i> Show Guest QR
                 </button>
             </li>
             {% if is_admin or is_owner %}
             <li>
-                <button class="dropdown-item" type="button" hx-get="/game/{{ game.id }}/book_keeper"
-                    hx-target="#assignBookKeeperContent" data-bs-toggle="modal" data-bs-target="#assignBookKeeperModal">
-                    <i class="bi bi-person-badge"></i> Assign Book Keeper
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button"
+                    hx-get="/game/{{ game.id }}/book_keeper" hx-target="#assignBookKeeperContent" data-bs-toggle="modal"
+                    data-bs-target="#assignBookKeeperModal">
+                    <i class="bi bi-person-badge me-2 text-primary"></i> Assign Book Keeper
                 </button>
             </li>
             {% endif %}
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#predictionsModal"
-                    hx-get="/game/{{ game.id }}/predictions" hx-target="#predictionsContent">
-                    <i class="bi bi-graph-up-arrow"></i> Predictions
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
+                    data-bs-target="#predictionsModal" hx-get="/game/{{ game.id }}/predictions"
+                    hx-target="#predictionsContent">
+                    <i class="bi bi-graph-up-arrow me-2 text-primary"></i> Predictions
                 </button>
             </li>
             {% if is_admin or is_owner or is_book_keeper %}
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal"
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
                     data-bs-target="#changeChipStructureModal">
-                    <i class="bi bi-stack"></i> Change Chip Structure
+                    <i class="bi bi-stack me-2 text-primary"></i> Change Chip Structure
                 </button>
             </li>
             {% endif %}
             {% if is_admin or is_owner or is_book_keeper %}
             <li>
-                <hr class="dropdown-divider">
+                <hr class="dropdown-divider mx-3">
             </li>
             <li>
-                <a class="dropdown-item text-danger" href="/game/{{ game.id }}/finish">
-                    <i class="bi bi-x-circle"></i> Finish Game
+                <a class="dropdown-item py-2 px-4 rounded-3 text-danger fw-bold fs-6" href="/game/{{ game.id }}/finish">
+                    <i class="bi bi-x-circle me-2"></i> Finish Game
                 </a>
             </li>
             {% endif %}
@@ -298,15 +302,30 @@
             <form action="/game/{{ game.id }}/update_chip_structure" method="POST">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="chip_structure_id_select" class="form-label">Select Chip Structure</label>
-                        <select name="chip_structure_id" id="chip_structure_id_select"
-                            class="form-select form-select-lg py-3 fs-5" required>
-                            {% for cs in chip_structures %}
-                            <option value="{{ cs.id }}" {% if game.chip_structure_id==cs.id %}selected{% endif %}>
-                                {{ cs.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        <label class="form-label small text-muted mb-1 ms-1">Select Chip Structure</label>
+                        <div class="dropdown">
+                            <button
+                                class="btn btn-white w-100 text-start d-flex justify-content-between align-items-center py-3 px-3 rounded-2 shadow-sm border"
+                                type="button" id="chipDropdownRunning" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span id="selectedChipLabelRunning" class="fs-6">
+                                    {% for cs in chip_structures %}
+                                    {% if game.chip_structure_id == cs.id %}{{ cs.name }}{% endif %}
+                                    {% endfor %}
+                                    {% if not game.chip_structure_id %}-- Select Chip Structure --{% endif %}
+                                </span>
+                                <i class="bi bi-chevron-down text-muted"></i>
+                            </button>
+                            <ul class="dropdown-menu w-100 shadow-lg border-0 rounded-4 mt-2 p-2"
+                                aria-labelledby="chipDropdownRunning"
+                                style="max-height: 350px; overflow-y: auto; z-index: 1050;">
+                                {% for cs in chip_structures %}
+                                <li><a class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6 {% if game.chip_structure_id == cs.id %}active{% endif %}"
+                                        href="#" data-value="{{ cs.id }}">{{ cs.name }}</a></li>
+                                {% endfor %}
+                            </ul>
+                            <input type="hidden" name="chip_structure_id" id="chip_structure_id_running"
+                                value="{{ game.chip_structure_id or '' }}">
+                        </div>
                     </div>
                     <p class="text-muted small">Changing the chip structure will update the values and colors displayed
                         for all players during the cash out.</p>
@@ -320,9 +339,9 @@
                         <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Cancel</span>
                     </button>
 
-                    <a href="/team/{{ game.team_id }}/chip_structures?return_url=/game/{{ game.id }}"
-                        class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-                        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+                    <a href="/chip_structure/manage?return_url=/game/{{ game.id }}"
+                        class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0"
+                        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background-color: #f8f9fa;">
                         <i class="bi bi-gear-wide-connected mb-1 fs-4 text-secondary"></i>
                         <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Manage</span>
                     </a>
@@ -410,6 +429,26 @@
             }
         });
     }
+
+    // --- Custom Chip Dropdown Logic for Running Game ---
+    const chipDropdownItemsRunning = document.querySelectorAll('#changeChipStructureModal .dropdown-item[data-value]');
+    const chipHiddenInputRunning = document.getElementById('chip_structure_id_running');
+    const chipLabelRunning = document.getElementById('selectedChipLabelRunning');
+
+    chipDropdownItemsRunning.forEach(item => {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            const val = this.getAttribute('data-value');
+            const text = this.textContent;
+
+            chipHiddenInputRunning.value = val;
+            chipLabelRunning.textContent = text;
+
+            // Remove active class from others, add to this
+            chipDropdownItemsRunning.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 <script>

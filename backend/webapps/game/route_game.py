@@ -44,6 +44,7 @@ from backend.db.repository.chip_structure import (
     get_user_team_chip_structures_dict,
     list_team_chip_structures,
     get_chip_structure,
+    get_user_selectable_chip_structures,
 )
 from backend.db.repository.game import (
     create_new_game_db,
@@ -126,10 +127,7 @@ async def create_game_form(
     """
     Renders the game creation form, populating team choices and default values.
     """
-    # Get all chip structures from games the user has played in
-    games = db.query(Game).join(UserGame).filter(UserGame.user_id == current_user.id).all()
-    unique_cs = {g.chip_structure for g in games if g.chip_structure}
-    user_chip_structures = sorted(list(unique_cs), key=lambda x: str(x.name))
+    user_chip_structures = get_user_selectable_chip_structures(current_user.id, db)
 
     # Round time to nearest 15 minutes
     now = datetime.now()
@@ -184,12 +182,16 @@ async def create_game(
         else:
             team_id = None
 
+        chip_structure_id = form.get("chip_structure_id")
+        if not chip_structure_id:  # Handles empty string
+            chip_structure_id = None
+
         new_game_data = GameCreate(
             date=game_date,
             default_buy_in=float(form.get("default_buy_in", 0)),
             running=True,
             team_id=team_id,
-            chip_structure_id=form.get("chip_structure_id"),
+            chip_structure_id=chip_structure_id,
             start_time=start_time_val,
         )
 
@@ -214,9 +216,7 @@ async def create_game(
     except Exception as e:
         errors.append(f"Unexpected error: {e}")
     # Refresh chip structures in case of error
-    games = db.query(Game).join(UserGame).filter(UserGame.user_id == current_user.id).all()
-    unique_cs = {g.chip_structure for g in games if g.chip_structure}
-    user_chip_structures = sorted(list(unique_cs), key=lambda x: str(x.name))
+    user_chip_structures = get_user_selectable_chip_structures(current_user.id, db)
 
     # Render back with errors
     return templates.TemplateResponse(
@@ -524,7 +524,7 @@ async def open_game(
 
     template_name = "game/view_running.html" if game.running else "game/view_ended.html"
 
-    chip_structures = list_team_chip_structures(game.team_id, db)
+    chip_structures = get_user_selectable_chip_structures(user.id, db) if user else []
 
     return templates.TemplateResponse(
         template_name,

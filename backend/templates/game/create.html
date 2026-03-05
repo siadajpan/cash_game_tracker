@@ -4,18 +4,31 @@
 content %}
 <form method="POST" action="/game/create">
   <!-- Group selection removed based on user request --> <!-- Chip structure -->
-  <div class="form-floating mb-3">
-    <select name="chip_structure_id" id="chip_structure_id" required class="form-select">
-      <option value="" disabled selected>-- Choose a chip structure --</option>
-      {% for cs in user_chip_structures %}
-      <option value="{{ cs.id }}">{{ cs.name }}</option>
-      {% endfor %}
-      {% if user_chip_structures %}
-      <option disabled>────────────────</option>
-      {% endif %}
-      <option value="create_new">➕ Create new chip values...</option>
-    </select>
-    <label for="chip_structure_id" class="form-label">Chip Structure</label>
+  <div class="mb-3">
+    <label class="form-label small text-muted mb-1 ms-1">Chip Structure</label>
+    <div class="dropdown">
+      <button
+        class="btn btn-white w-100 text-start d-flex justify-content-between align-items-center py-3 px-3 rounded-2 shadow-sm border"
+        type="button" id="chipDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <span id="selectedChipLabel" class="fs-6">-- No chip structure (Skip) --</span>
+        <i class="bi bi-chevron-down text-muted"></i>
+      </button>
+      <ul class="dropdown-menu w-100 shadow-lg border-0 rounded-4 mt-2 p-2" aria-labelledby="chipDropdown"
+        style="max-height: 350px; overflow-y: auto; z-index: 1050;">
+        <li><a class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" href="#" data-value="">-- No chip structure (Skip)
+            --</a></li>
+        {% for cs in user_chip_structures %}
+        <li><a class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" href="#" data-value="{{ cs.id }}">{{ cs.name }}</a>
+        </li>
+        {% endfor %}
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+        <li><a class="dropdown-item py-2 px-4 rounded-3 text-primary fw-bold fs-6" href="/chip_structure/create">➕
+            Create new chip values...</a></li>
+      </ul>
+      <input type="hidden" name="chip_structure_id" id="chip_structure_id" value="">
+    </div>
   </div>
 
   <!-- Default buy-in -->
@@ -174,17 +187,25 @@ content %}
 
     // --- End Time Picker Logic ---
 
-    // Handle chip structure selection (for "Create new..." redirection)
-    const chipSelect = document.getElementById('chip_structure_id');
-    if (chipSelect) {
-      chipSelect.addEventListener('change', function () {
-        if (this.value === 'create_new') {
-          // You can also append team_id=null or similar if needed
-          window.location.href = '/chip_structure/create';
-          this.value = "";
-        }
+    // --- Custom Chip Dropdown Logic ---
+    const chipDropdownItems = document.querySelectorAll('.dropdown-item[data-value]');
+    const chipHiddenInput = document.getElementById('chip_structure_id');
+    const chipLabel = document.getElementById('selectedChipLabel');
+
+    chipDropdownItems.forEach(item => {
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+        const val = this.getAttribute('data-value');
+        const text = this.textContent;
+
+        chipHiddenInput.value = val;
+        chipLabel.textContent = text;
+
+        // Remove active class from others, add to this
+        chipDropdownItems.forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
       });
-    }
+    });
 
     // Ensure start_time is updated before submission
     const form = document.querySelector('form');

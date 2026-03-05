@@ -9,7 +9,8 @@ class GameCreate(BaseModel):
     default_buy_in: float
     running: bool
     team_id: Optional[str] = None
-    chip_structure_id: Optional[str]
+    # Chip structure is now optional
+    chip_structure_id: Optional[str] = None
     start_time: Optional[datetime] = None
 
     @field_validator("default_buy_in")
@@ -25,14 +26,6 @@ class GameCreate(BaseModel):
     def ensure_correct_date(cls, value):
         if not value:
             raise AssertionError("Failed to fill the date")
-        return value
-
-    @field_validator("chip_structure_id")
-    def ensure_chip_structure_selected(cls, value):
-        if not value:
-            raise PydanticCustomError(
-                "chip_structure_error", "Select Chip Structure or create a new one"
-            )
         return value
 
 

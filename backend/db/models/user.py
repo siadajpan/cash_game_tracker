@@ -40,6 +40,7 @@ class User(Base):
     verification = relationship(
         "UserVerification", back_populates="user", uselist=False
     )
+    chip_structures = relationship("ChipStructure", back_populates="owner", cascade="all, delete-orphan")
 
     @property
     def teams(self):
