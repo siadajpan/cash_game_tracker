@@ -2,25 +2,47 @@
 <title>Welcome</title>
 {% endblock %} {% block page_heading %}Welcome{% endblock %} {% block content%}
 
-<form method="POST">
-    <div class="form-floating mb-3">
-        <input type="text" required class="form-control" id="nick" name="nick" value="{{nick}}" placeholder="Nick" />
-        <label>Nick</label>
-    </div>
+<div class="d-flex align-items-center justify-content-center" style="min-height: 50vh;">
+    <div class="card shadow-sm border-0 rounded-4 w-100" style="max-width: 400px;">
+        <div class="card-body p-4 text-center">
+            <h4 class="fw-bold mb-4">Who are you?</h4>
+            <form method="POST" id="registerForm">
+                <div class="form-floating mb-3">
+                    <input type="text" required class="form-control fs-4" id="nick" name="nick" value="{{nick}}"
+                        placeholder="Nick" autofocus autocomplete="off" />
+                    <label for="nick">Your Nickname</label>
+                </div>
 
-    {% if errors %}
-    <div class="alert alert-danger" role="alert">
-        {% for error in errors %}
-        <div>{{ error }}</div>
-        {% endfor %}
+                {% if errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for error in errors %}
+                    <div class="small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </form>
+        </div>
     </div>
-    {% endif %}
+</div>
 
-    <!-- Button row -->
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <a href="/login" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-in-right me-1"></i> Already
-            registered?</a>
-        <button type="submit" class="btn btn-primary"><i class="bi bi-person-plus-fill me-1"></i> Register</button>
+<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+<div style="height: 120px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+        <a href="/login"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-box-arrow-in-right mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Login</span>
+        </a>
+        <button type="submit" form="registerForm"
+            class="btn btn-primary shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <i class="bi bi-person-plus-fill mb-1 fs-4 text-white"></i>
+            <span class="small fw-bold text-white" style="font-size: 0.9rem;">Create account</span>
+        </button>
     </div>
-</form>
+</div>
 {% endblock %}

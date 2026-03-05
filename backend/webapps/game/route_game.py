@@ -314,7 +314,12 @@ async def join_game_form(
     user: User = Depends(get_active_user),
 ):
     game = get_game_by_id(game_id, db)
-    # TODO Add checking if user is allowed to enter that game (if he edits href)
+    if not game:
+        return RedirectResponse(url="/", status_code=303)
+
+    if not game.running:
+        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+
     if user_in_game(user, game):
         return RedirectResponse(url=f"/game/{game.id}")  # already in game
     return templates.TemplateResponse(
@@ -342,11 +347,14 @@ async def join_game(
         # Fetch game
         if game is None:
             errors.append("Game doesn't exist anymore. Maybe it was deleted.")
+        elif not game.running:
+            errors.append("Game is already finished. You cannot join it anymore.")
 
-        add_user_to_game(user, game, db)
-        add_user_buy_in(user, game, buy_in, db)
-        # Redirect to the game page
-        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+        if not errors:
+            add_user_to_game(user, game, db)
+            add_user_buy_in(user, game, buy_in, db)
+            # Redirect to the game page
+            return RedirectResponse(url=f"/game/{game.id}", status_code=303)
 
     except ValidationError as e:
         errors.extend([err["msg"] for err in e.errors()])
@@ -465,15 +473,23 @@ async def open_game(
             url="/?msg=Game not found or deleted", status_code=status.HTTP_302_FOUND
         )
 
-    if not user or not user_in_game(user, game):
+    if not user:
         if game.running:
-            # If guest/unauthenticated, they can't join normally via this check
-            if not user:
-                 # Pass through to allow viewing running game as guest
-                 pass
-            else:
-                 return RedirectResponse(url=f"/game/{game.id}/join")  # not in the game yet
-        # If game is ended, allow viewing even if not a player
+            # Allow viewing running game as guest (read-only view usually)
+            pass
+        else:
+            # Prohibit guests from viewing ended games
+            return RedirectResponse(url="/?msg=You must be logged in to view past games", status_code=status.HTTP_302_FOUND)
+    elif not user_in_game(user, game):
+        if game.running:
+            # Not in game yet, redirect to join page
+            return RedirectResponse(url=f"/game/{game.id}/join", status_code=status.HTTP_302_FOUND)
+        else:
+            # Ended game and user was NOT a participant: Prohibit viewing
+            return RedirectResponse(
+                url="/?msg=This game is already finished", 
+                status_code=status.HTTP_302_FOUND
+            )
 
     players_info = []
     existing_requests = False

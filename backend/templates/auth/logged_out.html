@@ -1,0 +1,55 @@
+{% extends "shared/base.html" %}
+{% block title %}
+<title>Logged Out</title>
+{% endblock %}
+{% block page_heading %}Successfully Logged Out{% endblock %}
+{% block content %}
+
+<div class="card shadow-sm border-0 rounded-4 mt-4">
+    <div class="card-body p-4 text-center">
+        <i class="bi bi-person-check-fill display-2 text-secondary mb-4"></i>
+        <h4 class="fw-bold mb-3">You've successfully logged out.</h4>
+
+        {% if is_default_password %}
+        <div class="alert alert-warning border-0 rounded-3 mb-4 mx-auto shadow-sm" style="max-width: 400px;">
+            <i class="bi bi-shield-lock-fill me-2"></i>
+            <span>Your login is still using the default password: <b>guest123</b></span>
+        </div>
+        {% endif %}
+
+        <div class="mt-4">
+            <p class="text-muted small">We've saved your <b>Nick ID</b> in your browser's history for next time.</p>
+        </div>
+
+        <hr class="my-5">
+
+        <p class="text-muted smaller mb-5">
+            Forgot your unique ID? <a href="/forgot-nick-id/" class="text-primary fw-semibold">Retrieve Nick ID</a>
+        </p>
+
+        <!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+        <div style="height: 120px;"></div>
+    </div>
+</div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+        <a href="/login"
+            class="btn btn-primary shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <i class="bi bi-box-arrow-in-right mb-1 fs-4 text-white"></i>
+            <span class="small fw-bold text-white" style="font-size: 0.9rem;">Log in</span>
+        </a>
+        <a href="/welcome"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-person-plus mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Create account</span>
+        </a>
+    </div>
+</div>
+</div>
+</div>
+
+{% endblock %}

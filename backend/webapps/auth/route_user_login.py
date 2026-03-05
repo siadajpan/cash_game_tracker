@@ -27,7 +27,7 @@ from backend.core.config import settings
 from backend.apis.v1.route_login import create_access_token
 from datetime import timedelta
 from backend.db.repository.user import create_verification_token
-from backend.apis.v1.route_login import add_new_access_token
+from backend.apis.v1.route_login import add_new_access_token, get_current_user
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
@@ -398,10 +398,83 @@ async def finish_google_registration(request: Request, db: Session = Depends(get
 
 
 @router.get("/logout/")
-async def login(request: Request):
+async def logout(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    is_default = False
+    if user:
+        is_default = user.is_using_default_password
+
     response = responses.RedirectResponse(
-        "/?msg=Successfully logged out", status_code=status.HTTP_302_FOUND
+        f"/logged-out?default={int(is_default)}", status_code=status.HTTP_302_FOUND
     )
     response.delete_cookie("access_token")
 
     return response
+
+
+@router.get("/logged-out")
+async def logged_out(request: Request, default: int = 0):
+    return templates.TemplateResponse("auth/logged_out.html", {
+        "request": request,
+        "is_default_password": bool(default)
+    })
+
+
+@router.get("/forgot-nick-id/")
+async def forgot_nick_form(request: Request):
+    return templates.TemplateResponse("auth/forgot_nick.html", {"request": request})
+
+
+@router.post("/forgot-nick-id/")
+async def forgot_nick(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    nick = form.get("nick", "").strip()
+    partners_str = form.get("partners", "").strip()
+    
+    if not nick or not partners_str:
+        return templates.TemplateResponse("auth/forgot_nick.html", {
+            "request": request, 
+            "errors": ["Both your nickname and at least one partner nickname are required."]
+        })
+
+    # Split partners by comma or space
+    partner_nicks = [p.strip().lower() for p in partners_str.replace(",", " ").split() if p.strip()]
+    
+    from backend.db.models.user import User
+    from backend.db.models.user_game import UserGame
+
+    # 1. Find all users with this display nick
+    potential_users = db.query(User).filter(User.nick.ilike(nick)).all()
+    
+    matches = []
+    for u in potential_users:
+        # 2. Get all games this user was in
+        game_ids = [ug.game_id for ug in u.game_associations]
+        if not game_ids:
+            continue
+            
+        # 3. Get all other players in those games
+        other_players = db.query(User.nick).join(UserGame).filter(
+            UserGame.game_id.in_(game_ids),
+            UserGame.user_id != u.id
+        ).distinct().all()
+        
+        other_nicks_lower = [p[0].lower() for p in other_players]
+        
+        # 4. Check if any entered partner nick matches
+        shared_partners = [p for p in partner_nicks if p in other_nicks_lower]
+        if shared_partners:
+            matches.append({
+                "nick_id": u.nick_id,
+                "shared_count": len(shared_partners)
+            })
+
+    # Sort by how many partners matched
+    matches.sort(key=lambda x: x["shared_count"], reverse=True)
+
+    return templates.TemplateResponse("auth/forgot_nick.html", {
+        "request": request,
+        "nick": nick,
+        "partners": partners_str,
+        "matches": matches[:5] # Limit to top 5
+    })

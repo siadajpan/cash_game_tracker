@@ -7,7 +7,7 @@
 
 <div class="card shadow-sm">
   <div class="card-body">
-    <form method="POST">
+    <form method="POST" id="profileForm">
       <!-- Nickname -->
       <div class="form-floating mb-3">
         <input type="text" required placeholder="Nickname" name="nick" value="{{ form.nick or user.nick }}"
@@ -23,7 +23,7 @@
       </div>
 
       <hr class="my-4">
-      <h5 class="mb-3 text-muted">Change Password (Optional)</h5>
+      <h5 id="password-section" class="mb-3 text-muted">Change Password (Optional)</h5>
 
       <!-- Password -->
       <div class="row g-2 mb-3">
@@ -43,13 +43,33 @@
         </div>
       </div>
 
-      <!-- Buttons -->
-      <div class="d-flex justify-content-between mt-4">
-        <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
-        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle-fill me-1"></i> Save
-          Changes</button>
-      </div>
+      <!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+      <div style="height: 120px;"></div>
     </form>
+  </div>
+</div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+  <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+    <a href="/"
+      class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center border shadow-sm"
+      style="width: 80px; padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+      <i class="bi bi-house mb-1 fs-4 text-secondary"></i>
+      <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Home</span>
+    </a>
+    <a href="/logout"
+      class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+      style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+      <i class="bi bi-box-arrow-right mb-1 fs-4 text-danger"></i>
+      <span class="small fw-bold text-danger" style="font-size: 0.9rem;">Logout</span>
+    </a>
+    <button type="submit" form="profileForm"
+      class="btn btn-primary shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+      style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+      <i class="bi bi-check-circle mb-1 fs-4 text-white"></i>
+      <span class="small fw-bold text-white" style="font-size: 0.9rem;">Save changes</span>
+    </button>
   </div>
 </div>
 {% endblock %}

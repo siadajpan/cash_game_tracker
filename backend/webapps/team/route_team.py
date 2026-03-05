@@ -664,57 +664,100 @@ async def _get_player_stats_context(
             excess_days = days_ago - recent_threshold_days
             return 0.95 * math.exp(-decay_rate * excess_days)
 
-    team = db.query(Team).filter(Team.id == team_id).first()
-    if not team:
-        return RedirectResponse(f"/dashboard")
-
-    # Check permissions
-    if current_user.id not in [m.id for m in team.users] and not current_user.is_superuser:
-        return RedirectResponse(f"/dashboard")
-    
-    # Check player role for admin actions
     is_admin = False
     player_role = "MEMBER"
-    for m in team.users:
-        if m.id == current_user.id:
-            membership = (
-                db.query(UserTeam)
-                .filter(UserTeam.team_id == team.id, UserTeam.user_id == current_user.id)
-                .first()
-            )
-            if membership and membership.role == TeamRole.ADMIN:
-                is_admin = True
-        
-        if m.id == player_id:
-             p_membership = (
-                db.query(UserTeam)
-                .filter(UserTeam.team_id == team.id, UserTeam.user_id == player_id)
-                .first()
-            )
-             if p_membership:
-                 player_role = p_membership.role
+    is_global_group = False
 
-    player = db.query(User).filter(User.id == player_id).first()
-    if not player:
-        return RedirectResponse(f"/team/{team_id}")
+    if team_id == 0:
+        class FakeTeam:
+            id = 0
+            name = "My Group"
+            search_code = ""
 
-    # Build filters
-    filters = [Game.team_id == team.id]
-    target_year = None
-    if year and year != "all":
-        target_year = year
-        filters.append(Game.date.like(f"{target_year}%"))
+        team = FakeTeam()
+        is_global_group = True
 
-    # Fetch all games for this team (filtered by year)
-    q_games = db.query(Game).filter(*filters).order_by(Game.date.desc())
-    all_team_games = q_games.all()
+        player = db.query(User).filter(User.id == player_id).first()
+        if not player:
+            return RedirectResponse(f"/")
+
+        from backend.db.models.user_game import UserGame
+
+        # Verify the current user has played at least one game with this player
+        shared_games_count = db.query(func.count(UserGame.game_id)).filter(
+            UserGame.game_id.in_(db.query(UserGame.game_id).filter(UserGame.user_id == current_user.id).subquery()),
+            UserGame.user_id == player_id
+        ).scalar() or 0
+
+        # If they've never met, we might want to restrict this or just show empty. 
+        # The user specifically said "for each player I played with", implying we only care about met players.
+        if shared_games_count == 0 and player_id != current_user.id:
+             # Option 1: Empty. Option 2: Error. Option 3: Allow anyway?
+             # User said: "for each player I played with". Let's stick to that.
+             # If I haven't played with them, don't show their career.
+             return RedirectResponse(f"/my_group?msg=You haven't played with this user")
+
+        # Now include ALL games for this player (not just shared ones)
+        player_game_ids_subquery = db.query(UserGame.game_id).filter(UserGame.user_id == player_id).subquery()
+
+        filters = [Game.id.in_(player_game_ids_subquery)]
+        target_year = None
+        if year and year != "all":
+            target_year = year
+            filters.append(Game.date.like(f"{target_year}%"))
+
+        q_games = db.query(Game).filter(*filters).order_by(Game.date.desc())
+        all_team_games = q_games.all()
+
+        all_dates = db.query(Game.date).filter(Game.id.in_(player_game_ids_subquery)).all()
+
+    else:
+        team = db.query(Team).filter(Team.id == team_id).first()
+        if not team:
+            return RedirectResponse(f"/dashboard")
+
+        # Check permissions
+        if current_user.id not in [m.id for m in team.users] and not current_user.is_superuser:
+            return RedirectResponse(f"/dashboard")
+
+        for m in team.users:
+            if m.id == current_user.id:
+                membership = (
+                    db.query(UserTeam)
+                    .filter(UserTeam.team_id == team.id, UserTeam.user_id == current_user.id)
+                    .first()
+                )
+                if membership and membership.role == TeamRole.ADMIN:
+                    is_admin = True
+            
+            if m.id == player_id:
+                p_membership = (
+                    db.query(UserTeam)
+                    .filter(UserTeam.team_id == team.id, UserTeam.user_id == player_id)
+                    .first()
+                )
+                if p_membership:
+                    player_role = p_membership.role
+
+        player = db.query(User).filter(User.id == player_id).first()
+        if not player:
+            return RedirectResponse(f"/team/{team_id}")
+
+        filters = [Game.team_id == team.id]
+        target_year = None
+        if year and year != "all":
+            target_year = year
+            filters.append(Game.date.like(f"{target_year}%"))
+
+        q_games = db.query(Game).filter(*filters).order_by(Game.date.desc())
+        all_team_games = q_games.all()
+
+        all_dates = db.query(Game.date).filter(Game.team_id == team.id).all()
+
     team_total_games = len(all_team_games)
-    
     team_game_ids = [g.id for g in all_team_games]
     
     # Determine available years for filter
-    # To get available years we need ALL games for the team, unqualified by year filter
-    all_dates = db.query(Game.date).filter(Game.team_id == team.id).all()
     available_years = sorted(
         list(set([str(d[0])[:4] for d in all_dates if d[0]])), reverse=True
     )
@@ -1258,6 +1301,7 @@ async def _get_player_stats_context(
         "player_role": player_role,
         "visible_count": len(games_history),
         "current_user": current_user,
+        "is_global_group": is_global_group,
     }
 
 

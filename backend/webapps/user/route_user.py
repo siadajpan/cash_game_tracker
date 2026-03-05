@@ -60,14 +60,8 @@ async def profile_update(
                 db.add(user)
                 db.commit()
                 db.refresh(user)
-                return templates.TemplateResponse(
-                    "user/profile.html",
-                    {
-                        "request": request,
-                        "user": user,
-                        "form": form,
-                        "msg": "Profile updated successfully",
-                    },
+                return responses.RedirectResponse(
+                    "/?msg=Profile updated successfully", status_code=status.HTTP_302_FOUND
                 )
             except Exception as e:
                 form.errors.append(f"An error occurred: {e}")

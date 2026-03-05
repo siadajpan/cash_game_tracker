@@ -14,24 +14,34 @@
         class="form-control" />
       <label>Password</label>
 
-      <div class="mt-2">
-        <a href="/forgot-password" class="small text-muted">Forgot your password?</a>
+      <div class="mt-2 d-flex justify-content-between">
+        <a href="/forgot-password" class="small text-muted">Forgot password?</a>
+        <a href="/forgot-nick-id/" class="small text-primary fw-bold">Don't know your ID?</a>
       </div>
     </div>
+</div>
 
-    <!-- Button row -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <a href="/welcome" class="btn btn-outline-secondary"><i class="bi bi-person-plus me-1"></i> Create a new
-        account</a>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-right me-1"></i> Login</button>
-    </div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const lastId = localStorage.getItem('last_nick_id');
+    if (lastId) {
+      const input = document.querySelector('input[name="nick"]');
+      if (input && !input.value) {
+        input.value = lastId;
+      }
+    }
+  });
+</script>
 
-    <div class="d-flex">
-      <a href="/login/google" class="btn btn-outline-danger">
-        <i class="bi bi-google"></i> Login with Google
-      </a>
-    </div>
-  </form>
+<!-- Button row -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <a href="/welcome" class="btn btn-outline-secondary"><i class="bi bi-person-plus me-1"></i> Create a new
+    account</a>
+  <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-right me-1"></i> Login</button>
+</div>
+
+
+</form>
 
 </div>
 {% endblock %}

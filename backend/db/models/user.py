@@ -50,3 +50,8 @@ class User(Base):
     def games_played(self):
         # Retrieve the Team objects via the association objects
         return [assoc.game for assoc in self.game_associations]
+    @property
+    def is_using_default_password(self):
+        from backend.core.hashing import Hasher
+        # Standard default password for all guest accounts
+        return Hasher.verify_password("guest123", self.hashed_password)

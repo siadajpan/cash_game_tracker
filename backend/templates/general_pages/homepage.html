@@ -36,16 +36,16 @@
     {% set game_count = running_games | length %}
 
     {% if game_count > 0 %}
-    <ul class="list-group list-group-flush mb-3">
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
         {% for game in running_games %}
-        <li class="list-group-item">
+        <div class="col">
             {% set is_user_in_game = user in game.players %}
             {% with game=game %}
             {% include "game/game_list_view.html" %}
             {% endwith %}
-        </li>
+        </div>
         {% endfor %}
-    </ul>
+    </div>
     {% else %}
     <div class="alert alert-info mt-3" role="alert">
         <p class="mb-0 lead"> There are no running games among people you've played with. Click the button below to

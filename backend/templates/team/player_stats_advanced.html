@@ -8,7 +8,11 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="page-title">
         {{ player.nick }}
+        {% if is_global_group %}
+        <span class="text-muted">Global Stats</span>
+        {% else %}
         <span class="text-muted">in {{ team.name }}</span>
+        {% endif %}
     </div>
 
     <div class="d-flex gap-2">
@@ -247,10 +251,19 @@
             </div>
         </div>
     </div>
-    <!-- Back Button -->
-    <div class="mt-4 mb-3">
-        <a href="/team/{{ team.id }}/player/{{ player.id }}?year={{ selected_year }}" class="btn btn-outline-secondary">
-            Back to Profile
+</div>
+
+<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+<div style="height: 100px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+        <a href="/team/{{ team.id }}/player/{{ player.id }}?year={{ selected_year }}"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Back to Profile</span>
         </a>
     </div>
 </div>
