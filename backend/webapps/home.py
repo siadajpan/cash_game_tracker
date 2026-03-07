@@ -180,6 +180,7 @@ async def my_group(
         "team/team_view.html",
         {
             "request": request,
+            "user": user,
             "current_user": user,
             "is_admin": False,
             "team": FakeTeam(),

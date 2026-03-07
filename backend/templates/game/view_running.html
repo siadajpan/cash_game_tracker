@@ -66,13 +66,15 @@
     </div>
 </div>
 
-<div id="game-table-container" class="mb-3" hx-get="/game/{{ game.id }}/table?sort={{ sort_by }}&order={{ order }}"
-    hx-trigger="every 5s" hx-swap="innerHTML">
-    {% include "components/players_table.html" %}
+<div id="game-view-container" class="overflow-y-auto px-1" style="min-height: 0; overflow-x: hidden;">
+    <div id="game-table-container" class="mb-3" hx-get="/game/{{ game.id }}/table?sort={{ sort_by }}&order={{ order }}"
+        hx-trigger="every 5s" hx-swap="innerHTML">
+        {% include "components/players_table.html" %}
+    </div>
 </div>
 
-<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
-<div style="height: 150px;"></div>
+
+
 
 <!-- Fixed Bottom Navigation -->
 <div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
@@ -396,11 +398,14 @@
 
         // Calculate available height: Window height - container top position - bottom nav height
         const rect = container.getBoundingClientRect();
-        const bottomNavHeight = 100; // Account for the approx 90px fixed bottom nav
+        const bottomNavHeight = 80;
         const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
 
         // Ensure a reasonable minimum height
         container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
+
+        // Ensure the body doesn't cause page-level scrolling
+        document.body.style.overflow = 'hidden';
     }
 
     window.addEventListener('resize', adjustGameViewHeight);

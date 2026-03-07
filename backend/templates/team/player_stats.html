@@ -5,103 +5,108 @@
 {% block page_heading %}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="page-title">
-        {{ player.nick }}
-        {% if is_global_group %}
-        <span class="text-muted">Global Stats</span>
-        {% else %}
-        <span class="text-muted">in {{ team.name }}</span>
-        {% endif %}
-    </div>
-
-    <div class="d-flex gap-2">
-        <!-- Year Filter -->
-        <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                aria-expanded="false">
-                {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}"
-                        href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
-                {% if available_years %}
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
-                {% for y in available_years %}
-                <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}"
-                        href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
-                {% endfor %}
-                {% endif %}
-            </ul>
+<div class="sticky-top bg-white pt-2 mb-2" style="z-index: 1020; top: 56px;">
+    <div class="d-flex justify-content-between align-items-center px-2">
+        <div class="page-title py-2 m-0">
+            {{ player.nick }}
+            {% if is_global_group %}
+            <span class="text-muted">Stats</span>
+            {% else %}
+            <span class="text-muted">in {{ team.name }}</span>
+            {% endif %}
         </div>
 
-        {% if is_admin and player.id != current_user.id %}
-        <div class="dropdown">
-            <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                aria-expanded="false">
-                <i class="bi bi-gear-fill"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                {% if player_role == 'MEMBER' %}
-                <li>
-                    <form action="/team/{{ team.id }}/player/{{ player.id }}/role" method="post">
-                        <input type="hidden" name="role" value="ADMIN">
-                        <button class="dropdown-item" type="submit">
-                            <i class="bi bi-shield-check"></i> Promote to Admin
-                        </button>
-                    </form>
-                </li>
-                {% else %}
-                <li>
-                    <form action="/team/{{ team.id }}/player/{{ player.id }}/role" method="post">
-                        <input type="hidden" name="role" value="MEMBER">
-                        <button class="dropdown-item" type="submit">
-                            <i class="bi bi-shield-slash"></i> Demote to Member
-                        </button>
-                    </form>
-                </li>
-                {% endif %}
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
-                <li>
-                    <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
-                        data-bs-target="#removePlayerModal">
-                        <i class="bi bi-person-x"></i> Remove from group
-                    </button>
-                </li>
-            </ul>
-        </div>
-        {% endif %}
-    </div>
+        <div class="d-flex gap-2">
+            <div class="dropdown">
+                <button class="btn btn-lg btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                    {% if selected_year == 'all' %}All Time{% else %}{{ selected_year }}{% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+                    <li><a class="dropdown-item {% if selected_year == 'all' %}active{% endif %}"
+                            href="?year=all&sort={{ sort_by }}&order={{ order }}">All Time</a></li>
+                    {% if available_years %}
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    {% for y in available_years %}
+                    <li><a class="dropdown-item {% if selected_year == y|string %}active{% endif %}"
+                            href="?year={{ y }}&sort={{ sort_by }}&order={{ order }}">{{ y }}</a></li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
 
-    {% if is_admin and player.id != current_user.id %}
-    <!-- Modal -->
-    <div class="modal fade" id="removePlayerModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Remove Player</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <p>Are you sure you want to remove <strong>{{ player.nick }}</strong> from the group?</p>
-                    <p class="text-muted small">This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form action="/team/{{ team.id }}/player/{{ player.id }}/remove" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-danger">Yes, Remove</button>
-                    </form>
-                </div>
+            <a href="/team/{{ team.id }}/player/{{ player.id }}/advanced?year={{ selected_year }}"
+                class="btn btn-lg btn-outline-primary shadow-sm" title="Advanced Player Stats">
+                <i class="bi bi-bar-chart-fill"></i> <span class="d-none d-md-inline ms-1">Advanced Stats</span>
+            </a>
+
+            {% if is_admin and player.id != current_user.id %}
+            <div class="dropdown">
+                <button class="btn btn-lg btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                    <i class="bi bi-gear-fill"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+                    {% if player_role == 'MEMBER' %}
+                    <li>
+                        <form action="/team/{{ team.id }}/player/{{ player.id }}/role" method="post">
+                            <input type="hidden" name="role" value="ADMIN">
+                            <button class="dropdown-item" type="submit">
+                                <i class="bi bi-shield-check"></i> Promote to Admin
+                            </button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li>
+                        <form action="/team/{{ team.id }}/player/{{ player.id }}/role" method="post">
+                            <input type="hidden" name="role" value="MEMBER">
+                            <button class="dropdown-item" type="submit">
+                                <i class="bi bi-shield-slash"></i> Demote to Member
+                            </button>
+                        </form>
+                    </li>
+                    {% endif %}
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                        <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
+                            data-bs-target="#removePlayerModal">
+                            <i class="bi bi-person-x"></i> Remove from group
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if is_admin and player.id != current_user.id %}
+<!-- Modal -->
+<div class="modal fade" id="removePlayerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remove Player</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Are you sure you want to remove <strong>{{ player.nick }}</strong> from the group?</p>
+                <p class="text-muted small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="/team/{{ team.id }}/player/{{ player.id }}/remove" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Yes, Remove</button>
+                </form>
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
-
+{% endif %}
 <div id="stats-view-container" class="d-flex flex-column" style="max-height: 50vh;">
     <!-- Summary Section -->
     <div class="d-flex justify-content-between mb-3 px-2">
@@ -214,8 +219,9 @@
         <span class="text-muted me-2 small">Showing {{ visible_count }} of {{ games_count }} games</span>
         <a href="?limit=10000" class="btn btn-link pe-0">Show All</a>
 </div>
+
 {% endif %}
-</div>
+
 </div>
 
 <!-- Spacer to prevent content from hiding behind fixed bottom nav -->
@@ -224,38 +230,37 @@
 <!-- Fixed Bottom Navigation -->
 <div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
     <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
-        {% if request.query_params.return_url %}
-        <a href="{{ request.query_params.return_url }}"
+        <a href="/"
             class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; flex-basis: 50%;">
-            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">{{ request.query_params.return_label
-                or 'Back' }}</span>
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-house mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Home</span>
         </a>
-        {% else %}
-        {% if is_global_group %}
-        <a href="/my_group?year={{ selected_year }}"
+        <a href="/game/view_past"
             class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; flex-basis: 50%;">
-            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Back</span>
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-clock-history mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Past games</span>
         </a>
-        {% else %}
-        <a href="/team/{{ team.id }}?year={{ selected_year }}"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; flex-basis: 50%;">
-            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Back</span>
-        </a>
-        {% endif %}
-        {% endif %}
 
-        <!-- Advanced Stats Link -->
-        <a href="/team/{{ team.id }}/player/{{ player.id }}/advanced?year={{ selected_year }}"
-            class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; flex-basis: 50%; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
-            <i class="bi bi-bar-chart-fill mb-1 fs-4 text-white"></i>
-            <span class="small fw-bold text-white" style="font-size: 0.9rem;">Adv. Stats</span>
+        {% set is_my_stats = (player.id == current_user.id and is_global_group) %}
+        {% set my_stats_class = "btn-primary shadow-sm border-0 shadow" if is_my_stats else "btn-light shadow-sm border"
+        %}
+        {% set my_stats_style = "background: linear-gradient(135deg, #0d6efd, #0a58ca);" if is_my_stats else "" %}
+        {% set my_stats_icon_class = "text-white" if is_my_stats else "text-secondary" %}
+        {% set my_stats_text_class = "text-white" if is_my_stats else "text-secondary" %}
+
+        <a href="/team/0/player/{{ current_user.id }}"
+            class="btn {{ my_stats_class }} d-flex flex-column align-items-center justify-content-center flex-grow-1"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; {{ my_stats_style }}">
+            <i class="bi bi-person-badge mb-1 fs-4 {{ my_stats_icon_class }}"></i>
+            <span class="small fw-bold {{ my_stats_text_class }}" style="font-size: 0.8rem;">My stats</span>
+        </a>
+        <a href="/my_group"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-people mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">My group</span>
         </a>
     </div>
     {% endblock %}
@@ -356,7 +361,7 @@
 
             // Calculate available height: Window height - container top position - bottom nav height
             const rect = container.getBoundingClientRect();
-            const bottomNavHeight = 100;
+            const bottomNavHeight = 120;
             const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
 
             // Ensure a reasonable minimum height

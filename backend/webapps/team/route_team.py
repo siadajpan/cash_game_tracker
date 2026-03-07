@@ -512,6 +512,7 @@ async def team_view(
         "team/team_view.html",
         {
             "request": request,
+            "user": user,
             "current_user": user,
             "is_admin": is_admin,
             "team": team,
@@ -572,26 +573,38 @@ async def team_stats(
     current_user: User = Depends(get_active_user),
     year: str = "all",
 ):
-    team = db.query(Team).filter(Team.id == team_id).first()
-    if not team:
-        return RedirectResponse(f"/dashboard")
+    if team_id == 0:
+        class FakeTeam:
+            id = 0
+            name = "My Group"
+            search_code = ""
+        team = FakeTeam()
+    else:
+        team = db.query(Team).filter(Team.id == team_id).first()
+        if not team:
+            return RedirectResponse("/")
 
-    # Check permissions
-    if (
-        current_user.id not in [m.id for m in team.users]
-        and not current_user.is_superuser
-    ):
-        return RedirectResponse(f"/dashboard")
+        # Check permissions
+        if (
+            current_user.id not in [m.id for m in team.users]
+            and not current_user.is_superuser
+        ):
+            return RedirectResponse("/")
 
     # Available years for the filter
-    team_games = db.query(Game).filter(Game.team_id == team_id).all()
+    if team_id == 0:
+        from backend.db.models.user_game import UserGame
+        team_games = db.query(Game).join(UserGame).filter(UserGame.user_id == current_user.id).all()
+    else:
+        team_games = db.query(Game).filter(Game.team_id == team_id).all()
+        
     all_years = set()
     for g in team_games:
         if g.date:
             all_years.add(int(str(g.date)[:4]))
     available_years = sorted(list(all_years), reverse=True)
 
-    stats = _calculate_team_stats(team, year, db)
+    stats = _calculate_team_stats(team, year, db, user_id=current_user.id)
 
     return templates.TemplateResponse(
         "team/team_stats.html",
@@ -1301,6 +1314,7 @@ async def _get_player_stats_context(
         "player_role": player_role,
         "visible_count": len(games_history),
         "current_user": current_user,
+        "user": current_user,
         "is_global_group": is_global_group,
     }
 
@@ -1569,23 +1583,7 @@ async def import_legacy_games(
         )
 
 
-@router.get("/{id}/stats", name="team_advanced_stats")
-async def team_advanced_stats(
-    request: Request,
-    id: int,
-    year: str = "all",
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token),
-):
-    team = get_team_by_id(team_id=id, db=db)
-    if not team:
-        return responses.RedirectResponse("/")
 
-    stats = _calculate_team_stats(team, year, db)
-
-    return templates.TemplateResponse(
-        "team/team_stats.html", {"request": request, "team": team, "stats": stats}
-    )
 
 
 
@@ -1686,9 +1684,14 @@ async def team_games_history(
     )
 
 
-def _calculate_team_stats(team, year, db):
+def _calculate_team_stats(team, year, db, user_id=None):
+    from backend.db.models.user_game import UserGame
     # Filter games
-    query = db.query(Game).filter(Game.team_id == team.id)
+    if team.id == 0 and user_id:
+        query = db.query(Game).join(UserGame).filter(UserGame.user_id == user_id)
+    else:
+        query = db.query(Game).filter(Game.team_id == team.id)
+        
     if year and year != "all":
         query = query.filter(Game.date.like(f"{year}%"))
     games = query.all()

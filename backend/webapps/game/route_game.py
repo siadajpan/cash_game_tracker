@@ -2,7 +2,8 @@ import json
 from datetime import datetime, timedelta
 from sqlite3 import IntegrityError
 from typing import Optional
-from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
+import unicodedata
+from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form, UploadFile, File
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from pydantic_core import PydanticCustomError
@@ -17,6 +18,7 @@ import os
 import tempfile
 from fastapi_mail import FastMail, MessageSchema
 from backend.webapps.auth.email_config import conf
+from backend.core.hashing import Hasher
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
     get_current_user,
@@ -230,6 +232,129 @@ async def create_game(
     )
 
 
+@router.post("/import", name="import_personal_games")
+async def import_personal_games(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+):
+    from backend.db.models.game import Game
+    from backend.db.models.buy_in import BuyIn
+    from backend.db.models.cash_out import CashOut
+    from backend.db.models.user_game import UserGame
+
+    if not file:
+        return RedirectResponse(url="/game/view_past?error=No file uploaded", status_code=status.HTTP_303_SEE_OTHER)
+
+    try:
+        content = await file.read()
+        data = json.loads(content)
+
+        if not isinstance(data, list):
+            raise ValueError("JSON must be a list of game objects")
+
+        imported_count = 0
+        skipped_count = 0
+
+        # Helper to get or create guest users for personal import
+        def get_or_create_ext_user(nick_name):
+            if not nick_name:
+                return None
+            
+            # Use a unique email pattern for personal guest players
+            normalized_nick = unicodedata.normalize('NFD', nick_name.lower().replace('ł', 'l').replace('Ł', 'L'))
+            ascii_nick = "".join(c for c in normalized_nick if unicodedata.category(c) != 'Mn').replace(' ', '_')
+            ext_email = f"{ascii_nick}_ext_{current_user.nick_id.lower()}@over-bet.com"
+            
+            player_user = db.query(User).filter(User.email == ext_email).first()
+            if not player_user:
+                player_user = User(
+                    email=ext_email,
+                    nick=nick_name,
+                    hashed_password=Hasher.get_password_hash("guest123"),
+                    is_active=True,
+                )
+                db.add(player_user)
+                db.commit()
+                db.refresh(player_user)
+            
+            return player_user
+
+        for g_data in data:
+            start_str = g_data.get("start_time")
+            finish_str = g_data.get("finish_time")
+            if not start_str or not finish_str:
+                continue
+
+            dt_start = datetime.strptime(start_str, "%Y-%m-%d %H:%M")
+            dt_finish = datetime.strptime(finish_str, "%Y-%m-%d %H:%M")
+            
+            # Duplicates check (personal games have no team_id)
+            exists = db.query(Game).filter(
+                Game.owner_id == current_user.id, 
+                Game.team_id == None, 
+                Game.start_time == dt_start
+            ).first()
+
+            if exists:
+                skipped_count += 1
+                continue
+
+            # Create Game
+            new_game = Game(
+                date=dt_start.date(),
+                start_time=dt_start,
+                finish_time=dt_finish,
+                default_buy_in=0,
+                running=False,
+                owner_id=current_user.id,
+                team_id=None,
+            )
+            db.add(new_game)
+            db.commit()
+            db.refresh(new_game)
+
+            # Process Players
+            players_list = g_data.get("players", [])
+            for p_data in players_list:
+                nick = p_data.get("nick")
+                buy_in_amt = float(p_data.get("buy_in", 0))
+                cash_out_amt = float(p_data.get("cash_out", 0))
+
+                player_user = get_or_create_ext_user(nick)
+
+                # Add to Game
+                ug = UserGame(user_id=player_user.id, game_id=new_game.id)
+                db.add(ug)
+
+                if buy_in_amt > 0:
+                    db.add(BuyIn(amount=buy_in_amt, user_id=player_user.id, game_id=new_game.id, time=dt_start))
+
+                if cash_out_amt > 0:
+                    db.add(CashOut(amount=cash_out_amt, user_id=player_user.id, game_id=new_game.id, time=dt_finish, status=PlayerRequestStatus.APPROVED))
+                elif buy_in_amt > 0:
+                     db.add(CashOut(amount=0, user_id=player_user.id, game_id=new_game.id, time=dt_finish, status=PlayerRequestStatus.APPROVED))
+
+            db.commit()
+            imported_count += 1
+
+        msg = f"Successfully imported {imported_count} games."
+        if skipped_count > 0:
+            msg += f" {skipped_count} duplicates skipped."
+        
+        return RedirectResponse(
+            url=f"/game/view_past?msg={msg}", 
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+
+    except Exception as e:
+        return RedirectResponse(
+            url=f"/game/view_past?error=Import failed: {str(e)}", 
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+
+
 @router.get("/view_past", name="view_past")
 async def view_past_games(
     request: Request,
@@ -296,6 +421,7 @@ async def view_past_games(
         "game/view_past.html",
         {
             "request": request,
+            "user": user,
             "games_data": visible_games,
             "games_count": total_count,
             "visible_count": len(visible_games),
@@ -485,11 +611,15 @@ async def open_game(
             # Not in game yet, redirect to join page
             return RedirectResponse(url=f"/game/{game.id}/join", status_code=status.HTTP_302_FOUND)
         else:
-            # Ended game and user was NOT a participant: Prohibit viewing
-            return RedirectResponse(
-                url="/?msg=This game is already finished", 
-                status_code=status.HTTP_302_FOUND
-            )
+            # Ended game: Allow viewing summary if user is a member of the team
+            if game.team_id and game.team_id != 0:
+                is_member = db.query(UserTeam).filter(UserTeam.team_id == game.team_id, UserTeam.user_id == user.id).first()
+                if not is_member and not user.is_superuser:
+                    return RedirectResponse(
+                        url="/?msg=You are not a member of this group", 
+                        status_code=status.HTTP_302_FOUND
+                    )
+            # If team_id is 0 or user is a participant/member, we fall through to render the summary
 
     players_info = []
     existing_requests = False
