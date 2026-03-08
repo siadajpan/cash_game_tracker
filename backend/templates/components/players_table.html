@@ -4,8 +4,9 @@
 {% if p_len <= 4 %} {% set grid_min="160px" %} {% elif p_len <=9 %} {% set grid_min="130px" %} {% else %} {% set
     grid_min="110px" %} {% endif %} <style>
     .players-grid-container {
+    --grid-min: {{ grid_min }};
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax({{ grid_min }}, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(calc(var(--grid-min) * var(--tile-scale, 1)), 1fr));
     gap: 0.5rem;
     margin-bottom: 1rem;
     justify-content: center;
@@ -16,7 +17,7 @@
     flex-direction: column;
     width: 100%;
     margin: 0 auto;
-    max-width: 200px;
+    max-width: calc(200px * var(--tile-scale, 1));
     }
     .player-tile-card .card-body {
     display: flex;

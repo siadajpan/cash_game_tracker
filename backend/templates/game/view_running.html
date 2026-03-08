@@ -383,18 +383,44 @@
 
         // Calculate available height: Window height - container top position - bottom nav height
         const rect = container.getBoundingClientRect();
-        const bottomNavHeight = 80;
+        const bottomNavHeight = 95; // Buffer for premium bottom buttons
         const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
 
-        // Ensure a reasonable minimum height
-        container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
+        const safeHeight = Math.max(300, availableHeight);
+        container.style.maxHeight = `${safeHeight}px`;
 
-        // Ensure the body doesn't cause page-level scrolling
+        // Intelligent fitting: attempt to shrink tiles until they fit on one screen
+        const grid = container.querySelector('.players-grid-container');
+        if (grid) {
+            let scale = 1.0;
+            grid.style.setProperty('--tile-scale', scale);
+
+            // Reset to full size first, then iterate down if needed
+            // Only perform shrinking if it actually overflows
+            if (container.scrollHeight > safeHeight) {
+                while (container.scrollHeight > safeHeight && scale > 0.6) {
+                    scale -= 0.05;
+                    grid.style.setProperty('--tile-scale', scale.toFixed(2));
+                    // Check if it fits now
+                    if (container.scrollHeight <= safeHeight) break;
+                }
+            }
+        }
+
+        // Prevent body-level scrolling to keep 'App Mode' feel
         document.body.style.overflow = 'hidden';
     }
 
+    // Run on resize and initial load
     window.addEventListener('resize', adjustGameViewHeight);
     window.addEventListener('load', adjustGameViewHeight);
+
+    // Crucial: run after HTMX updates the player table
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        if (evt.detail.target.id === "game-table-container") {
+            adjustGameViewHeight();
+        }
+    });
 
     adjustGameViewHeight();
 
