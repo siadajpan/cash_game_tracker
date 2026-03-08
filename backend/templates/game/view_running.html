@@ -5,6 +5,16 @@
 {% block page_heading %}{% endblock %}
 
 {% block content %}
+<script>
+    // Immediate Scale Restoration (Anti-Flicker)
+    (function () {
+        const key = `tile_scale_{{ game.id }}_${window.innerHeight}`;
+        const saved = localStorage.getItem(key);
+        if (saved) {
+            document.documentElement.style.setProperty('--tile-scale', saved);
+        }
+    })();
+</script>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="page-title">Game #{{ "%06d" | format(game.id) }}</div>
     <div class="dropdown">
@@ -381,44 +391,42 @@
         const container = document.getElementById('game-view-container');
         if (!container) return;
 
-        // Calculate available height: Window height - container top position - bottom nav height
         const rect = container.getBoundingClientRect();
-        const bottomNavHeight = 95; // Buffer for premium bottom buttons
+        const bottomNavHeight = 95;
         const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
-
         const safeHeight = Math.max(300, availableHeight);
         container.style.maxHeight = `${safeHeight}px`;
 
-        // Intelligent fitting: attempt to shrink tiles until they fit on one screen
         const grid = container.querySelector('.players-grid-container');
         if (grid) {
+            const storageKey = `tile_scale_{{ game.id }}_${window.innerHeight}`;
             let scale = 1.0;
+
+            // Apply scale (reset first to measure real size)
             grid.style.setProperty('--tile-scale', scale);
 
-            // Reset to full size first, then iterate down if needed
-            // Only perform shrinking if it actually overflows
             if (container.scrollHeight > safeHeight) {
                 while (container.scrollHeight > safeHeight && scale > 0.6) {
                     scale -= 0.05;
                     grid.style.setProperty('--tile-scale', scale.toFixed(2));
-                    // Check if it fits now
                     if (container.scrollHeight <= safeHeight) break;
                 }
             }
+            // Save latest scale
+            localStorage.setItem(storageKey, scale.toFixed(2));
+            // Apply globally to prevent flicker on render
+            document.documentElement.style.setProperty('--tile-scale', scale.toFixed(2));
         }
-
-        // Prevent body-level scrolling to keep 'App Mode' feel
         document.body.style.overflow = 'hidden';
     }
 
-    // Run on resize and initial load
     window.addEventListener('resize', adjustGameViewHeight);
     window.addEventListener('load', adjustGameViewHeight);
 
-    // Crucial: run after HTMX updates the player table
     document.body.addEventListener('htmx:afterSwap', function (evt) {
         if (evt.detail.target.id === "game-table-container") {
-            adjustGameViewHeight();
+            // Slight delay to ensure DOM is ready
+            setTimeout(adjustGameViewHeight, 50);
         }
     });
 
