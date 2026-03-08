@@ -45,8 +45,10 @@
     </div>
 </div>
 
-<div class="mb-3">
-    {% include "components/players_table.html" %}
+<div id="game-view-container" class="overflow-y-auto px-1" style="min-height: 0; overflow-x: hidden;">
+    <div class="mb-3">
+        {% include "components/players_table.html" %}
+    </div>
 </div>
 
 <!-- Spacer to prevent content from hiding behind fixed bottom nav -->
@@ -274,11 +276,30 @@
         // Calculate available height: Window height - container top position - bottom nav height
         const rect = container.getBoundingClientRect();
         // Adjust margin to ensure list doesn't get covered by fixed nav
-        const bottomNavHeight = 100;
+        const bottomNavHeight = 95; // Match buffer in view_running.html
         const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
 
-        // Ensure a reasonable minimum height
-        container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
+        const safeHeight = Math.max(300, availableHeight);
+        container.style.maxHeight = `${safeHeight}px`;
+
+        // Intelligent fitting: attempt to shrink tiles until they fit on one screen
+        const grid = container.querySelector('.players-grid-container');
+        if (grid) {
+            let scale = 1.0;
+            grid.style.setProperty('--tile-scale', scale);
+
+            // Reset to full size first, then iterate down if needed
+            if (container.scrollHeight > safeHeight) {
+                while (container.scrollHeight > safeHeight && scale > 0.6) {
+                    scale -= 0.05;
+                    grid.style.setProperty('--tile-scale', scale.toFixed(2));
+                    if (container.scrollHeight <= safeHeight) break;
+                }
+            }
+        }
+
+        // Prevent body-level scrolling to keep 'App Mode' feel
+        document.body.style.overflow = 'hidden';
     }
 
     window.addEventListener('resize', adjustGameViewHeight);

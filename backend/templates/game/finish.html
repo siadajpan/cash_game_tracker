@@ -8,29 +8,31 @@
 
 <!-- Content Area -->
 <div class="mb-4">
-    <!-- Players table -->
-    {% with is_finish_page=True %}
-    {% include "components/players_table.html" %}
-    {% endwith %}
+    <div id="game-view-container" class="overflow-y-auto px-1" style="min-height: 0; overflow-x: hidden;">
+        <!-- Players table -->
+        {% with is_finish_page=True %}
+        {% include "components/players_table.html" %}
+        {% endwith %}
 
-    <!-- Warnings -->
-    {% if sum_warning %}
-    <div class="alert alert-warning mt-3 mb-1 py-2" style="font-size: 0.85rem;">
-        <i class="bi bi-exclamation-triangle-fill me-1"></i>
-        Total Buy-ins ({{ total_buy_in|int if total_buy_in == total_buy_in|int else "%.2f"|format(total_buy_in) }})
-        do not equal total Cash Outs ({{ total_cash_out|int if total_cash_out == total_cash_out|int else
-        "%.2f"|format(total_cash_out) }}).<br>
-        <strong>
-            {% if total_buy_in > total_cash_out %}
-            Money left in pot: {{ (total_buy_in - total_cash_out)|int if (total_buy_in - total_cash_out) ==
-            (total_buy_in - total_cash_out)|int else "%.2f"|format(total_buy_in - total_cash_out) }}
-            {% else %}
-            Money missing: {{ (total_cash_out - total_buy_in)|int if (total_cash_out - total_buy_in) ==
-            (total_cash_out - total_buy_in)|int else "%.2f"|format(total_cash_out - total_buy_in) }}
-            {% endif %}
-        </strong>
+        <!-- Warnings -->
+        {% if sum_warning %}
+        <div class="alert alert-warning mt-3 mb-1 py-2" style="font-size: 0.85rem;">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Total Buy-ins ({{ total_buy_in|int if total_buy_in == total_buy_in|int else "%.2f"|format(total_buy_in) }})
+            do not equal total Cash Outs ({{ total_cash_out|int if total_cash_out == total_cash_out|int else
+            "%.2f"|format(total_cash_out) }}).<br>
+            <strong>
+                {% if total_buy_in > total_cash_out %}
+                Money left in pot: {{ (total_buy_in - total_cash_out)|int if (total_buy_in - total_cash_out) ==
+                (total_buy_in - total_cash_out)|int else "%.2f"|format(total_buy_in - total_cash_out) }}
+                {% else %}
+                Money missing: {{ (total_cash_out - total_buy_in)|int if (total_cash_out - total_buy_in) ==
+                (total_cash_out - total_buy_in)|int else "%.2f"|format(total_cash_out - total_buy_in) }}
+                {% endif %}
+            </strong>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 
 <!-- Extra Spacer to ensure all content can be scrolled above the fixed bottom bar -->
@@ -169,5 +171,34 @@
             }
         }
     });
+
+    function adjustGameViewHeight() {
+        const container = document.getElementById('game-view-container');
+        if (!container) return;
+
+        const rect = container.getBoundingClientRect();
+        const bottomNavHeight = 180; // More buffer for finish page (form + buttons)
+        const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
+
+        const safeHeight = Math.max(250, availableHeight);
+        container.style.maxHeight = `${safeHeight}px`;
+
+        const grid = container.querySelector('.players-grid-container');
+        if (grid) {
+            let scale = 1.0;
+            grid.style.setProperty('--tile-scale', scale);
+            if (container.scrollHeight > safeHeight) {
+                while (container.scrollHeight > safeHeight && scale > 0.6) {
+                    scale -= 0.05;
+                    grid.style.setProperty('--tile-scale', scale.toFixed(2));
+                    if (container.scrollHeight <= safeHeight) break;
+                }
+            }
+        }
+        document.body.style.overflow = 'hidden';
+    }
+    window.addEventListener('resize', adjustGameViewHeight);
+    window.addEventListener('load', adjustGameViewHeight);
+    adjustGameViewHeight();
 </script>
 {% endblock %}
