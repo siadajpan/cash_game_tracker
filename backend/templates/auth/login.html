@@ -4,7 +4,7 @@
 
 
 <div class="mb-3">
-  <form method="POST">
+  <form method="POST" id="loginForm">
     <div class="form-floating mb-3">
       <input type="text" class="form-control" name="nick" placeholder="Nick" value="{{ form.nick }}" />
       <label>Nick</label>
@@ -19,6 +19,24 @@
         <a href="/forgot-nick-id/" class="small text-primary fw-bold">Don't know your ID?</a>
       </div>
     </div>
+  </form>
+</div>
+
+<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+<div style="height: 100px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+  <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+    <a href="/welcome" class="btn btn-premium-base btn-premium-secondary">
+      <i class="bi bi-person-plus"></i>
+      <span>Create Account</span>
+    </a>
+    <button type="submit" form="loginForm" class="btn btn-premium-base btn-premium-primary">
+      <i class="bi bi-box-arrow-in-right text-white"></i>
+      <span class="text-white">Login</span>
+    </button>
+  </div>
 </div>
 
 <script>
@@ -32,22 +50,5 @@
     }
   });
 </script>
-
-<!-- Button row -->
-<div class="d-flex gap-3 justify-content-center mt-4">
-  <a href="/welcome"
-    class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-    style="padding-top: 0.8rem; padding-bottom: 0.8rem; border-radius: 12px;">
-    <i class="bi bi-person-plus mb-1 fs-4 text-secondary"></i>
-    <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Create Account</span>
-  </a>
-  <button type="submit"
-    class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
-    style="padding-top: 0.8rem; padding-bottom: 0.8rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
-    <i class="bi bi-box-arrow-in-right mb-1 fs-4 text-white"></i>
-    <span class="small fw-bold text-white" style="font-size: 0.9rem;">Login</span>
-  </button>
-</div>
-</form>
 </div>
 {% endblock %}

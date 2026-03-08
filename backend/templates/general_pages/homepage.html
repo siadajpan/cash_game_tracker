@@ -4,33 +4,24 @@
 {% block title %}
 <title>Cash game manager</title>
 {% endblock %}
-{% block page_heading %}{% endblock %}
+{% block page_heading %}
+
+{% set team_count = user.teams | length %}
+
+{% set game_count = running_games | length %}
+{% if game_count > 0 %}
+{% if game_count == 1 %}
+Running game
+{% else %}
+Running games
+{% endif %}
+{% else %}
+Join a game
+{% endif %}
+
+{% endblock %}
 
 {% block content %}
-
-
-{% set team_count = user.teams | length %}
-
-{% set team_count = user.teams | length %}
-
-<div class="mt-3 mb-3 border-bottom-desktop">
-    <!-- TITLES CONTAINER -->
-    <div>
-        <!-- Games Title -->
-        <div id="header-games">
-            {% set game_count = running_games | length %}
-            {% if game_count > 0 %}
-            {% if game_count == 1 %}
-            <h2 class="display-6 mb-0">Running game</h2>
-            {% else %}
-            <h2 class="display-6 mb-0">Running games</h2>
-            {% endif %}
-            {% else %}
-            <h2 class="display-6 mb-0">No running games</h2>
-            {% endif %}
-        </div>
-    </div>
-</div>
 
 <div>
     {% set game_count = running_games | length %}
@@ -46,11 +37,6 @@
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <div class="alert alert-info mt-3" role="alert">
-        <p class="mb-0 lead"> There are no running games among people you've played with. Click the button below to
-            start one! </p>
-    </div>
     {% endif %}
 
     <div class="mt-4">
@@ -61,9 +47,9 @@
                     onsubmit="event.preventDefault(); const code = document.getElementById('gameCodeInput').value; if(code) { window.location.href = '/game/' + parseInt(code, 10) + '/join'; }">
                     <div
                         class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border {% if error %}border-danger{% endif %}">
-                        <input type="text" id="gameCodeInput" class="form-control border-0 fs-5 py-3"
+                        <input type="text" id="gameCodeInput" class="form-control border-0 fs-4 py-4"
                             placeholder="6-digit code" pattern="\d{1,6}" required value="{{ join_code or '' }}">
-                        <button class="btn btn-white bg-white border-0 text-primary fw-bold px-4"
+                        <button class="btn btn-white bg-white border-0 text-primary fw-bold px-4 fs-4"
                             type="submit">Join</button>
                     </div>
                     {% if error %}
@@ -87,14 +73,14 @@
             <div class="col-12 col-md-5 d-flex justify-content-md-start">
                 {% if user.is_active %}
                 <a href="/game/create"
-                    class="btn btn-primary btn-lg w-100 py-3 fs-5 border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-center"
+                    class="btn btn-primary btn-xl w-100 py-4 fs-4 border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-center"
                     style="background: linear-gradient(135deg, #0d6efd, #0a58ca);">
                     <i class="bi bi-plus-circle me-2"></i> Create a game
                 </a>
                 {% else %}
                 <div class="w-100" tabindex="0" data-bs-toggle="tooltip"
                     title="Please verify your email to create a game">
-                    <button class="btn btn-primary btn-lg w-100 py-3 fs-5 opacity-50 border-0 rounded-3" type="button"
+                    <button class="btn btn-primary btn-xl w-100 py-4 fs-4 opacity-50 border-0 rounded-3" type="button"
                         disabled style="pointer-events: none;">
                         Create a game
                     </button>
@@ -111,29 +97,21 @@
 <!-- Fixed Bottom Navigation -->
 <div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
     <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
-        <a href="/"
-            class="btn btn-primary shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
-            <i class="bi bi-house mb-1 fs-4 text-white"></i>
-            <span class="small fw-bold text-white" style="font-size: 0.8rem;">Home</span>
+        <a href="/" class="btn btn-premium-base btn-premium-primary">
+            <i class="bi bi-house text-white"></i>
+            <span class="text-white">Home</span>
         </a>
-        <a href="/game/view_past"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-clock-history mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Past games</span>
+        <a href="/game/view_past" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-clock-history"></i>
+            <span>Past games</span>
         </a>
-        <a href="/team/0/player/{{ user.id }}"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-person-badge mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">My stats</span>
+        <a href="/team/0/player/{{ user.id }}" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-person-badge"></i>
+            <span>My stats</span>
         </a>
-        <a href="/my_group"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-people mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">My group</span>
+        <a href="/my_group" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-people"></i>
+            <span>My group</span>
         </a>
     </div>
 </div>

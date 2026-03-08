@@ -227,39 +227,29 @@
 <div style="height: 100px;"></div>
 
 <!-- Fixed Bottom Navigation -->
+<!-- Fixed Bottom Navigation -->
 <div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
     <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
-        <a href="/"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-house mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Home</span>
+        <a href="/" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-house text-secondary"></i>
+            <span class="text-secondary">Home</span>
         </a>
-        <a href="/game/view_past"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-clock-history mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Past games</span>
+        <a href="/game/view_past" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-clock-history text-secondary"></i>
+            <span class="text-secondary">Past games</span>
         </a>
 
         {% set is_my_stats = (player.id == current_user.id and is_global_group) %}
-        {% set my_stats_class = "btn-primary shadow-sm border-0 shadow" if is_my_stats else "btn-light shadow-sm border"
-        %}
-        {% set my_stats_style = "background: linear-gradient(135deg, #0d6efd, #0a58ca);" if is_my_stats else "" %}
-        {% set my_stats_icon_class = "text-white" if is_my_stats else "text-secondary" %}
+        {% set my_stats_btn_class = "btn-premium-primary" if is_my_stats else "btn-premium-secondary" %}
         {% set my_stats_text_class = "text-white" if is_my_stats else "text-secondary" %}
 
-        <a href="/team/0/player/{{ current_user.id }}"
-            class="btn {{ my_stats_class }} d-flex flex-column align-items-center justify-content-center flex-grow-1"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; {{ my_stats_style }}">
-            <i class="bi bi-person-badge mb-1 fs-4 {{ my_stats_icon_class }}"></i>
-            <span class="small fw-bold {{ my_stats_text_class }}" style="font-size: 0.8rem;">My stats</span>
+        <a href="/team/0/player/{{ current_user.id }}" class="btn btn-premium-base {{ my_stats_btn_class }}">
+            <i class="bi bi-person-badge {{ my_stats_text_class }}"></i>
+            <span class="{{ my_stats_text_class }}">My stats</span>
         </a>
-        <a href="/my_group"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-people mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">My group</span>
+        <a href="/my_group" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-people text-secondary"></i>
+            <span class="text-secondary">My group</span>
         </a>
     </div>
 </div>

@@ -41,52 +41,42 @@
     <!-- Main Toolbar -->
     <div id="mainToolbar" class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
         {% if request.query_params.return_url %}
-        <a href="{{ request.query_params.return_url }}"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 1rem;">Back</span>
+        <a href="{{ request.query_params.return_url }}" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-arrow-left text-secondary"></i>
+            <span class="text-secondary">Back</span>
         </a>
         {% else %}
-        <a href="/game/{{ game.id }}"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 1rem;">Back</span>
+        <a href="/game/{{ game.id }}" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-arrow-left text-secondary"></i>
+            <span class="text-secondary">Back</span>
         </a>
         {% endif %}
 
         {% if game.running %}
         <button type="button" data-bs-toggle="modal" data-bs-target="#cashoutModal"
-            class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
-            <i class="bi bi-box-arrow-right mb-1 fs-4 text-white"></i>
-            <span class="small fw-bold text-white" style="font-size: 1rem;">Cash out</span>
+            class="btn btn-premium-base btn-premium-primary">
+            <i class="bi bi-box-arrow-right text-white"></i>
+            <span class="text-white">Cash out</span>
         </button>
 
         <button type="button" data-bs-toggle="modal" data-bs-target="#addonModal"
-            class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
-            <i class="bi bi-plus-circle-fill mb-1 fs-4 text-white"></i>
-            <span class="small fw-bold text-white" style="font-size: 1rem;">Add on</span>
+            class="btn btn-premium-base btn-premium-primary">
+            <i class="bi bi-plus-circle-fill text-white"></i>
+            <span class="text-white">Add on</span>
         </button>
         {% endif %}
     </div>
     {% else %}
     <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
         {% if request.query_params.return_url %}
-        <a href="{{ request.query_params.return_url }}"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 1rem;">Back</span>
+        <a href="{{ request.query_params.return_url }}" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-arrow-left text-secondary"></i>
+            <span class="text-secondary">Back</span>
         </a>
         {% else %}
-        <a href="/game/{{ game.id }}"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 1rem;">Back</span>
+        <a href="/game/{{ game.id }}" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-arrow-left text-secondary"></i>
+            <span class="text-secondary">Back</span>
         </a>
         {% endif %}
     </div>

@@ -65,15 +65,16 @@ async def my_group(
     my_game_ids_subquery = db.query(UserGame.game_id).filter(UserGame.user_id == user.id).subquery()
     
     # 2. Identify all people (friends) who were in those games
+    friend_ids_subquery = db.query(UserGame.user_id).filter(UserGame.game_id.in_(my_game_ids_subquery)).distinct().subquery()
     friend_ids = [uid for (uid,) in db.query(UserGame.user_id).filter(UserGame.game_id.in_(my_game_ids_subquery)).distinct().all()]
 
-    # 3. For metadata like available years, we still use the user's specific games context possibly?
-    # Actually, the user wants the list to include ALL of their games. So let's base it on the FRIENDS' games.
-    # But for the general "Years" filter on the My Group page, usually it's based on when the USER played.
-    # Let's keep the years filter based on user's history for simplicity unless they ask for more.
-    my_past_games = db.query(Game).join(UserGame).filter(UserGame.user_id == user.id).all()
+    # 3. All games hosted by those people (The Universe)
+    group_games = db.query(Game).filter(Game.owner_id.in_(friend_ids_subquery)).all()
+    group_game_ids = [g.id for g in group_games]
+
+    # Meta-data: Available years (based on group's games)
     all_years = set()
-    for g in my_past_games:
+    for g in group_games:
         if g.date:
             all_years.add(int(str(g.date)[:4]))
     available_years = sorted(list(all_years), reverse=True)
@@ -86,39 +87,27 @@ async def my_group(
             pass
 
     # 4. Filter logic: We need to find the stats for each friend.
-    # We'll calculate it from UserGame, BuyIn, AddOn, CashOut for all games they were in (optionally filtered by year).
-    
-    # We need a query that gives us game_ids and user_ids for our friends.
     # UserGame records for these people.
     q_friends_games = db.query(UserGame.user_id, UserGame.game_id).filter(UserGame.user_id.in_(friend_ids))
+    
+    current_universe_game_ids = group_game_ids
     if target_year:
-        q_friends_games = q_friends_games.join(Game, UserGame.game_id == Game.id).filter(func.strftime('%Y', Game.start_time) == str(target_year))
-        # sqlite3 doesn't handle date strings well, but wait, Game.date is a string.
-        # Fallback to manual date filtering if it's simpler. Let's do it like before.
+        current_universe_game_ids = [g.id for g in group_games if g.date and int(str(g.date)[:4]) == target_year]
+        q_friends_games = q_friends_games.filter(UserGame.game_id.in_(current_universe_game_ids))
 
     friends_participations = q_friends_games.all()
-    friends_game_ids = list(set([gid for uid, gid in friends_participations]))
 
-    # Now filter friends_game_ids by year if needed.
-    if target_year:
-        f_games_objs = db.query(Game.id).filter(Game.id.in_(friends_game_ids))
-        # Use simple str slice like before
-        f_games_objs = [gid for (gid,) in f_games_objs.all() if db.query(Game.date).filter(Game.id == gid).scalar() and int(str(db.query(Game.date).filter(Game.id == gid).scalar())[:4]) == target_year]
-        friends_game_ids = f_games_objs
-        # Re-filter participations
-        friends_participations = [p for p in friends_participations if p[1] in friends_game_ids]
-
-    # Calculate general group stats based on FRIENDS' aggregate (or just user's aggregate? Usually it's the User's perspective)
-    # The user said "this list should include all of their games".
-    # Let's keep the Top Summary statistics (avg players, frequency) based on USER'S context so it stays personal-ish.
-    
+    # Calculate general group stats based on the universe
     stats = type("Stats", (object,), {"avg_players": 0.0, "frequency": 0})()
-    user_game_ids = [g.id for g in my_past_games]
-    if user_game_ids:
-        total_p = db.query(func.count(UserGame.user_id)).filter(UserGame.game_id.in_(user_game_ids)).scalar() or 0
-        stats.avg_players = total_p / len(user_game_ids)
+    
+    universe_games_filtered = [g for g in group_games if not target_year or (g.date and int(str(g.date)[:4]) == target_year)]
+    universe_game_ids_filtered = [g.id for g in universe_games_filtered]
+
+    if universe_game_ids_filtered:
+        total_p = db.query(func.count(UserGame.user_id)).filter(UserGame.game_id.in_(universe_game_ids_filtered)).scalar() or 0
+        stats.avg_players = total_p / len(universe_game_ids_filtered)
         dates = []
-        for g in my_past_games:
+        for g in universe_games_filtered:
             if g.date:
                 if isinstance(g.date, str):
                     from datetime import datetime
@@ -134,7 +123,7 @@ async def my_group(
 
     players_info = []
 
-    if friends_game_ids:
+    if current_universe_game_ids:
         counts_map = defaultdict(int)
         for uid, gid in friends_participations:
             counts_map[uid] += 1
@@ -142,15 +131,15 @@ async def my_group(
         money_in = defaultdict(float)
         money_out = defaultdict(float)
 
-        bi = db.query(BuyIn.user_id, func.sum(BuyIn.amount)).filter(BuyIn.game_id.in_(friends_game_ids)).group_by(BuyIn.user_id).all()
+        bi = db.query(BuyIn.user_id, func.sum(BuyIn.amount)).filter(BuyIn.game_id.in_(current_universe_game_ids)).group_by(BuyIn.user_id).all()
         for u_id, amt in bi:
             if u_id in friend_ids: money_in[u_id] += amt
 
-        ao = db.query(AddOn.user_id, func.sum(AddOn.amount)).filter(AddOn.game_id.in_(friends_game_ids), AddOn.status == PlayerRequestStatus.APPROVED).group_by(AddOn.user_id).all()
+        ao = db.query(AddOn.user_id, func.sum(AddOn.amount)).filter(AddOn.game_id.in_(current_universe_game_ids), AddOn.status == PlayerRequestStatus.APPROVED).group_by(AddOn.user_id).all()
         for u_id, amt in ao:
             if u_id in friend_ids: money_in[u_id] += amt
 
-        co = db.query(CashOut.user_id, func.sum(CashOut.amount)).filter(CashOut.game_id.in_(friends_game_ids)).group_by(CashOut.user_id).all()
+        co = db.query(CashOut.user_id, func.sum(CashOut.amount)).filter(CashOut.game_id.in_(current_universe_game_ids)).group_by(CashOut.user_id).all()
         for u_id, amt in co:
             if u_id in friend_ids: money_out[u_id] += amt
 

@@ -179,18 +179,14 @@
                 </div>
             </div>
             <div class="modal-footer border-0 p-4 pt-0 d-flex gap-2 w-100">
-                <button type="button"
-                    class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle mb-1 fs-4 text-secondary"></i>
-                    <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Cancel</span>
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle text-secondary"></i>
+                    <span class="text-secondary">Cancel</span>
                 </button>
                 <form action="/game/{{ game.id }}/delete" method="POST" class="flex-grow-1">
-                    <button type="submit"
-                        class="btn btn-danger d-flex flex-column align-items-center justify-content-center w-100 border-0 shadow"
-                        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #dc3545, #bb2d3b);">
-                        <i class="bi bi-trash-fill mb-1 fs-4 text-white"></i>
-                        <span class="small fw-bold text-white" style="font-size: 0.9rem;">Delete Game</span>
+                    <button type="submit" class="btn btn-premium-base btn-premium-danger w-100">
+                        <i class="bi bi-trash-fill text-white"></i>
+                        <span class="text-white">Delete Game</span>
                     </button>
                 </form>
             </div>
@@ -244,12 +240,12 @@
 <!-- Predictions Modal -->
 <div class="modal fade" id="predictionsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Game Predictions</h5>
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-graph-up-arrow me-2"></i>Game Predictions</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="predictionsContent">
+            <div class="modal-body p-4" id="predictionsContent">
                 <div class="text-center p-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -257,9 +253,11 @@
                     <p class="mt-2 text-muted">Calculating probabilities based on player history...</p>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i
-                        class="bi bi-x-circle me-1"></i> Close</button>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-2 w-100">
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle text-secondary"></i>
+                    <span class="text-secondary">Close</span>
+                </button>
             </div>
         </div>
     </div>

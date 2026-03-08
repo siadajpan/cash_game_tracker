@@ -383,9 +383,15 @@ async def _perform_import(request, data, user_nick_in_file, db, current_user):
         except:
             continue
         
+        # Get the host from the JSON, fallback to current_user
+        host_nick = g_data.get("host")
+        host_user = get_or_create_ext_user(host_nick) if host_nick else current_user
+        if not host_user:
+            host_user = current_user
+
         # Duplicates check
         exists = db.query(Game).filter(
-            Game.owner_id == current_user.id, 
+            Game.owner_id == host_user.id, 
             Game.team_id == None, 
             Game.start_time == dt_start
         ).first()
@@ -401,7 +407,7 @@ async def _perform_import(request, data, user_nick_in_file, db, current_user):
             finish_time=dt_finish,
             default_buy_in=0,
             running=False,
-            owner_id=current_user.id,
+            owner_id=host_user.id,
             team_id=None,
         )
         db.add(new_game)
@@ -466,11 +472,7 @@ async def view_past_games(
     past_games = get_user_past_games(user, db, limit=None)
     total_count = len(past_games)
     
-    print(f"DEBUG: view_past_games for user {user.nick} (ID: {user.id})")
-    print(f"DEBUG: Found {total_count} past games in DB")
-
     game_ids = [g.id for g in past_games]
-    print(f"DEBUG: Game IDs: {game_ids}")
     bulk_stats = get_user_past_games_stats_bulk(user.id, game_ids, db)
 
     games_data = []

@@ -594,7 +594,12 @@ async def team_stats(
     # Available years for the filter
     if team_id == 0:
         from backend.db.models.user_game import UserGame
-        team_games = db.query(Game).join(UserGame).filter(UserGame.user_id == current_user.id).all()
+        # 1. Identify all games current user has participated in
+        my_game_ids_subquery = db.query(UserGame.game_id).filter(UserGame.user_id == current_user.id).subquery()
+        # 2. Identify all people (friends) who were in those games
+        friend_ids_subquery = db.query(UserGame.user_id).filter(UserGame.game_id.in_(my_game_ids_subquery)).distinct().subquery()
+        # 3. All games where any of these friends is the owner (host)
+        team_games = db.query(Game).filter(Game.owner_id.in_(friend_ids_subquery)).all()
     else:
         team_games = db.query(Game).filter(Game.team_id == team_id).all()
         
@@ -710,10 +715,15 @@ async def _get_player_stats_context(
              # If I haven't played with them, don't show their career.
              return RedirectResponse(f"/my_group?msg=You haven't played with this user")
 
-        # Now include ALL games for this player (not just shared ones)
-        player_game_ids_subquery = db.query(UserGame.game_id).filter(UserGame.user_id == player_id).subquery()
+        # Now include ALL games hosted by people in the group
+        # 1. My games (to find group members)
+        my_game_ids_all_subquery = db.query(UserGame.game_id).filter(UserGame.user_id == current_user.id).subquery()
+        # 2. People I've played with
+        friend_ids_all_subquery = db.query(UserGame.user_id).filter(UserGame.game_id.in_(my_game_ids_all_subquery)).distinct().subquery()
+        # 3. All games hosted by those people
+        group_game_ids_subquery = db.query(Game.id).filter(Game.owner_id.in_(friend_ids_all_subquery)).subquery()
 
-        filters = [Game.id.in_(player_game_ids_subquery)]
+        filters = [Game.id.in_(group_game_ids_subquery)]
         target_year = None
         if year and year != "all":
             target_year = year
@@ -722,7 +732,7 @@ async def _get_player_stats_context(
         q_games = db.query(Game).filter(*filters).order_by(Game.date.desc())
         all_team_games = q_games.all()
 
-        all_dates = db.query(Game.date).filter(Game.id.in_(player_game_ids_subquery)).all()
+        all_dates = db.query(Game.date).filter(Game.id.in_(group_game_ids_subquery)).all()
 
     else:
         team = db.query(Team).filter(Team.id == team_id).first()
@@ -1688,7 +1698,12 @@ def _calculate_team_stats(team, year, db, user_id=None):
     from backend.db.models.user_game import UserGame
     # Filter games
     if team.id == 0 and user_id:
-        query = db.query(Game).join(UserGame).filter(UserGame.user_id == user_id)
+        # 1. Identify all games the specified user has participated in
+        my_game_ids_subquery = db.query(UserGame.game_id).filter(UserGame.user_id == user_id).subquery()
+        # 2. Identify all people (friends) who were in those games
+        friend_ids_subquery = db.query(UserGame.user_id).filter(UserGame.game_id.in_(my_game_ids_subquery)).distinct().subquery()
+        # 3. All games where any of these friends is the owner
+        query = db.query(Game).filter(Game.owner_id.in_(friend_ids_subquery))
     else:
         query = db.query(Game).filter(Game.team_id == team.id)
         

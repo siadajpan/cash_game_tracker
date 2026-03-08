@@ -39,21 +39,17 @@
 <!-- Fixed Bottom Navigation -->
 <div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
     <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
-        <a href="/game/view_past"
-            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-x-circle mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Cancel</span>
+        <a href="/game/view_past" class="btn btn-premium-base btn-premium-secondary">
+            <i class="bi bi-x-circle text-secondary"></i>
+            <span class="text-secondary">Cancel</span>
         </a>
 
         <button type="submit" form="nickSelectForm" id="importConfirmBtn"
-            class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
-            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
-            <i class="bi bi-check-circle-fill mb-1 fs-4 text-white" id="importIcon"></i>
+            class="btn btn-premium-base btn-premium-primary">
+            <i class="bi bi-check-circle-fill text-white" id="importIcon"></i>
             <div class="spinner-border spinner-border-sm d-none mb-1 mt-1" role="status" aria-hidden="true"
                 id="importSpinner"></div>
-            <span class="small fw-bold text-white text-center" id="importBtnText" style="font-size: 0.9rem;">Confirm
-                Import</span>
+            <span class="text-white text-center" id="importBtnText">Confirm Import</span>
         </button>
     </div>
 </div>

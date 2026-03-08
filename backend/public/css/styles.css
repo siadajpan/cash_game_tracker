@@ -60,3 +60,63 @@
 .dropdown-menu .dropdown-divider {
   margin: 0.5rem 0;
 }
+
+/* Global Button Standardization */
+.btn {
+  font-size: 0.95rem;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease !important;
+}
+
+.btn:active {
+  transform: scale(0.98) !important;
+}
+
+/* Standardized Premium Buttons (App Mode) */
+.btn-premium-base {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-grow: 1 !important;
+  border-radius: 12px !important;
+  padding-top: 0.8rem !important;
+  padding-bottom: 0.8rem !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+}
+
+.btn-premium-base:active {
+  transform: scale(0.98) !important;
+}
+
+.btn-premium-base span {
+  font-size: 0.9rem !important;
+}
+
+.btn-premium-base i {
+  font-size: 1.5rem !important;
+  margin-bottom: 0.1rem !important;
+}
+
+.btn-premium-primary {
+  background: linear-gradient(135deg, #0d6efd, #0a58ca) !important;
+  border: none !important;
+  color: white !important;
+}
+
+.btn-premium-secondary {
+  background-color: #f8f9fa !important;
+  border: 1px solid #dee2e6 !important;
+  color: #6c757d !important;
+}
+
+.btn-premium-danger {
+  background: linear-gradient(135deg, #dc3545, #bb2d3b) !important;
+  border: none !important;
+  color: white !important;
+}
