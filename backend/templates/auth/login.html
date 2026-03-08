@@ -4,34 +4,51 @@
 
 
 <div class="mb-3">
-  <form method="POST">
+  <form method="POST" id="loginForm">
     <div class="form-floating mb-3">
-      <input type="email" class="form-control" name="email" placeholder="name@example.com" value="{{ form.email }}" />
-      <label>Email address</label>
+      <input type="text" class="form-control" name="nick" placeholder="Nick" value="{{ form.nick }}" />
+      <label>Nick</label>
     </div>
     <div class="form-floating mb-3">
       <input type="password" required placeholder="Your password" value="{{ form.password }}" name="password"
         class="form-control" />
       <label>Password</label>
 
-      <div class="mt-2">
-        <a href="/forgot-password" class="small text-muted">Forgot your password?</a>
+      <div class="mt-2 d-flex justify-content-between">
+        <a href="/forgot-password" class="small text-muted">Forgot password?</a>
+        <a href="/forgot-nick-id/" class="small text-primary fw-bold">Don't know your ID?</a>
       </div>
     </div>
-
-    <!-- Button row -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <a href="/register" class="btn btn-outline-secondary"><i class="bi bi-person-plus me-1"></i> Create a new
-        account</a>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-right me-1"></i> Login</button>
-    </div>
-
-    <div class="d-flex">
-      <a href="/login/google" class="btn btn-outline-danger">
-        <i class="bi bi-google"></i> Login with Google
-      </a>
-    </div>
   </form>
+</div>
 
+<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+<div style="height: 100px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+  <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+    <a href="/welcome" class="btn btn-premium-base btn-premium-secondary">
+      <i class="bi bi-person-plus"></i>
+      <span>Create Account</span>
+    </a>
+    <button type="submit" form="loginForm" class="btn btn-premium-base btn-premium-primary">
+      <i class="bi bi-box-arrow-in-right text-white"></i>
+      <span class="text-white">Login</span>
+    </button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const lastId = localStorage.getItem('last_nick_id');
+    if (lastId) {
+      const input = document.querySelector('input[name="nick"]');
+      if (input && !input.value) {
+        input.value = lastId;
+      }
+    }
+  });
+</script>
 </div>
 {% endblock %}

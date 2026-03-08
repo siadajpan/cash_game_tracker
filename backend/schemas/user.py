@@ -8,7 +8,7 @@ from pydantic import EmailStr
 
 
 class UserCreate(BaseModel):
-    email: Optional[EmailStr] = None
+    nick_id: Optional[str] = None
     nick: Optional[str] = None
     password: Optional[str] = None
     repeat_password: Optional[str] = None
@@ -23,13 +23,11 @@ class UserCreate(BaseModel):
             )
         return nick
 
-    @field_validator("email")
-    def is_email_valid(cls, email):
-        if not email:
-            raise ValueError("Email is required")
-        if not EmailStr._validate(email):
-            raise ValueError("Invalid email address")
-        return email
+    @field_validator("nick_id")
+    def is_nick_id_valid(cls, nick_id):
+        if not nick_id:
+            raise ValueError("nick_id is required")
+        return nick_id
 
     @field_validator("password")
     def is_password_valid(cls, password):
@@ -52,7 +50,7 @@ class UserCreate(BaseModel):
 
 class UserShow(BaseModel):
     id: int
-    email: str
+    nick_id: str
     nick: str
 
     class Config:

@@ -172,6 +172,9 @@ def is_user_admin(user_id: int, team_id: int, db: Session) -> bool:
     """
     from backend.db.models.team_role import TeamRole
 
+    if team_id is None:
+        return False
+
     assoc = (
         db.query(UserTeam)
         .filter(UserTeam.user_id == user_id, UserTeam.team_id == team_id)

@@ -10,7 +10,7 @@ from backend.db.models.user_verification import UserVerification
 
 def create_new_user(user: UserCreate, db: Session):
     new_user = User(
-        email=user.email,
+        nick_id=user.nick_id,
         hashed_password=Hasher.get_password_hash(user.password),
         nick=user.nick,
         is_active=False,
@@ -22,8 +22,15 @@ def create_new_user(user: UserCreate, db: Session):
     return new_user
 
 
-def get_user_by_email(email: str, db: Session):
-    user = db.query(User).filter(User.email == email).one_or_none()
+def get_user_by_nick_id(nick_id: str, db: Session):
+    user = db.query(User).filter(User.nick_id == nick_id).one_or_none()
+    return user
+
+
+def get_user_by_login(login: str, db: Session):
+    user = db.query(User).filter(User.nick_id == login).first()
+    if not user:
+        user = db.query(User).filter(User.nick == login).first()
     return user
 
 

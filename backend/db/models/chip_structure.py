@@ -8,8 +8,10 @@ class ChipStructure(Base):
     __tablename__ = "chip_structure"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    team_id = Column(Integer, ForeignKey("team.id"))
+    team_id = Column(Integer, ForeignKey("team.id"), nullable=True)
+    owner_id = Column(Integer, ForeignKey("user.id"), nullable=True)
 
     team = relationship("Team", back_populates="chip_structure", foreign_keys=[team_id])
+    owner = relationship("User", back_populates="chip_structures", foreign_keys=[owner_id])
     games = relationship("Game", back_populates="chip_structure")
     chips = relationship("Chip", back_populates="chip_structure")

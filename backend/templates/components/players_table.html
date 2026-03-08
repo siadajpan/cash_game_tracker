@@ -1,153 +1,238 @@
-<!-- Header -->
-{% if not game.running or show_balance %}
-{% set col_player = "col-4" %}
-{% set col_in = "col-2" %}
-{% set col_out = "col-2" %}
-{% set col_balance = "col-3" %}
-{% set col_arrow = "col-1" %}
-{% else %}
-{% set col_player = "col-5" %}
-{% set col_in = "col-3" %}
-{% set col_out = "col-3" %}
-{% set col_arrow = "col-1" %}
-{% endif %}
+{% if game.running or is_finish_page %}
+<!-- Players Grid -->
+{% set p_len = players_info|length %}
+{% if p_len <= 4 %} {% set grid_min="160px" %} {% elif p_len <=9 %} {% set grid_min="130px" %} {% else %} {% set
+    grid_min="110px" %} {% endif %} <style>
+    .players-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax({{ grid_min }}, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    justify-content: center;
+    }
+    .player-tile-card {
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin: 0 auto;
+    max-width: 200px;
+    }
+    .player-tile-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0.4rem;
+    container-type: inline-size;
+    }
+    .tile-name {
+    font-size: min(1.5rem, max(1.1rem, 20cqw));
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
+    }
+    .tile-stats {
+    font-size: min(1.25rem, max(0.95rem, 17cqw));
+    line-height: 1.25;
+    }
+    .tile-bal {
+    font-size: min(1.3rem, max(1.0rem, 18cqw));
+    line-height: 1;
+    }
+    .tile-bal-label {
+    font-size: min(0.9rem, max(0.75rem, 12cqw));
+    line-height: 1;
+    }
+    .tile-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.35rem;
+    }
+    .tile-action-btn {
+    font-size: 0.9rem;
+    padding: 0.3rem 0.5rem;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 6px;
+    }
+    @keyframes highlightUpdate {
+    0% { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border-color: rgba(0,0,0,.125); background-color: #ffffff;
+    }
+    25% { box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); border-color: #0d6efd; background-color: rgba(13, 110,
+    253, 0.03); }
+    100% { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border-color: rgba(0,0,0,.125); background-color:
+    #ffffff; }
+    }
+    .tile-highlight-animation {
+    animation: highlightUpdate 1s ease-out forwards;
+    }
+    @keyframes highlightUpdateRed {
+    0% { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border-color: rgba(0,0,0,.125); background-color: #ffffff;
+    }
+    25% { box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25); border-color: #dc3545; background-color: rgba(220, 53,
+    69, 0.05); }
+    100% { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border-color: #dc3545; background-color:
+    rgba(220, 53, 69, 0.02); }
+    }
+    .tile-highlight-animation-red {
+    animation: highlightUpdateRed 1.5s ease-out forwards;
+    }
 
-<ul class="list-group list-group-flush mb-3 list-group-hover">
-    <li class="list-group-item">
-        <div class="row fw-bold text-center">
-            <div class="{{ col_player }} text-start">
-                <a href="?sort=player&order={% if sort_by == 'player' and order == 'asc' %}desc{% else %}asc{% endif %}"
-                    class="text-dark text-decoration-none">
-                    Player
-                    {% if sort_by == 'player' %}
-                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
-                        style="font-size: 0.7em;"></i>
-                    {% endif %}
-                </a>
-            </div>
-            <div class="{{ col_in }}">
-                <a href="?sort=buy_in&order={% if sort_by == 'buy_in' and order == 'desc' %}asc{% else %}desc{% endif %}"
-                    class="text-dark text-decoration-none">
-                    In
-                    {% if sort_by == 'buy_in' %}
-                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
-                        style="font-size: 0.7em;"></i>
-                    {% endif %}
-                </a>
-            </div>
-            <div class="{{ col_out }}">
-                <a href="?sort=cash_out&order={% if sort_by == 'cash_out' and order == 'desc' %}asc{% else %}desc{% endif %}"
-                    class="text-dark text-decoration-none">
-                    Out
-                    {% if sort_by == 'cash_out' %}
-                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
-                        style="font-size: 0.7em;"></i>
-                    {% endif %}
-                </a>
-            </div>
-            {% if not game.running or show_balance %}
-            <div class="{{ col_balance }}">
-                <a href="?sort=balance&order={% if sort_by == 'balance' and order == 'desc' %}asc{% else %}desc{% endif %}"
-                    class="text-dark text-decoration-none">
-                    Balance
-                    {% if sort_by == 'balance' %}
-                    <i class="bi bi-caret-{% if order == 'desc' %}down{% else %}up{% endif %}-fill"
-                        style="font-size: 0.7em;"></i>
-                    {% endif %}
-                </a>
-            </div>
-            {% endif %}
-            <div class="{{ col_arrow }}"></div>
-        </div>
-    </li>
+    @keyframes textHighlightUpdate {
+    0% { transform: scale(1); color: inherit; }
+    25% { transform: scale(1.15); color: #0d6efd; }
+    100% { transform: scale(1); color: inherit; }
+    }
+    .text-highlight-animation {
+    animation: textHighlightUpdate 1s ease-out forwards;
+    display: inline-block;
+    transform-origin: right center;
+    }
+    @keyframes textHighlightUpdateRed {
+    0% { transform: scale(1); color: inherit; }
+    25% { transform: scale(1.15); color: #dc3545; }
+    100% { transform: scale(1); color: #dc3545; }
+    }
+    .text-highlight-animation-red {
+    animation: textHighlightUpdateRed 1.5s ease-out forwards;
+    display: inline-block;
+    transform-origin: right center;
+    }
+    </style>
 
-    <!-- Players -->
-    {% for info in players_info %}
-
-    <li class="list-group-item position-relative">
-        <div class="row text-center align-items-center">
-            <div class="{{ col_player }} text-start">
+    <div class="players-grid-container">
+        {% for info in players_info %}
+        <div
+            class="card shadow-sm position-relative player-tile-card {{ 'border-primary' if user and info.player.id == user.id else '' }} {{ 'tile-highlight-animation' if request.query_params.highlight_player == info.player.id|string else '' }} {{ 'tile-highlight-animation-red' if is_finish_page and (info.has_cashed_out is sameas false or info.money_out is none) else '' }}">
+            <div class="card-body">
+                <!-- Top: Name -->
                 <a href="/game/{{ game.id }}/player/{{ info.player.id }}/history"
-                    class="text-decoration-none text-dark fw-semibold stretched-link">
+                    class="text-decoration-none text-dark fw-bold stretched-link d-flex justify-content-center align-items-center mb-1 mt-2 flex-wrap tile-name text-truncate text-center"
+                    style="line-height: 1;">
                     {{ info.player.nick }}
-                    {% if info.owner %} (host) {% endif %}
-                    {% if info.is_book_keeper and not info.owner %} (bookkeeper) {% endif %}
-                </a>
-            </div>
-
-            <div class="{{ col_in }}">
-                {% if game.running and info.request_type == 'add_on' %}
-                {% if user in info.can_approve %}
-                <!-- z-index needed to click button on top of stretched link -->
-                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative"
-                    style="z-index: 5;" title="{{ info.request_text }}">
-                    <i class="bi bi-exclamation-circle-fill"></i> Add-on
-                </a>
-                {% else %}
-                <span class="badge bg-secondary" title="{{ info.request_text }}">
-                    Add-on
-                </span>
-                {% endif %}
-                {% else %}
-                <span class="position-relative">
-                    {% if info.money_in % 1 %}
-                    {{ "%.2f"|format(info.money_in) }}
-                    {% else %}
-                    {{ info.money_in|int }}
+                    {% if info.owner %}
+                    <span class="badge bg-dark fw-normal ms-1" style="font-size: 0.65rem;">Host</span>
                     {% endif %}
-                    <!-- {% if (is_admin or is_owner or is_book_keeper) and game.running %}
-                    <a href="/game/{{ game.id }}/add_on?player_id={{ info.player.id }}"
-                        class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
-                        <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
-                    </a>
-                    {% endif %} -->
-                </span>
-                {% endif %}
-            </div>
-            <div class="{{ col_out }}">
-                {% if game.running and info.request_type == 'cash_out' %}
-                {% if user in info.can_approve %}
-                <a href="{{ info.request_href }}" class="btn btn-sm btn-outline-danger position-relative"
-                    style="z-index: 5;" title="{{ info.request_text }}">
-                    <i class="bi bi-exclamation-circle-fill"></i> Cash-out
+                    {% if info.is_book_keeper and not info.owner %}
+                    <span class="badge bg-secondary fw-normal ms-1" style="font-size: 0.65rem;">Bk</span>
+                    {% endif %}
                 </a>
-                {% else %}
-                <span class="badge bg-secondary" title="{{ info.request_text }}">
-                    Cash-out
-                </span>
-                {% endif %}
-                {% else %}
-                <span class="position-relative">
-                    {% if info.money_out is not none %}
-                    {% if info.money_out % 1 %}
-                    {{ "%.2f"|format(info.money_out) }}
-                    {% else %}
-                    {{ info.money_out|int }}
+
+                <!-- Middle: Stats -->
+                <div class="d-flex flex-column tile-stats justify-content-center" style="flex: 1;">
+                    <div class="d-flex justify-content-center align-items-center w-100 position-relative mb-1">
+                        <span class="text-muted pe-1">In:</span>
+                        <span
+                            class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end {{ 'text-highlight-animation' if request.query_params.highlight_player == info.player.id|string and request.query_params.action == 'add_on' else '' }}">
+                            {% if game.running and info.request_type == 'add_on' %}
+                            <span class="badge bg-warning text-dark tile-badge ms-1"
+                                title="{{ info.request_text }}">Add-on</span>
+                            {% else %}
+                            {% if info.money_in % 1 %}
+                            {{ "%.2f"|format(info.money_in) }}
+                            {% else %}
+                            {{ info.money_in|int }}
+                            {% endif %}
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if (game.running and info.request_type == 'cash_out') or info.money_out is not none or
+                    is_finish_page %}
+                    <div class="d-flex justify-content-center align-items-center w-100 position-relative">
+                        <span
+                            class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end {{ 'text-highlight-animation' if request.query_params.highlight_player == info.player.id|string and request.query_params.action == 'cash_out' else '' }} {{ 'text-highlight-animation-red' if is_finish_page and (info.has_cashed_out is sameas false or info.money_out is none) else '' }}">
+                            {% if game.running and info.request_type == 'cash_out' %}
+                            {% if user in info.can_approve %}
+                            <span class="badge bg-danger tile-action-btn ms-1" title="{{ info.request_text }}">
+                                <i class="bi bi-exclamation-circle-fill"></i> Cash out
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary tile-badge ms-1" title="{{ info.request_text }}">Cash
+                                out</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted pe-1">Out:</span>
+                            {% if is_finish_page and (info.has_cashed_out is sameas false or info.money_out is none) %}
+                            0
+                            {% elif info.money_out is none %}
+                            0
+                            {% elif info.money_out % 1 or (is_finish_page and info.money_out != 0) %}
+                            {{ "%.2f"|format(info.money_out) }}
+                            {% else %}
+                            {{ info.money_out|int }}
+                            {% endif %}
+                            {% endif %}
+                        </span>
+                    </div>
                     {% endif %}
-                    {% else %}
-                    -
-                    {% endif %}
-                    <!-- {% if (is_admin or is_owner or is_book_keeper) and game.running %}
-                    <a href="/game/{{ game.id }}/cash_out?player_id={{ info.player.id }}"
-                        class="ms-1 text-primary position-relative" style="z-index: 5; text-decoration: none;">
-                        <i class="bi bi-plus-circle-fill" style="font-size: 1.1rem;"></i>
-                    </a>
-                    {% endif %} -->
-                </span>
+                </div>
+
+                <!-- Bottom: Balance -->
+                {% if not game.running or show_balance %}
+                <div class="d-flex justify-content-between align-items-end pt-1 mt-auto border-top position-relative">
+                    <span class="text-muted tile-bal-label">Balance</span>
+                    <span
+                        class="fw-bold tile-bal {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                        {{ "%.2f"|format(info.balance) }}
+                    </span>
+                </div>
                 {% endif %}
             </div>
-
-            {% if not game.running or show_balance %}
-            <div class="{{ col_balance }} {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                {{ "%.2f"|format(info.balance) }}
-            </div>
-            {% endif %}
-
-            <div class="{{ col_arrow }} text-end text-muted">
-                <i class="bi bi-chevron-right" style="font-size: 0.8rem;"></i>
-            </div>
-
         </div>
-    </li>
-    {% endfor %}
-</ul>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Players List (Table) -->
+    <div class="table-responsive border rounded bg-white mt-1 mb-2">
+        <table class="table table-hover table-hover-custom align-middle mb-0">
+            <thead class="sticky-top bg-white border-bottom">
+                <tr>
+                    <th scope="col" class="py-2 ps-3 border-0">Player</th>
+                    <th scope="col" class="py-2 text-end border-0">In</th>
+                    <th scope="col" class="py-2 text-end border-0">Out</th>
+                    <th scope="col" class="py-2 text-end pe-3 border-0">Balance</th>
+                    <th scope="col" class="py-2 border-0"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for info in players_info %}
+                <tr class="position-relative"
+                    onclick="window.location.href='/game/{{ game.id }}/player/{{ info.player.id }}/history'"
+                    style="cursor: pointer;">
+                    <td class="ps-3 py-2 border-bottom-0">
+                        <a href="/game/{{ game.id }}/player/{{ info.player.id }}/history"
+                            class="text-decoration-none text-dark stretched-link">
+                            {{ info.player.nick }}
+                        </a>
+                        {% if info.owner %}
+                        <span class="badge bg-dark fw-normal ms-1" style="font-size: 0.65rem;">Host</span>
+                        {% endif %}
+                        {% if info.is_book_keeper and not info.owner %}
+                        <span class="badge bg-secondary fw-normal ms-1" style="font-size: 0.65rem;">Bk</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end py-2 text-secondary border-bottom-0">
+                        {% if info.money_in % 1 %}{{ "%.2f"|format(info.money_in) }}{% else %}{{ info.money_in|int }}{%
+                        endif %}
+                    </td>
+                    <td class="text-end py-2 text-secondary border-bottom-0">
+                        {% if info.money_out is none %}
+                        0
+                        {% elif info.money_out % 1 %}
+                        {{ "%.2f"|format(info.money_out) }}
+                        {% else %}
+                        {{ info.money_out|int }}
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-3 py-2 border-bottom-0">
+                        <span class="fw-bold {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ "%.2f"|format(info.balance) }}
+                        </span>
+                    </td>
+                    <td class="text-end pe-3 py-2 text-muted border-bottom-0" style="width: 1%;">
+                        <i class="bi bi-chevron-right" style="font-size: 0.8rem;"></i>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}

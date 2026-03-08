@@ -1,5 +1,6 @@
 from sqlite3 import IntegrityError
 from typing import List, Type, Optional
+import random
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -17,12 +18,24 @@ from backend.schemas.games import GameCreate
 from datetime import date
 
 
+def generate_unique_game_id(db: Session) -> int:
+    """
+    Generate a random 6-digit integer and ensure it doesn't already exist in the Game table.
+    """
+    while True:
+        game_id = random.randint(100000, 999999)
+        if not db.query(Game).filter(Game.id == game_id).first():
+            return game_id
+
+
 def create_new_game_db(
     game: GameCreate,
     current_user: User = Depends(get_current_user_from_token),
     db: Session = Depends(get_db),
 ):
+    game_id = generate_unique_game_id(db)
     new_game = Game(
+        id=game_id,
         owner_id=current_user.id,
         book_keeper_id=current_user.id,
         **game.model_dump(),
@@ -109,8 +122,8 @@ def finish_the_game(
     """
     from backend.db.repository.team import is_user_admin
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise PermissionError("Only an admin or the game owner can finish the game.")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise PermissionError("Only an admin, the game owner, or the book keeper can finish the game.")
 
     add_ons = get_game_add_on_requests(game, db)
     cash_outs = get_game_cash_out_requests(game, db)
@@ -205,16 +218,11 @@ def delete_game_by_id(game_id: int, db: Session) -> bool:
 
 def get_user_past_games(user: User, db: Session, limit: int = None) -> List[Game]:
     """
-    Returns list of past (not running) games for all teams the user belongs to.
+    Returns list of past (not running) games the user has played in.
     """
-    team_ids = [team.id for team in user.teams]
-    if not team_ids:
-        return []
-
     query = (
         db.query(Game)
         .join(UserGame)
-        .filter(Game.team_id.in_(team_ids))
         .filter(UserGame.user_id == user.id)
         .filter(Game.running == False)
         .order_by(Game.date.desc())
@@ -228,18 +236,43 @@ def get_user_past_games(user: User, db: Session, limit: int = None) -> List[Game
 
 def get_user_past_games_count(user: User, db: Session) -> int:
     """
-    Returns count of past (not running) games for all teams the user belongs to.
+    Returns count of past (not running) games the user has played in.
     """
-    team_ids = [team.id for team in user.teams]
-    if not team_ids:
-        return 0
-
     return (
         db.query(Game)
-        .filter(Game.team_id.in_(team_ids))
+        .join(UserGame)
+        .filter(UserGame.user_id == user.id)
         .filter(Game.running == False)
         .count()
     )
+
+def get_running_games_for_user(user: User, db: Session) -> List[Game]:
+    """
+    Returns all running games where at least one participant is someone 
+    the user has played with (or is currently playing with), or the user is the owner.
+    """
+    # Subquery for games the user is/was part of
+    user_game_ids = db.query(UserGame.game_id).filter(UserGame.user_id == user.id)
+    
+    # Subquery for users that have played in any of those games
+    known_user_ids = db.query(UserGame.user_id).filter(UserGame.game_id.in_(user_game_ids))
+
+    # Fetch all running games that have a known user, or the user is the owner
+    running_games = (
+        db.query(Game)
+        .outerjoin(UserGame)
+        .filter(Game.running == True)
+        .filter(
+            (UserGame.user_id.in_(known_user_ids)) | 
+            (UserGame.user_id == user.id) | 
+            (Game.owner_id == user.id)
+        )
+        .distinct()
+        .order_by(Game.date.desc())
+        .all()
+    )
+    return running_games
+
 
 
 from sqlalchemy import func

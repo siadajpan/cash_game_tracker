@@ -8,21 +8,24 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="page-title">Game {{ game.start_time.strftime('%Y-%m-%d') if game.start_time else game.date }}</div>
     <div class="dropdown">
-        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
+        <button class="btn btn-lg btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false">
-            <i class="bi bi-gear-fill"></i>
+            <i class="bi bi-gear-fill fs-4"></i>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end">
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 p-2"
+            style="min-width: 220px; z-index: 2000;">
             <li>
-                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#predictionsModal"
-                    hx-get="/game/{{ game.id }}/predictions" hx-target="#predictionsContent">
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
+                    data-bs-target="#predictionsModal" hx-get="/game/{{ game.id }}/predictions"
+                    hx-target="#predictionsContent">
                     <i class="bi bi-graph-up-arrow"></i> Predictions
                 </button>
             </li>
             {% if is_admin or is_owner %}
             <li>
-                <button class="dropdown-item" type="button" hx-get="/game/{{ game.id }}/book_keeper"
-                    hx-target="#assignBookKeeperContent" data-bs-toggle="modal" data-bs-target="#assignBookKeeperModal">
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button"
+                    hx-get="/game/{{ game.id }}/book_keeper" hx-target="#assignBookKeeperContent" data-bs-toggle="modal"
+                    data-bs-target="#assignBookKeeperModal">
                     <i class="bi bi-person-badge"></i> Assign Book Keeper
                 </button>
             </li>
@@ -32,8 +35,8 @@
                 <hr class="dropdown-divider">
             </li>
             <li>
-                <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
-                    data-bs-target="#deleteGameModal">
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6 text-danger" type="button"
+                    data-bs-toggle="modal" data-bs-target="#deleteGameModal">
                     <i class="bi bi-trash-fill"></i> Delete Game
                 </button>
             </li>
@@ -42,17 +45,30 @@
     </div>
 </div>
 
-<div id="game-view-container" class="d-flex flex-column" style="max-height: 60vh;">
-    <div class="overflow-auto" style="min-height: 0;">
-        {% include "components/players_table.html" %}
-    </div>
+<div class="mb-3">
+    {% include "components/players_table.html" %}
+</div>
 
-    <div class="mt-3 flex-shrink-0 bg-white pt-2 d-flex">
+<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+<div style="height: 100px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
         {% if request.query_params.return_url %}
-        <a href="{{ request.query_params.return_url }}" class="btn btn-outline-secondary"><i
-                class="bi bi-arrow-left me-1"></i> Back</a>
+        <a href="{{ request.query_params.return_url }}"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Back</span>
+        </a>
         {% else %}
-        <a href="/game/view_past" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back</a>
+        <a href="/game/view_past"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Back</span>
+        </a>
         {% endif %}
     </div>
 </div>
@@ -115,11 +131,20 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer d-flex justify-content-between w-100">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
-                        class="bi bi-arrow-left me-1"></i> Back</button>
-                <button type="button" class="btn btn-primary" onclick="submitExport()"><i
-                        class="bi bi-check-circle-fill me-1"></i> Submit</button>
+            <div class="modal-footer d-flex gap-2 w-100">
+                <button type="button"
+                    class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;" data-bs-dismiss="modal">
+                    <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
+                    <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Back</span>
+                </button>
+                <button type="button"
+                    class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);"
+                    onclick="submitExport()">
+                    <i class="bi bi-check-circle-fill mb-1 fs-4 text-white"></i>
+                    <span class="small fw-bold text-white" style="font-size: 0.9rem;">Submit</span>
+                </button>
             </div>
         </div>
     </div>
@@ -142,23 +167,27 @@
 <!-- Delete Game Modal -->
 <div class="modal fade" id="deleteGameModal" tabindex="-1" aria-labelledby="deleteGameModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title text-danger" id="deleteGameModalLabel">Delete Game</h5>
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="deleteGameModalLabel">Delete Game</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete this game?</p>
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle-fill"></i> This action cannot be undone.
+            <div class="modal-body p-4">
+                <p class="fs-5">Are you sure you want to delete this game?</p>
+                <div class="alert alert-warning border-0 rounded-3 shadow-sm" style="background-color: #fff3cd;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> This action cannot be undone.
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
-                        class="bi bi-x-circle me-1"></i> Cancel</button>
-                <form action="/game/{{ game.id }}/delete" method="POST">
-                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash-fill me-1"></i> Delete
-                        Game</button>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-2 w-100">
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle text-secondary"></i>
+                    <span class="text-secondary">Cancel</span>
+                </button>
+                <form action="/game/{{ game.id }}/delete" method="POST" class="flex-grow-1">
+                    <button type="submit" class="btn btn-premium-base btn-premium-danger w-100">
+                        <i class="bi bi-trash-fill text-white"></i>
+                        <span class="text-white">Delete Game</span>
+                    </button>
                 </form>
             </div>
         </div>
@@ -211,12 +240,12 @@
 <!-- Predictions Modal -->
 <div class="modal fade" id="predictionsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Game Predictions</h5>
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-graph-up-arrow me-2"></i>Game Predictions</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="predictionsContent">
+            <div class="modal-body p-4" id="predictionsContent">
                 <div class="text-center p-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -224,9 +253,11 @@
                     <p class="mt-2 text-muted">Calculating probabilities based on player history...</p>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i
-                        class="bi bi-x-circle me-1"></i> Close</button>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-2 w-100">
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle text-secondary"></i>
+                    <span class="text-secondary">Close</span>
+                </button>
             </div>
         </div>
     </div>
@@ -240,10 +271,11 @@
         const container = document.getElementById('game-view-container');
         if (!container) return;
 
-        // Calculate available height: Window height - container top position - bottom margin (20px)
+        // Calculate available height: Window height - container top position - bottom nav height
         const rect = container.getBoundingClientRect();
-        // Adjust margin to ensure buttons are visible
-        const availableHeight = window.innerHeight - rect.top - 20;
+        // Adjust margin to ensure list doesn't get covered by fixed nav
+        const bottomNavHeight = 100;
+        const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
 
         // Ensure a reasonable minimum height
         container.style.maxHeight = `${Math.max(300, availableHeight)}px`;

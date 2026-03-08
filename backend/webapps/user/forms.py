@@ -8,7 +8,7 @@ from pydantic import EmailStr
 
 
 class UserCreateForm(BaseModel):
-    email: Optional[EmailStr] = None
+    nick_id: Optional[str] = None
     nick: Optional[str] = None
     password: Optional[str] = None
     repeat_password: Optional[str] = None
@@ -23,15 +23,11 @@ class UserCreateForm(BaseModel):
             )
         return nick
 
-    @field_validator("email")
-    def is_email_valid(cls, email):
-        if not email:
-            raise ValueError("Email is required")
-        try:
-            validate_email(email, check_deliverability=False)
-        except EmailNotValidError:
-            raise ValueError("Invalid email address")
-        return email
+    @field_validator("nick_id")
+    def is_nick_id_valid(cls, nick_id):
+        if not nick_id:
+            raise ValueError("Nick ID is required")
+        return nick_id
 
     @field_validator("password")
     def is_password_valid(cls, password):
@@ -64,10 +60,6 @@ class ResetPasswordForm:
     def is_email_valid(cls, email):
         if not email:
             raise ValueError("Email is required")
-        try:
-            validate_email(email, check_deliverability=False)
-        except EmailNotValidError:
-            raise ValueError("Invalid email address")
         return email
 
     @field_validator("password")
@@ -93,43 +85,21 @@ class UserProfileForm:
     def __init__(self, request: Request):
         self.request: Request = request
         self.errors: List = []
-        self.email: Optional[str] = None
+        self.nick_id: Optional[str] = None
         self.nick: Optional[str] = None
         self.password: Optional[str] = None
         self.repeat_password: Optional[str] = None
 
     async def load_data(self):
         form = await self.request.form()
-        self.email = form.get("email")
+        self.nick_id = form.get("nick_id")
         self.nick = form.get("nick")
         self.password = form.get("password")
         self.repeat_password = form.get("repeat_password")
 
     async def is_valid(self):
-        if not self.email:
-            self.errors.append("Email is required")
-        else:
-            try:
-                validate_email(self.email, check_deliverability=False)
-            except EmailNotValidError:
-                self.errors.append("Invalid email address")
-
-        if not self.nick:
-            self.errors.append("Nick is required")
-        elif len(self.nick) < settings.NICK_LENGTH:
-            self.errors.append(
-                f"Nick needs to be at least {settings.NICK_LENGTH} characters"
-            )
-
-        if self.password:
-            if len(self.password) < settings.PASSWORD_LENGTH:
-                self.errors.append(
-                    f"Password needs to be at least {settings.PASSWORD_LENGTH} characters"
-                )
-            if self.password != self.repeat_password:
-                self.errors.append("Passwords do not match")
-
-        return not self.errors
+        if not self.nick_id:
+            self.errors.append("Nick ID is required")
 
         if not self.nick:
             self.errors.append("Nick is required")

@@ -14,7 +14,7 @@ from backend.core.config import settings, TEMPLATES_DIR
 from backend.db.session import get_db
 from backend.db.models.team import Team
 from backend.db.models.game import Game
-from backend.db.repository.user import create_new_user, get_user_by_email
+from backend.db.repository.user import create_new_user, get_user_by_nick_id
 from backend.db.repository.team import join_team, get_team_by_id
 from backend.db.repository.game import get_game_by_id, add_user_to_game
 from backend.db.repository.buy_in import add_user_buy_in
@@ -93,26 +93,24 @@ async def guest_join(
     if not game.running:
         raise HTTPException(status_code=400, detail="This game has already finished")
 
-    team = get_team_by_id(team_id, db)
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
+    team = None
+    if team_id:
+        team = get_team_by_id(team_id, db)
+        if not team:
+            raise HTTPException(status_code=404, detail="Team not found")
 
     # Pre-load data to avoid DB access in error handler (which follows a failed session)
     owner_nick = game.owner.nick if game.owner else "the host"
 
     try:
         # 1. Logic for Guest User
-        # Normalize nick to create a safe ASCII string for email
-        # replace non-ascii characters with close matches (e.g. ł -> l)
-        normalized_nick = unicodedata.normalize('NFD', nick.lower().replace('ł', 'l').replace('Ł', 'L'))
-        ascii_nick = "".join(c for c in normalized_nick if unicodedata.category(c) != 'Mn').replace(' ', '_')
-        
-        # Email format: {lowercase_nick}_{group_search_code}@over-bet.com
-        guest_email = f"{ascii_nick}_{team.search_code.lower()}@over-bet.com"
+        import random
+        digits = f"{random.randint(0, 9999):04d}"
+        guest_nick_id = f"{nick}_{digits}"
         guest_password = "guest123"
 
         # Check if user exists
-        existing_user = get_user_by_email(guest_email, db)
+        existing_user = get_user_by_nick_id(guest_nick_id, db)
         
         if existing_user:
              # If user exists, we use them.
@@ -127,7 +125,7 @@ async def guest_join(
         else:
             # Create new user
             user_create = UserCreate(
-                email=guest_email,
+                nick_id=guest_nick_id,
                 nick=nick,
                 password=guest_password,
                 repeat_password=guest_password,
@@ -140,9 +138,9 @@ async def guest_join(
             db.commit()
             db.refresh(new_user)
 
-        # 2. Add to Team
+        # 2. Add to Team (only if game is linked to a team)
         # Check if already in team? (Unlikely for new user)
-        if new_user not in team.users:
+        if team and new_user not in team.users:
             join_team(team, new_user, db)
 
         # 3. Log them in
@@ -156,7 +154,7 @@ async def guest_join(
     except IntegrityError:
         error_msg = (
             f"Nick ({nick}) already exists in this group. "
-            f"If you want to use it, please log in with {guest_email}, the default password is guest123. "
+            f"If you want to use it, please log in with {guest_nick_id}, the default password is guest123. "
             "If you want to create a new guest account use a different nick."
         )
         return templates.TemplateResponse(

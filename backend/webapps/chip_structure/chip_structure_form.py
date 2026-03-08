@@ -9,7 +9,7 @@ from pydantic_core import PydanticCustomError
 
 class ChipStructureCreateForm(BaseModel):
     team_id: Optional[int] = None
-    created_by: Optional[int] = None
+    owner_id: Optional[int] = None
     chips: List[NewChip] = []
     name: Optional[str] = None
 

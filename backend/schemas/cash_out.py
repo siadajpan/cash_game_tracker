@@ -32,7 +32,7 @@ class CashOutRequest(BaseModel):
 
     async def load_data(self, chip_structure: List):
         """
-        Load total cash-out amount and per-chip quantities from form.
+        Load total cash out amount and per-chip quantities from form.
         `chip_structure` should be a list of Chip objects (in display order).
         """
         form = await self.request.form()
@@ -42,7 +42,7 @@ class CashOutRequest(BaseModel):
         try:
             self.amount = float(cash_out)
         except (ValueError, TypeError):
-            self.errors.append("Cash-out amount must be a valid number.")
+            self.errors.append("Cash out amount must be a valid number.")
             self.amount = 0.0
 
         # Load chip counts
@@ -68,7 +68,7 @@ class CashOutRequest(BaseModel):
     async def is_valid(self):
         # Validation for total
         if self.amount is None or self.amount < 0:
-            self.errors.append("Cash-out total must be 0 or more.")
+            self.errors.append("Cash out total must be 0 or more.")
 
         return len(self.errors) == 0
 

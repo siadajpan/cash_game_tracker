@@ -8,14 +8,14 @@ from pydantic_core import PydanticCustomError
 
 
 class LoginForm(BaseModel):
-    username: Optional[EmailStr]
+    username: Optional[str]
     password: Optional[str]
 
     @field_validator("username")
     def ensure_correct_username(cls, value):
         print(value)
-        if "@" not in value:
-            raise PydanticCustomError("email_error", "Email is required")
+        if not value:
+            raise PydanticCustomError("nick_error", "Nick is required")
         return value
 
     @field_validator("password")

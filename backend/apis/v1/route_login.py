@@ -13,14 +13,14 @@ from backend.core.hashing import Hasher
 from backend.core.security import create_access_token
 from backend.db.session import get_db
 from backend.schemas.tokens import Token
-from backend.db.repository.user import get_user_by_email
+from backend.db.repository.user import get_user_by_nick_id, get_user_by_login
 from backend.db.models.user import User
 
 router = APIRouter()
 
 
-def authenticate_user(email: str, password: str, db: Session):
-    user = get_user_by_email(email=email, db=db)
+def authenticate_user(login: str, password: str, db: Session):
+    user = get_user_by_login(login=login, db=db)
     if not user or not Hasher.verify_password(password, user.hashed_password):
         return None
     return user
@@ -29,7 +29,7 @@ def authenticate_user(email: str, password: str, db: Session):
 def add_new_access_token(response: Response, user: User):
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
+        data={"sub": user.nick_id}, expires_delta=access_token_expires
     )
     response.set_cookie(
         key="access_token",
@@ -82,7 +82,7 @@ def get_current_user_from_token(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = get_user_by_email(email=email, db=db)
+    user = get_user_by_nick_id(nick_id=email, db=db)
     if user is None:
         raise credentials_exception
     return user
@@ -91,8 +91,6 @@ def get_current_user_from_token(
 def get_active_user(user: User = Depends(get_current_user_from_token)):
     if not user:
         raise HTTPException(status_code=401, detail="Please log in.")
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="Email verification required.")
     return user
 
 

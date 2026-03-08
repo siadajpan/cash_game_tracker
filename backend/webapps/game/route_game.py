@@ -2,7 +2,8 @@ import json
 from datetime import datetime, timedelta
 from sqlite3 import IntegrityError
 from typing import Optional
-from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form
+import unicodedata
+from fastapi import APIRouter, Depends, Request, responses, HTTPException, Form, UploadFile, File
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from pydantic_core import PydanticCustomError
@@ -17,6 +18,7 @@ import os
 import tempfile
 from fastapi_mail import FastMail, MessageSchema
 from backend.webapps.auth.email_config import conf
+from backend.core.hashing import Hasher
 from backend.apis.v1.route_login import (
     get_current_user_from_token,
     get_current_user,
@@ -44,6 +46,7 @@ from backend.db.repository.chip_structure import (
     get_user_team_chip_structures_dict,
     list_team_chip_structures,
     get_chip_structure,
+    get_user_selectable_chip_structures,
 )
 from backend.db.repository.game import (
     create_new_game_db,
@@ -79,9 +82,9 @@ async def delete_game(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         raise HTTPException(
-            status_code=403, detail="Only admins or the game owner can delete the game"
+            status_code=403, detail="Only admins, game owner, or book keeper can delete the game"
         )
 
     delete_game_by_id(game_id, db)
@@ -119,12 +122,15 @@ async def update_game_chip_structure(
 
 @router.get("/create", name="create_game_form")
 async def create_game_form(
-    request: Request, current_user: User = Depends(get_active_user)
+    request: Request, 
+    current_user: User = Depends(get_active_user),
+    db: Session = Depends(get_db)
 ):
     """
     Renders the game creation form, populating team choices and default values.
     """
-    team_chip_structures = get_user_team_chip_structures_dict(current_user)
+    user_chip_structures = get_user_selectable_chip_structures(current_user.id, db)
+
     # Round time to nearest 15 minutes
     now = datetime.now()
     minute = now.minute
@@ -134,8 +140,7 @@ async def create_game_form(
     context = {
         "request": request,
         "errors": [],
-        "user_teams": current_user.teams,
-        "team_chip_structures": team_chip_structures,
+        "user_chip_structures": user_chip_structures,
         "form": {
             "default_buy_in": 0.0,
             "date": "",
@@ -170,18 +175,27 @@ async def create_game(
         if not game_date:
             game_date = str(datetime.today().date())
 
+        # Validate team manually if provided, but default to None
+        team_id = form.get("team_id")
+        if team_id:
+            team = get_team_by_id(team_id, db)
+            if not team:
+                raise ValueError("Selected team does not exist.")
+        else:
+            team_id = None
+
+        chip_structure_id = form.get("chip_structure_id")
+        if not chip_structure_id:  # Handles empty string
+            chip_structure_id = None
+
         new_game_data = GameCreate(
             date=game_date,
             default_buy_in=float(form.get("default_buy_in", 0)),
             running=True,
-            team_id=form.get("team_id"),
-            chip_structure_id=form.get("chip_structure_id"),
+            team_id=team_id,
+            chip_structure_id=chip_structure_id,
             start_time=start_time_val,
         )
-        # Check if the team exists separately
-        team = get_team_by_id(new_game_data.team_id, db)
-        if not team:
-            raise ValueError("Selected team does not exist.")
 
         # If all good, save to DB
         game = create_new_game_db(game=new_game_data, current_user=current_user, db=db)
@@ -203,7 +217,8 @@ async def create_game(
         errors.append("Database integrity error occurred.")
     except Exception as e:
         errors.append(f"Unexpected error: {e}")
-    team_chip_structures = get_user_team_chip_structures_dict(current_user)
+    # Refresh chip structures in case of error
+    user_chip_structures = get_user_selectable_chip_structures(current_user.id, db)
 
     # Render back with errors
     return templates.TemplateResponse(
@@ -211,10 +226,228 @@ async def create_game(
         {
             "request": request,
             "errors": errors,
-            "team_chip_structures": team_chip_structures,
+            "user_chip_structures": user_chip_structures,
             "form": form,
-            "user_teams": current_user.teams,
         },
+    )
+
+
+@router.post("/import", name="import_personal_games")
+async def import_personal_games(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+):
+    from backend.db.models.game import Game
+    from backend.db.models.buy_in import BuyIn
+    from backend.db.models.cash_out import CashOut
+    from backend.db.models.user_game import UserGame
+
+    if not file:
+        return RedirectResponse(url="/game/view_past?error=No file uploaded", status_code=status.HTTP_303_SEE_OTHER)
+
+    try:
+        content = await file.read()
+        data = json.loads(content)
+
+        if not isinstance(data, list):
+            raise ValueError("JSON must be a list of game objects")
+
+        # Step 1: Check if the user is in the data
+        all_nicks = set()
+        for g_data in data:
+            players_list = g_data.get("players", [])
+            for p_data in players_list:
+                nick = p_data.get("nick")
+                if nick:
+                    all_nicks.add(nick)
+        
+        # If user's nick is exactly in the list, we proceed. 
+        # Otherwise, ask them which one they are.
+        if current_user.nick not in all_nicks:
+            return templates.TemplateResponse(
+                "game/import_select_nick.html",
+                {
+                    "request": request,
+                    "nicks": sorted(list(all_nicks)),
+                    "original_data": json.dumps(data),
+                    "user": current_user
+                }
+            )
+
+        # Proceed with import normally using current_user.nick
+        return await _perform_import(request, data, current_user.nick, db, current_user)
+
+    except Exception as e:
+        return RedirectResponse(
+            url=f"/game/view_past?error=Import failed: {str(e)}", 
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+
+@router.post("/import/confirm", name="import_personal_games_confirm")
+async def import_personal_games_confirm(
+    request: Request,
+    selected_nick: str = Form(...),
+    original_data: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+):
+    try:
+        data = json.loads(original_data)
+        return await _perform_import(request, data, selected_nick, db, current_user)
+    except Exception as e:
+        return RedirectResponse(
+            url=f"/game/view_past?error=Import failed: {str(e)}", 
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+
+async def _perform_import(request, data, user_nick_in_file, db, current_user):
+    from backend.db.models.game import Game
+    from backend.db.models.buy_in import BuyIn
+    from backend.db.models.cash_out import CashOut
+    from backend.db.models.user_game import UserGame
+
+    imported_count = 0
+    skipped_count = 0
+
+    print(f"DEBUG: Starting import for user {current_user.nick} (ID: {current_user.id})")
+    print(f"DEBUG: Selected nickname in file: {user_nick_in_file}")
+
+    # Helper to get or create guest users for personal import
+    session_guest_cache = {}
+
+    def get_or_create_ext_user(nick_name):
+        if not nick_name:
+            return None
+        
+        # If this is the user's selected nick, return the real user
+        if nick_name == user_nick_in_file:
+            return current_user
+            
+        if nick_name in session_guest_cache:
+            return session_guest_cache[nick_name]
+
+        import unicodedata
+        import random
+        normalized_nick = unicodedata.normalize('NFD', nick_name.lower().replace('ł', 'l').replace('Ł', 'L'))
+        ascii_nick = "".join(c for c in normalized_nick if unicodedata.category(c) != 'Mn').replace(' ', '_')
+
+        # 1. First check if we already have a guest user with this display name that this user has played with
+        from backend.db.models.user_game import UserGame
+        my_game_ids = db.query(UserGame.game_id).filter(UserGame.user_id == current_user.id).subquery()
+        friend_user = db.query(User).join(UserGame).filter(
+            UserGame.game_id.in_(my_game_ids),
+            User.nick == nick_name,
+            User.id != current_user.id
+        ).first()
+
+        # 2. Check for identifying by our old extension format if friend not found (for people who imported earlier)
+        if not friend_user:
+            old_guest_nick_id = f"{ascii_nick}_ext_{current_user.nick_id.lower()}"
+            friend_user = db.query(User).filter(User.nick_id == old_guest_nick_id).first()
+
+        if friend_user:
+            session_guest_cache[nick_name] = friend_user
+            return friend_user
+
+        # 3. Create a new one with the requested format: nick_1234
+        while True:
+            digits = f"{random.randint(0, 9999):04d}"
+            guest_nick_id = f"{ascii_nick}_{digits}"
+            if not db.query(User).filter(User.nick_id == guest_nick_id).first():
+                break
+        
+        from backend.core.hashing import Hasher
+        player_user = User(
+            nick=nick_name,
+            nick_id=guest_nick_id,
+            hashed_password=Hasher.get_password_hash("guest123"),
+            is_active=True,
+        )
+        db.add(player_user)
+        db.commit()
+        db.refresh(player_user)
+        session_guest_cache[nick_name] = player_user
+        return player_user
+
+    for g_data in data:
+        start_str = g_data.get("start_time")
+        finish_str = g_data.get("finish_time")
+        if not start_str or not finish_str:
+            continue
+
+        try:
+            dt_start = datetime.strptime(start_str, "%Y-%m-%d %H:%M")
+            dt_finish = datetime.strptime(finish_str, "%Y-%m-%d %H:%M")
+        except:
+            continue
+        
+        # Get the host from the JSON, fallback to current_user
+        host_nick = g_data.get("host")
+        host_user = get_or_create_ext_user(host_nick) if host_nick else current_user
+        if not host_user:
+            host_user = current_user
+
+        # Duplicates check
+        exists = db.query(Game).filter(
+            Game.owner_id == host_user.id, 
+            Game.team_id == None, 
+            Game.start_time == dt_start
+        ).first()
+
+        if exists:
+            skipped_count += 1
+            continue
+
+        # Create Game
+        new_game = Game(
+            date=dt_start.date(),
+            start_time=dt_start,
+            finish_time=dt_finish,
+            default_buy_in=0,
+            running=False,
+            owner_id=host_user.id,
+            team_id=None,
+        )
+        db.add(new_game)
+        db.commit()
+        db.refresh(new_game)
+
+        # Process Players
+        players_list = g_data.get("players", [])
+        for p_data in players_list:
+            nick = p_data.get("nick")
+            buy_in_amt = float(p_data.get("buy_in", 0))
+            cash_out_amt = float(p_data.get("cash_out", 0))
+
+            player_user = get_or_create_ext_user(nick)
+
+            # Add to Game
+            ug = UserGame(user_id=player_user.id, game_id=new_game.id, status=PlayerRequestStatus.APPROVED)
+            db.add(ug)
+
+            if buy_in_amt > 0:
+                db.add(BuyIn(amount=buy_in_amt, user_id=player_user.id, game_id=new_game.id, time=dt_start.isoformat()))
+
+            if cash_out_amt > 0:
+                db.add(CashOut(amount=cash_out_amt, user_id=player_user.id, game_id=new_game.id, time=dt_finish.isoformat(), status=PlayerRequestStatus.APPROVED))
+            elif buy_in_amt > 0:
+                 db.add(CashOut(amount=0, user_id=player_user.id, game_id=new_game.id, time=dt_finish.isoformat(), status=PlayerRequestStatus.APPROVED))
+
+        db.commit()
+        imported_count += 1
+        print(f"DEBUG: Imported game {new_game.id} with {len(players_list)} players")
+
+    print(f"DEBUG: Import finished. Imported: {imported_count}, Skipped: {skipped_count}")
+
+    msg = f"Successfully imported {imported_count} games."
+    if skipped_count > 0:
+        msg += f" {skipped_count} duplicates skipped."
+    
+    return RedirectResponse(
+        url=f"/game/view_past?msg={msg}", 
+        status_code=status.HTTP_303_SEE_OTHER
     )
 
 
@@ -238,7 +471,7 @@ async def view_past_games(
     # Get all games to allow sorting by computed fields
     past_games = get_user_past_games(user, db, limit=None)
     total_count = len(past_games)
-
+    
     game_ids = [g.id for g in past_games]
     bulk_stats = get_user_past_games_stats_bulk(user.id, game_ids, db)
 
@@ -284,6 +517,7 @@ async def view_past_games(
         "game/view_past.html",
         {
             "request": request,
+            "user": user,
             "games_data": visible_games,
             "games_count": total_count,
             "visible_count": len(visible_games),
@@ -302,7 +536,18 @@ async def join_game_form(
     user: User = Depends(get_active_user),
 ):
     game = get_game_by_id(game_id, db)
-    # TODO Add checking if user is allowed to enter that game (if he edits href)
+    if not game:
+        return RedirectResponse(
+            url=f"/?error=Game not found. Please check the number.&join_code={game_id}",
+            status_code=303,
+        )
+
+    if not game.running:
+        return RedirectResponse(
+            url=f"/?error=This game has already finished.&join_code={game_id}",
+            status_code=303,
+        )
+
     if user_in_game(user, game):
         return RedirectResponse(url=f"/game/{game.id}")  # already in game
     return templates.TemplateResponse(
@@ -330,11 +575,14 @@ async def join_game(
         # Fetch game
         if game is None:
             errors.append("Game doesn't exist anymore. Maybe it was deleted.")
+        elif not game.running:
+            errors.append("Game is already finished. You cannot join it anymore.")
 
-        add_user_to_game(user, game, db)
-        add_user_buy_in(user, game, buy_in, db)
-        # Redirect to the game page
-        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+        if not errors:
+            add_user_to_game(user, game, db)
+            add_user_buy_in(user, game, buy_in, db)
+            # Redirect to the game page
+            return RedirectResponse(url=f"/game/{game.id}", status_code=303)
 
     except ValidationError as e:
         errors.extend([err["msg"] for err in e.errors()])
@@ -392,11 +640,9 @@ def process_player(
             request_type = "cash_out"
             request_text = f"Cash out: {cash_out_req.amount}"
             request_href = f"/game/{game.id}/cash_out/{cash_out_req.id}"
-            [
-                can_approve.append(p)
-                for p in game.players
-                if p.id != player.id or p.id == game.owner_id
-            ]
+            can_approve.append(game.owner)
+            if game.book_keeper and game.book_keeper.id != game.owner_id:
+                can_approve.append(game.book_keeper)
 
     for add_on_req in add_ons_requests:
         if add_on_req.status == PlayerRequestStatus.APPROVED:
@@ -442,8 +688,8 @@ def sort_players_game_info(players_info, sort, order):
 async def open_game(
     request: Request,
     game_id: int,
-    sort: str = "balance",
-    order: str = "desc",
+    sort: str = "player",
+    order: str = "asc",
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(get_current_user),
 ):
@@ -453,15 +699,27 @@ async def open_game(
             url="/?msg=Game not found or deleted", status_code=status.HTTP_302_FOUND
         )
 
-    if not user or not user_in_game(user, game):
+    if not user:
         if game.running:
-            # If guest/unauthenticated, they can't join normally via this check
-            if not user:
-                 # Pass through to allow viewing running game as guest
-                 pass
-            else:
-                 return RedirectResponse(url=f"/game/{game.id}/join")  # not in the game yet
-        # If game is ended, allow viewing even if not a player
+            # Allow viewing running game as guest (read-only view usually)
+            pass
+        else:
+            # Prohibit guests from viewing ended games
+            return RedirectResponse(url="/?msg=You must be logged in to view past games", status_code=status.HTTP_302_FOUND)
+    elif not user_in_game(user, game):
+        if game.running:
+            # Not in game yet, redirect to join page
+            return RedirectResponse(url=f"/game/{game.id}/join", status_code=status.HTTP_302_FOUND)
+        else:
+            # Ended game: Allow viewing summary if user is a member of the team
+            if game.team_id and game.team_id != 0:
+                is_member = db.query(UserTeam).filter(UserTeam.team_id == game.team_id, UserTeam.user_id == user.id).first()
+                if not is_member and not user.is_superuser:
+                    return RedirectResponse(
+                        url="/?msg=You are not a member of this group", 
+                        status_code=status.HTTP_302_FOUND
+                    )
+            # If team_id is 0 or user is a participant/member, we fall through to render the summary
 
     players_info = []
     existing_requests = False
@@ -496,7 +754,7 @@ async def open_game(
 
     template_name = "game/view_running.html" if game.running else "game/view_ended.html"
 
-    chip_structures = list_team_chip_structures(game.team_id, db)
+    chip_structures = get_user_selectable_chip_structures(user.id, db) if user else []
 
     return templates.TemplateResponse(
         template_name,
@@ -521,8 +779,8 @@ async def open_game(
 async def get_game_table(
     request: Request,
     game_id: int,
-    sort: str = "balance",
-    order: str = "desc",
+    sort: str = "player",
+    order: str = "asc",
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(get_current_user),
 ):
@@ -580,6 +838,12 @@ async def finish_game_view(
     if not user:
         return RedirectResponse(url="/", status_code=303)
 
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins, the game owner, or the book keeper can finish the game.",
+        )
+
     form = await request.form()
     finish_time = form.get("finish_time")
 
@@ -598,7 +862,7 @@ async def get_assign_book_keeper_list(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         raise HTTPException(status_code=403, detail="Insufficient permissions (Only admins or game owner)")
 
     # Get players currently in the game
@@ -626,7 +890,7 @@ async def assign_book_keeper(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
         raise HTTPException(status_code=403, detail="Insufficient permissions (Only admins or game owner)")
 
     # Verify user is in the game
@@ -786,8 +1050,8 @@ async def get_add_player_list(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise HTTPException(status_code=403, detail="Only admins or game owner can add players")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     # Get all approved members of the team
     team_members = (
@@ -827,8 +1091,8 @@ async def add_player_remotely(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise HTTPException(status_code=403, detail="Only admins or game owner can add players")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     target_user = db.query(User).filter(User.id == player_id).first()
     if not target_user:
@@ -873,8 +1137,8 @@ async def get_remove_player_list(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise HTTPException(status_code=403, detail="Only admins or game owner can remove players")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     # Filter out the host/owner if desired, or just list everyone
     players = [p for p in game.players if p.id != game.owner_id]
@@ -901,8 +1165,8 @@ async def remove_player_remotely(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id):
-        raise HTTPException(status_code=403, detail="Only admins or game owner can remove players")
+    if not (is_user_admin(user.id, game.team_id, db) or user.id == game.owner_id or user.id == game.book_keeper_id):
+        raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     if player_id == game.owner_id:
         raise HTTPException(status_code=400, detail="Cannot remove game owner")

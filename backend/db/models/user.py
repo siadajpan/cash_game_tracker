@@ -7,7 +7,7 @@ from backend.db.base_class import Base
 class User(Base):
     __tablename__ = "user"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(200), nullable=False, unique=True)
+    nick_id = Column(String(200), nullable=False, unique=True)
     hashed_password = Column(String(200), nullable=False)
     is_superuser = Column(Boolean(), default=False)
     is_active = Column(Boolean(), default=False)
@@ -40,6 +40,7 @@ class User(Base):
     verification = relationship(
         "UserVerification", back_populates="user", uselist=False
     )
+    chip_structures = relationship("ChipStructure", back_populates="owner", cascade="all, delete-orphan")
 
     @property
     def teams(self):
@@ -50,3 +51,8 @@ class User(Base):
     def games_played(self):
         # Retrieve the Team objects via the association objects
         return [assoc.game for assoc in self.game_associations]
+    @property
+    def is_using_default_password(self):
+        from backend.core.hashing import Hasher
+        # Standard default password for all guest accounts
+        return Hasher.verify_password("guest123", self.hashed_password)
