@@ -219,7 +219,6 @@
         <span class="text-muted me-2 small">Showing {{ visible_count }} of {{ games_count }} games</span>
         <a href="?limit=10000" class="btn btn-link pe-0">Show All</a>
 </div>
-
 {% endif %}
 
 </div>
@@ -263,114 +262,115 @@
             <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">My group</span>
         </a>
     </div>
-    {% endblock %}
+</div>
+{% endblock %}
 
-    {% block scripts %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Initialize Tooltips
-            // Initialize Tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl)
-            })
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Tooltips
+        // Initialize Tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
 
-            const chartData = {{ chart_points | tojson
-        }};
+        const chartData = {{ chart_points | tojson
+    }};
 
-        if (chartData && chartData.length > 0) {
-            const ctx = document.getElementById('balanceChart').getContext('2d');
+    if (chartData && chartData.length > 0) {
+        const ctx = document.getElementById('balanceChart').getContext('2d');
 
-            // Create gradient
-            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-            gradient.addColorStop(0, 'rgba(13, 110, 253, 0.2)');
-            gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)');
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(13, 110, 253, 0.2)');
+        gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)');
 
-            const balances = chartData.map(d => d.balance);
-            const minBalance = Math.min(...balances);
-            const maxBalance = Math.max(...balances);
+        const balances = chartData.map(d => d.balance);
+        const minBalance = Math.min(...balances);
+        const maxBalance = Math.max(...balances);
 
-            // Add slight padding (5%) so points aren't cut off at the edges
-            const range = maxBalance - minBalance;
-            const padding = range === 0 ? 10 : range * 0.05;
+        // Add slight padding (5%) so points aren't cut off at the edges
+        const range = maxBalance - minBalance;
+        const padding = range === 0 ? 10 : range * 0.05;
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.map(d => d.date),
-                    datasets: [{
-                        label: 'Balance',
-                        data: balances,
-                        borderColor: '#0d6efd',
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#0d6efd',
-                        pointBorderWidth: 2,
-                        pointRadius: 3,
-                        pointHoverRadius: 6
-                    }]
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map(d => d.date),
+                datasets: [{
+                    label: 'Balance',
+                    data: balances,
+                    borderColor: '#0d6efd',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#0d6efd',
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index',
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y).replace('$', '');
-                                    }
-                                    return label;
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
                                 }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y).replace('$', '');
+                                }
+                                return label;
                             }
                         }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: minBalance - padding,
+                        max: maxBalance + padding,
+                        beginAtZero: false,
+                        grid: { borderDash: [2, 4], color: '#e9ecef' },
+                        ticks: { callback: function (value) { return Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 }); } }
                     },
-                    scales: {
-                        y: {
-                            min: minBalance - padding,
-                            max: maxBalance + padding,
-                            beginAtZero: false,
-                            grid: { borderDash: [2, 4], color: '#e9ecef' },
-                            ticks: { callback: function (value) { return Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 }); } }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { maxTicksLimit: 8 }
-                        }
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxTicksLimit: 8 }
                     }
                 }
-            });
-        }
+            }
+        });
+    }
     });
 
-        function adjustStatsViewHeight() {
-            const container = document.getElementById('stats-view-container');
-            if (!container) return;
+    function adjustStatsViewHeight() {
+        const container = document.getElementById('stats-view-container');
+        if (!container) return;
 
-            // Calculate available height: Window height - container top position - bottom nav height
-            const rect = container.getBoundingClientRect();
-            const bottomNavHeight = 120;
-            const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
+        // Calculate available height: Window height - container top position - bottom nav height
+        const rect = container.getBoundingClientRect();
+        const bottomNavHeight = 120;
+        const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
 
-            // Ensure a reasonable minimum height
-            container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
-        }
+        // Ensure a reasonable minimum height
+        container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
+    }
 
-        window.addEventListener('resize', adjustStatsViewHeight);
-        window.addEventListener('load', adjustStatsViewHeight);
+    window.addEventListener('resize', adjustStatsViewHeight);
+    window.addEventListener('load', adjustStatsViewHeight);
 
-        adjustStatsViewHeight();
-    </script>
-    {% endblock %}
+    adjustStatsViewHeight();
+</script>
+{% endblock %}

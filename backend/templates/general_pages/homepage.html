@@ -59,12 +59,18 @@
             <div class="col-12 col-md-5">
                 <form
                     onsubmit="event.preventDefault(); const code = document.getElementById('gameCodeInput').value; if(code) { window.location.href = '/game/' + parseInt(code, 10) + '/join'; }">
-                    <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border">
+                    <div
+                        class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border {% if error %}border-danger{% endif %}">
                         <input type="text" id="gameCodeInput" class="form-control border-0 fs-5 py-3"
-                            placeholder="6-digit code" pattern="\d{1,6}" required>
+                            placeholder="6-digit code" pattern="\d{1,6}" required value="{{ join_code or '' }}">
                         <button class="btn btn-white bg-white border-0 text-primary fw-bold px-4"
                             type="submit">Join</button>
                     </div>
+                    {% if error %}
+                    <div class="text-danger small mt-2 ms-1 fw-bold">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> {{ error }}
+                    </div>
+                    {% endif %}
                 </form>
             </div>
 

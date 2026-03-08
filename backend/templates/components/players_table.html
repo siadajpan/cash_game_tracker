@@ -124,7 +124,7 @@
                             class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end {{ 'text-highlight-animation' if request.query_params.highlight_player == info.player.id|string and request.query_params.action == 'add_on' else '' }}">
                             {% if game.running and info.request_type == 'add_on' %}
                             <span class="badge bg-warning text-dark tile-badge ms-1"
-                                title="{{ info.request_text }}">Add-on pending</span>
+                                title="{{ info.request_text }}">Add-on</span>
                             {% else %}
                             {% if info.money_in % 1 %}
                             {{ "%.2f"|format(info.money_in) }}
@@ -137,21 +137,19 @@
                     {% if (game.running and info.request_type == 'cash_out') or info.money_out is not none or
                     is_finish_page %}
                     <div class="d-flex justify-content-center align-items-center w-100 position-relative">
-                        <span class="text-muted pe-1">Out:</span>
                         <span
                             class="fw-semibold text-end text-truncate d-flex align-items-center justify-content-end {{ 'text-highlight-animation' if request.query_params.highlight_player == info.player.id|string and request.query_params.action == 'cash_out' else '' }} {{ 'text-highlight-animation-red' if is_finish_page and (info.has_cashed_out is sameas false or info.money_out is none) else '' }}">
                             {% if game.running and info.request_type == 'cash_out' %}
                             {% if user in info.can_approve %}
-                            <a href="{{ info.request_href }}"
-                                class="btn btn-danger tile-action-btn ms-1 position-relative shadow-sm"
-                                style="z-index: 5;" title="{{ info.request_text }}">
-                                <i class="bi bi-exclamation-circle-fill"></i> Cash
-                            </a>
+                            <span class="badge bg-danger tile-action-btn ms-1" title="{{ info.request_text }}">
+                                <i class="bi bi-exclamation-circle-fill"></i> Cash out
+                            </span>
                             {% else %}
                             <span class="badge bg-secondary tile-badge ms-1" title="{{ info.request_text }}">Cash
                                 out</span>
                             {% endif %}
                             {% else %}
+                            <span class="text-muted pe-1">Out:</span>
                             {% if is_finish_page and (info.has_cashed_out is sameas false or info.money_out is none) %}
                             0
                             {% elif info.money_out is none %}
@@ -184,8 +182,8 @@
     {% else %}
     <!-- Players List (Table) -->
     <div class="table-responsive border rounded bg-white mt-1 mb-2">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
+        <table class="table table-hover table-hover-custom align-middle mb-0">
+            <thead class="sticky-top bg-white border-bottom">
                 <tr>
                     <th scope="col" class="py-2 ps-3 border-0">Player</th>
                     <th scope="col" class="py-2 text-end border-0">In</th>
@@ -199,7 +197,7 @@
                 <tr class="position-relative"
                     onclick="window.location.href='/game/{{ game.id }}/player/{{ info.player.id }}/history'"
                     style="cursor: pointer;">
-                    <td class="ps-3 py-3 fw-semibold border-bottom-0">
+                    <td class="ps-3 py-2 border-bottom-0">
                         <a href="/game/{{ game.id }}/player/{{ info.player.id }}/history"
                             class="text-decoration-none text-dark stretched-link">
                             {{ info.player.nick }}
@@ -211,11 +209,11 @@
                         <span class="badge bg-secondary fw-normal ms-1" style="font-size: 0.65rem;">Bk</span>
                         {% endif %}
                     </td>
-                    <td class="text-end py-3 text-secondary border-bottom-0">
+                    <td class="text-end py-2 text-secondary border-bottom-0">
                         {% if info.money_in % 1 %}{{ "%.2f"|format(info.money_in) }}{% else %}{{ info.money_in|int }}{%
                         endif %}
                     </td>
-                    <td class="text-end py-3 text-secondary border-bottom-0">
+                    <td class="text-end py-2 text-secondary border-bottom-0">
                         {% if info.money_out is none %}
                         0
                         {% elif info.money_out % 1 %}
@@ -224,12 +222,12 @@
                         {{ info.money_out|int }}
                         {% endif %}
                     </td>
-                    <td class="text-end pe-3 py-3 border-bottom-0">
+                    <td class="text-end pe-3 py-2 border-bottom-0">
                         <span class="fw-bold {% if info.balance < 0 %}text-danger{% else %}text-success{% endif %}">
                             {{ "%.2f"|format(info.balance) }}
                         </span>
                     </td>
-                    <td class="text-end pe-3 py-3 text-muted border-bottom-0" style="width: 1%;">
+                    <td class="text-end pe-3 py-2 text-muted border-bottom-0" style="width: 1%;">
                         <i class="bi bi-chevron-right" style="font-size: 0.8rem;"></i>
                     </td>
                 </tr>

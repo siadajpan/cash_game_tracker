@@ -12,7 +12,8 @@
             aria-expanded="false">
             <i class="bi bi-gear-fill fs-4"></i>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end">
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 p-2"
+            style="min-width: 220px; z-index: 2000;">
             <li>
                 <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
                     data-bs-target="#predictionsModal" hx-get="/game/{{ game.id }}/predictions"
@@ -166,23 +167,31 @@
 <!-- Delete Game Modal -->
 <div class="modal fade" id="deleteGameModal" tabindex="-1" aria-labelledby="deleteGameModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title text-danger" id="deleteGameModalLabel">Delete Game</h5>
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="deleteGameModalLabel">Delete Game</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete this game?</p>
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle-fill"></i> This action cannot be undone.
+            <div class="modal-body p-4">
+                <p class="fs-5">Are you sure you want to delete this game?</p>
+                <div class="alert alert-warning border-0 rounded-3 shadow-sm" style="background-color: #fff3cd;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> This action cannot be undone.
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
-                        class="bi bi-x-circle me-1"></i> Cancel</button>
-                <form action="/game/{{ game.id }}/delete" method="POST">
-                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash-fill me-1"></i> Delete
-                        Game</button>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-2 w-100">
+                <button type="button"
+                    class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle mb-1 fs-4 text-secondary"></i>
+                    <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Cancel</span>
+                </button>
+                <form action="/game/{{ game.id }}/delete" method="POST" class="flex-grow-1">
+                    <button type="submit"
+                        class="btn btn-danger d-flex flex-column align-items-center justify-content-center w-100 border-0 shadow"
+                        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #dc3545, #bb2d3b);">
+                        <i class="bi bi-trash-fill mb-1 fs-4 text-white"></i>
+                        <span class="small fw-bold text-white" style="font-size: 0.9rem;">Delete Game</span>
+                    </button>
                 </form>
             </div>
         </div>

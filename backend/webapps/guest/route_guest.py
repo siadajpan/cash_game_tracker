@@ -93,9 +93,11 @@ async def guest_join(
     if not game.running:
         raise HTTPException(status_code=400, detail="This game has already finished")
 
-    team = get_team_by_id(team_id, db)
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
+    team = None
+    if team_id:
+        team = get_team_by_id(team_id, db)
+        if not team:
+            raise HTTPException(status_code=404, detail="Team not found")
 
     # Pre-load data to avoid DB access in error handler (which follows a failed session)
     owner_nick = game.owner.nick if game.owner else "the host"
@@ -136,9 +138,9 @@ async def guest_join(
             db.commit()
             db.refresh(new_user)
 
-        # 2. Add to Team
+        # 2. Add to Team (only if game is linked to a team)
         # Check if already in team? (Unlikely for new user)
-        if new_user not in team.users:
+        if team and new_user not in team.users:
             join_team(team, new_user, db)
 
         # 3. Log them in

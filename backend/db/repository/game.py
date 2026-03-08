@@ -1,5 +1,6 @@
 from sqlite3 import IntegrityError
 from typing import List, Type, Optional
+import random
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -17,12 +18,24 @@ from backend.schemas.games import GameCreate
 from datetime import date
 
 
+def generate_unique_game_id(db: Session) -> int:
+    """
+    Generate a random 6-digit integer and ensure it doesn't already exist in the Game table.
+    """
+    while True:
+        game_id = random.randint(100000, 999999)
+        if not db.query(Game).filter(Game.id == game_id).first():
+            return game_id
+
+
 def create_new_game_db(
     game: GameCreate,
     current_user: User = Depends(get_current_user_from_token),
     db: Session = Depends(get_db),
 ):
+    game_id = generate_unique_game_id(db)
     new_game = Game(
+        id=game_id,
         owner_id=current_user.id,
         book_keeper_id=current_user.id,
         **game.model_dump(),

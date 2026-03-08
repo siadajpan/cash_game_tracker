@@ -1,0 +1,100 @@
+{% extends "shared/base.html" %}
+{% block title %}<title>Select Your Nickname</title>{% endblock %}
+{% block page_heading %}Connect Profile{% endblock %}
+
+{% block content %}
+<div id="import-view-container" class="overflow-y-auto px-1" style="min-height: 0; overflow-x: hidden;">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3">
+        <div class="card-header bg-primary text-white py-3 border-0">
+            <h4 class="mb-0 fs-5 fw-bold"><i class="bi bi-person-check-fill me-2"></i> Who are you?</h4>
+        </div>
+        <div class="card-body p-4 text-center">
+            <p class="text-muted mb-4 fs-6">We found multiple players in your import file. To ensure your history is
+                correctly appearing in your profile, <b>please select which of these nicknames refers to you</b>:</p>
+
+            <form action="/game/import/confirm" method="post" id="nickSelectForm">
+                <input type="hidden" name="original_data" value='{{ original_data }}'>
+
+                <div class="list-group list-group-flush mb-4 rounded-3 border text-start">
+                    {% for nick in nicks %}
+                    <label
+                        class="list-group-item list-group-item-action py-3 d-flex align-items-center justify-content-between cursor-pointer">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-circle fs-5 me-3 text-primary"></i>
+                            <span class="fw-bold fs-5">{{ nick }}</span>
+                        </div>
+                        <input class="form-check-input fs-5" type="radio" name="selected_nick" value="{{ nick }}"
+                            required>
+                    </label>
+                    {% endfor %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Spacer to prevent content from hiding behind fixed bottom nav -->
+<div style="height: 150px;"></div>
+
+<!-- Fixed Bottom Navigation -->
+<div class="fixed-bottom bg-white border-top pb-3 pt-2 px-3 shadow" style="z-index: 1030;">
+    <div class="d-flex gap-3 justify-content-center mx-auto" style="max-width: 800px;">
+        <a href="/game/view_past"
+            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
+            <i class="bi bi-x-circle mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Cancel</span>
+        </a>
+
+        <button type="submit" form="nickSelectForm" id="importConfirmBtn"
+            class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
+            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <i class="bi bi-check-circle-fill mb-1 fs-4 text-white" id="importIcon"></i>
+            <div class="spinner-border spinner-border-sm d-none mb-1 mt-1" role="status" aria-hidden="true"
+                id="importSpinner"></div>
+            <span class="small fw-bold text-white text-center" id="importBtnText" style="font-size: 0.9rem;">Confirm
+                Import</span>
+        </button>
+    </div>
+</div>
+
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    function adjustImportViewHeight() {
+        const container = document.getElementById('import-view-container');
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const bottomNavHeight = 100;
+        const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
+        container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
+    }
+
+    window.addEventListener('resize', adjustImportViewHeight);
+    window.addEventListener('load', adjustImportViewHeight);
+
+    document.getElementById('nickSelectForm').addEventListener('submit', function () {
+        const btn = document.getElementById('importConfirmBtn');
+        const spinner = document.getElementById('importSpinner');
+        const icon = document.getElementById('importIcon');
+        const text = document.getElementById('importBtnText');
+
+        if (btn && spinner && text && icon) {
+            btn.classList.add('disabled');
+            icon.classList.add('d-none');
+            spinner.classList.remove('d-none');
+            text.textContent = 'Importing...';
+        }
+    });
+
+    adjustImportViewHeight();
+</script>
+{% endblock %}

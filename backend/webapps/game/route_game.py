@@ -254,105 +254,195 @@ async def import_personal_games(
         if not isinstance(data, list):
             raise ValueError("JSON must be a list of game objects")
 
-        imported_count = 0
-        skipped_count = 0
-
-        # Helper to get or create guest users for personal import
-        def get_or_create_ext_user(nick_name):
-            if not nick_name:
-                return None
-            
-            # Use a unique email pattern for personal guest players
-            normalized_nick = unicodedata.normalize('NFD', nick_name.lower().replace('ł', 'l').replace('Ł', 'L'))
-            ascii_nick = "".join(c for c in normalized_nick if unicodedata.category(c) != 'Mn').replace(' ', '_')
-            ext_email = f"{ascii_nick}_ext_{current_user.nick_id.lower()}@over-bet.com"
-            
-            player_user = db.query(User).filter(User.email == ext_email).first()
-            if not player_user:
-                player_user = User(
-                    email=ext_email,
-                    nick=nick_name,
-                    hashed_password=Hasher.get_password_hash("guest123"),
-                    is_active=True,
-                )
-                db.add(player_user)
-                db.commit()
-                db.refresh(player_user)
-            
-            return player_user
-
+        # Step 1: Check if the user is in the data
+        all_nicks = set()
         for g_data in data:
-            start_str = g_data.get("start_time")
-            finish_str = g_data.get("finish_time")
-            if not start_str or not finish_str:
-                continue
-
-            dt_start = datetime.strptime(start_str, "%Y-%m-%d %H:%M")
-            dt_finish = datetime.strptime(finish_str, "%Y-%m-%d %H:%M")
-            
-            # Duplicates check (personal games have no team_id)
-            exists = db.query(Game).filter(
-                Game.owner_id == current_user.id, 
-                Game.team_id == None, 
-                Game.start_time == dt_start
-            ).first()
-
-            if exists:
-                skipped_count += 1
-                continue
-
-            # Create Game
-            new_game = Game(
-                date=dt_start.date(),
-                start_time=dt_start,
-                finish_time=dt_finish,
-                default_buy_in=0,
-                running=False,
-                owner_id=current_user.id,
-                team_id=None,
-            )
-            db.add(new_game)
-            db.commit()
-            db.refresh(new_game)
-
-            # Process Players
             players_list = g_data.get("players", [])
             for p_data in players_list:
                 nick = p_data.get("nick")
-                buy_in_amt = float(p_data.get("buy_in", 0))
-                cash_out_amt = float(p_data.get("cash_out", 0))
-
-                player_user = get_or_create_ext_user(nick)
-
-                # Add to Game
-                ug = UserGame(user_id=player_user.id, game_id=new_game.id)
-                db.add(ug)
-
-                if buy_in_amt > 0:
-                    db.add(BuyIn(amount=buy_in_amt, user_id=player_user.id, game_id=new_game.id, time=dt_start))
-
-                if cash_out_amt > 0:
-                    db.add(CashOut(amount=cash_out_amt, user_id=player_user.id, game_id=new_game.id, time=dt_finish, status=PlayerRequestStatus.APPROVED))
-                elif buy_in_amt > 0:
-                     db.add(CashOut(amount=0, user_id=player_user.id, game_id=new_game.id, time=dt_finish, status=PlayerRequestStatus.APPROVED))
-
-            db.commit()
-            imported_count += 1
-
-        msg = f"Successfully imported {imported_count} games."
-        if skipped_count > 0:
-            msg += f" {skipped_count} duplicates skipped."
+                if nick:
+                    all_nicks.add(nick)
         
-        return RedirectResponse(
-            url=f"/game/view_past?msg={msg}", 
-            status_code=status.HTTP_303_SEE_OTHER
-        )
+        # If user's nick is exactly in the list, we proceed. 
+        # Otherwise, ask them which one they are.
+        if current_user.nick not in all_nicks:
+            return templates.TemplateResponse(
+                "game/import_select_nick.html",
+                {
+                    "request": request,
+                    "nicks": sorted(list(all_nicks)),
+                    "original_data": json.dumps(data),
+                    "user": current_user
+                }
+            )
+
+        # Proceed with import normally using current_user.nick
+        return await _perform_import(request, data, current_user.nick, db, current_user)
 
     except Exception as e:
         return RedirectResponse(
             url=f"/game/view_past?error=Import failed: {str(e)}", 
             status_code=status.HTTP_303_SEE_OTHER
         )
+
+@router.post("/import/confirm", name="import_personal_games_confirm")
+async def import_personal_games_confirm(
+    request: Request,
+    selected_nick: str = Form(...),
+    original_data: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user),
+):
+    try:
+        data = json.loads(original_data)
+        return await _perform_import(request, data, selected_nick, db, current_user)
+    except Exception as e:
+        return RedirectResponse(
+            url=f"/game/view_past?error=Import failed: {str(e)}", 
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+
+async def _perform_import(request, data, user_nick_in_file, db, current_user):
+    from backend.db.models.game import Game
+    from backend.db.models.buy_in import BuyIn
+    from backend.db.models.cash_out import CashOut
+    from backend.db.models.user_game import UserGame
+
+    imported_count = 0
+    skipped_count = 0
+
+    print(f"DEBUG: Starting import for user {current_user.nick} (ID: {current_user.id})")
+    print(f"DEBUG: Selected nickname in file: {user_nick_in_file}")
+
+    # Helper to get or create guest users for personal import
+    session_guest_cache = {}
+
+    def get_or_create_ext_user(nick_name):
+        if not nick_name:
+            return None
+        
+        # If this is the user's selected nick, return the real user
+        if nick_name == user_nick_in_file:
+            return current_user
+            
+        if nick_name in session_guest_cache:
+            return session_guest_cache[nick_name]
+
+        import unicodedata
+        import random
+        normalized_nick = unicodedata.normalize('NFD', nick_name.lower().replace('ł', 'l').replace('Ł', 'L'))
+        ascii_nick = "".join(c for c in normalized_nick if unicodedata.category(c) != 'Mn').replace(' ', '_')
+
+        # 1. First check if we already have a guest user with this display name that this user has played with
+        from backend.db.models.user_game import UserGame
+        my_game_ids = db.query(UserGame.game_id).filter(UserGame.user_id == current_user.id).subquery()
+        friend_user = db.query(User).join(UserGame).filter(
+            UserGame.game_id.in_(my_game_ids),
+            User.nick == nick_name,
+            User.id != current_user.id
+        ).first()
+
+        # 2. Check for identifying by our old extension format if friend not found (for people who imported earlier)
+        if not friend_user:
+            old_guest_nick_id = f"{ascii_nick}_ext_{current_user.nick_id.lower()}"
+            friend_user = db.query(User).filter(User.nick_id == old_guest_nick_id).first()
+
+        if friend_user:
+            session_guest_cache[nick_name] = friend_user
+            return friend_user
+
+        # 3. Create a new one with the requested format: nick_1234
+        while True:
+            digits = f"{random.randint(0, 9999):04d}"
+            guest_nick_id = f"{ascii_nick}_{digits}"
+            if not db.query(User).filter(User.nick_id == guest_nick_id).first():
+                break
+        
+        from backend.core.hashing import Hasher
+        player_user = User(
+            nick=nick_name,
+            nick_id=guest_nick_id,
+            hashed_password=Hasher.get_password_hash("guest123"),
+            is_active=True,
+        )
+        db.add(player_user)
+        db.commit()
+        db.refresh(player_user)
+        session_guest_cache[nick_name] = player_user
+        return player_user
+
+    for g_data in data:
+        start_str = g_data.get("start_time")
+        finish_str = g_data.get("finish_time")
+        if not start_str or not finish_str:
+            continue
+
+        try:
+            dt_start = datetime.strptime(start_str, "%Y-%m-%d %H:%M")
+            dt_finish = datetime.strptime(finish_str, "%Y-%m-%d %H:%M")
+        except:
+            continue
+        
+        # Duplicates check
+        exists = db.query(Game).filter(
+            Game.owner_id == current_user.id, 
+            Game.team_id == None, 
+            Game.start_time == dt_start
+        ).first()
+
+        if exists:
+            skipped_count += 1
+            continue
+
+        # Create Game
+        new_game = Game(
+            date=dt_start.date(),
+            start_time=dt_start,
+            finish_time=dt_finish,
+            default_buy_in=0,
+            running=False,
+            owner_id=current_user.id,
+            team_id=None,
+        )
+        db.add(new_game)
+        db.commit()
+        db.refresh(new_game)
+
+        # Process Players
+        players_list = g_data.get("players", [])
+        for p_data in players_list:
+            nick = p_data.get("nick")
+            buy_in_amt = float(p_data.get("buy_in", 0))
+            cash_out_amt = float(p_data.get("cash_out", 0))
+
+            player_user = get_or_create_ext_user(nick)
+
+            # Add to Game
+            ug = UserGame(user_id=player_user.id, game_id=new_game.id, status=PlayerRequestStatus.APPROVED)
+            db.add(ug)
+
+            if buy_in_amt > 0:
+                db.add(BuyIn(amount=buy_in_amt, user_id=player_user.id, game_id=new_game.id, time=dt_start.isoformat()))
+
+            if cash_out_amt > 0:
+                db.add(CashOut(amount=cash_out_amt, user_id=player_user.id, game_id=new_game.id, time=dt_finish.isoformat(), status=PlayerRequestStatus.APPROVED))
+            elif buy_in_amt > 0:
+                 db.add(CashOut(amount=0, user_id=player_user.id, game_id=new_game.id, time=dt_finish.isoformat(), status=PlayerRequestStatus.APPROVED))
+
+        db.commit()
+        imported_count += 1
+        print(f"DEBUG: Imported game {new_game.id} with {len(players_list)} players")
+
+    print(f"DEBUG: Import finished. Imported: {imported_count}, Skipped: {skipped_count}")
+
+    msg = f"Successfully imported {imported_count} games."
+    if skipped_count > 0:
+        msg += f" {skipped_count} duplicates skipped."
+    
+    return RedirectResponse(
+        url=f"/game/view_past?msg={msg}", 
+        status_code=status.HTTP_303_SEE_OTHER
+    )
 
 
 @router.get("/view_past", name="view_past")
@@ -375,8 +465,12 @@ async def view_past_games(
     # Get all games to allow sorting by computed fields
     past_games = get_user_past_games(user, db, limit=None)
     total_count = len(past_games)
+    
+    print(f"DEBUG: view_past_games for user {user.nick} (ID: {user.id})")
+    print(f"DEBUG: Found {total_count} past games in DB")
 
     game_ids = [g.id for g in past_games]
+    print(f"DEBUG: Game IDs: {game_ids}")
     bulk_stats = get_user_past_games_stats_bulk(user.id, game_ids, db)
 
     games_data = []
@@ -441,10 +535,16 @@ async def join_game_form(
 ):
     game = get_game_by_id(game_id, db)
     if not game:
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(
+            url=f"/?error=Game not found. Please check the number.&join_code={game_id}",
+            status_code=303,
+        )
 
     if not game.running:
-        return RedirectResponse(url=f"/game/{game.id}", status_code=303)
+        return RedirectResponse(
+            url=f"/?error=This game has already finished.&join_code={game_id}",
+            status_code=303,
+        )
 
     if user_in_game(user, game):
         return RedirectResponse(url=f"/game/{game.id}")  # already in game
@@ -538,11 +638,9 @@ def process_player(
             request_type = "cash_out"
             request_text = f"Cash out: {cash_out_req.amount}"
             request_href = f"/game/{game.id}/cash_out/{cash_out_req.id}"
-            [
-                can_approve.append(p)
-                for p in game.players
-                if p.id != player.id or p.id == game.owner_id
-            ]
+            can_approve.append(game.owner)
+            if game.book_keeper and game.book_keeper.id != game.owner_id:
+                can_approve.append(game.book_keeper)
 
     for add_on_req in add_ons_requests:
         if add_on_req.status == PlayerRequestStatus.APPROVED:

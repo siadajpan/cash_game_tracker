@@ -223,13 +223,17 @@
                 {% for info in players_info %}
                 <tr class="position-relative">
                     <td class="ps-3 border-bottom-0 py-2">
-                        <a href="/team/{{ team.id }}/player/{{ info.player.id }}?year={{ selected_year }}"
-                            class="text-decoration-none text-dark fw-semibold stretched-link">
-                            {{ info.player.nick }}
-                        </a>
+                        <div class="d-flex align-items-baseline">
+                            <a href="/team/{{ team.id }}/player/{{ info.player.id }}?year={{ selected_year }}"
+                                class="text-decoration-none text-dark fw-semibold stretched-link">
+                                {{ info.player.nick }}
+                            </a>
+                            <small class="text-muted ms-2" style="font-size: 0.75rem;">#{{ info.player.nick_id
+                                }}</small>
+                        </div>
                         {% if info.player_role == 'ADMIN' and not is_global_group %}
                         <span class="badge rounded-pill bg-info text-dark ms-1 border border-info bg-opacity-25"
-                            style="font-size: 0.6em; vertical-align: text-top;">ADMIN</span>
+                            style="font-size: 0.6em; vertical-align: text-top; width: fit-content;">ADMIN</span>
                         {% endif %}
                     </td>
                     <td class="text-center border-bottom-0 py-2 text-secondary">{{ info.games_count }}</td>

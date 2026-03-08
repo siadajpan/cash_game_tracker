@@ -22,6 +22,8 @@ async def home(
     request: Request,
     user: Optional[User] = Depends(get_current_user_from_token),
     msg: str = None,
+    error: str = None,
+    join_code: str = None,
     db: Session = Depends(get_db),
 ):
     if user:
@@ -35,6 +37,8 @@ async def home(
         {
             "request": request,
             "msg": msg,
+            "error": error,
+            "join_code": join_code,
             "user": user,
             "running_games": running_games,
         },
