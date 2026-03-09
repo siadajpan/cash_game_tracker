@@ -24,19 +24,19 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 p-2"
             style="min-width: 220px; z-index: 2000;">
-            {% if is_admin or is_owner or is_book_keeper %}
+            {% if invite_link %}
             <li>
                 <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
-                    data-bs-target="#editPlayersModal" hx-get="/game/{{ game.id }}/edit_players"
-                    hx-target="#edit-players-container">
-                    <i class="bi bi-people-fill me-2 text-primary"></i> Edit Players
+                    data-bs-target="#qrCodeModal">
+                    <i class="bi bi-qr-code me-2 text-primary"></i> Show Guest QR
                 </button>
             </li>
             {% endif %}
             <li>
                 <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
-                    data-bs-target="#qrCodeModal">
-                    <i class="bi bi-qr-code me-2 text-primary"></i> Show Guest QR
+                    data-bs-target="#predictionsModal" hx-get="/game/{{ game.id }}/predictions"
+                    hx-target="#predictionsContent">
+                    <i class="bi bi-graph-up-arrow me-2 text-primary"></i> Predictions
                 </button>
             </li>
             {% if is_admin or is_owner %}
@@ -49,21 +49,22 @@
             </li>
             {% endif %}
             <li>
-                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
-                    data-bs-target="#predictionsModal" hx-get="/game/{{ game.id }}/predictions"
-                    hx-target="#predictionsContent">
-                    <i class="bi bi-graph-up-arrow me-2 text-primary"></i> Predictions
-                </button>
+                <hr class="dropdown-divider mx-3">
             </li>
             {% if is_admin or is_owner or is_book_keeper %}
+            <li>
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
+                    data-bs-target="#editPlayersModal" hx-get="/game/{{ game.id }}/edit_players"
+                    hx-target="#edit-players-container">
+                    <i class="bi bi-people-fill me-2 text-primary"></i> Edit Players
+                </button>
+            </li>
             <li>
                 <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
                     data-bs-target="#changeChipStructureModal">
                     <i class="bi bi-stack me-2 text-primary"></i> Change Chip Structure
                 </button>
             </li>
-            {% endif %}
-            {% if is_admin or is_owner or is_book_keeper %}
             <li>
                 <hr class="dropdown-divider mx-3">
             </li>
@@ -383,6 +384,124 @@
     </div>
 </div>
 
+<!-- Stats Result Modal -->
+<div class="modal fade" id="statsResultModal" tabindex="-1" aria-labelledby="statsResultModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statsResultModalLabel">Game Stats</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="statsResultText" class="form-control" rows="15" readonly></textarea>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle text-secondary"></i>
+                    <span class="text-secondary">Close</span>
+                </button>
+                <button type="button" class="btn btn-premium-base btn-premium-primary" onclick="copyStatsToClipboard()">
+                    <i class="bi bi-clipboard-fill text-white"></i>
+                    <span class="text-white">Copy and Close</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Stats Modal -->
+<div class="modal fade" id="exportStatsModal" tabindex="-1" aria-labelledby="exportStatsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Export Game Stats</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="exportStatsForm">
+                    <div class="mb-4">
+                        <label class="form-label small text-muted text-uppercase fw-bold mb-2 ms-1"
+                            style="letter-spacing: 0.05em;">Format</label>
+                        <div class="d-flex gap-2">
+                            <input type="radio" class="btn-check" name="format" id="formatJson" value="json" checked>
+                            <label class="btn btn-outline-primary flex-grow-1 py-2 rounded-3"
+                                for="formatJson">JSON</label>
+
+                            <input type="radio" class="btn-check" name="format" id="formatCsv" value="csv">
+                            <label class="btn btn-outline-primary flex-grow-1 py-2 rounded-3"
+                                for="formatCsv">CSV</label>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small text-muted text-uppercase fw-bold mb-2 ms-1"
+                            style="letter-spacing: 0.05em;">Delivery Method</label>
+                        <div class="d-grid gap-2">
+                            <div>
+                                <input type="radio" class="btn-check" name="delivery" id="deliveryView" value="view"
+                                    checked>
+                                <label
+                                    class="btn btn-outline-primary w-100 py-3 rounded-3 text-start px-3 d-flex align-items-center"
+                                    for="deliveryView">
+                                    <i class="bi bi-eye me-2 fs-5"></i> View on Screen
+                                </label>
+                            </div>
+
+                            <div>
+                                <input type="radio" class="btn-check" name="delivery" id="deliveryDownload"
+                                    value="download">
+                                <label
+                                    class="btn btn-outline-primary w-100 py-3 rounded-3 text-start px-3 d-flex align-items-center"
+                                    for="deliveryDownload">
+                                    <i class="bi bi-download me-2 fs-5"></i> Download File
+                                </label>
+                            </div>
+
+                            <div>
+                                <input type="radio" class="btn-check" name="delivery" id="deliveryMail" value="mail">
+                                <label
+                                    class="btn btn-outline-primary w-100 py-3 rounded-3 text-start px-3 d-flex align-items-center"
+                                    for="deliveryMail">
+                                    <i class="bi bi-envelope me-2 fs-5"></i> Send by email
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3" id="emailInputContainerRunning" style="display: none;">
+                            <label for="exportEmailRunning"
+                                class="form-label small text-muted text-uppercase fw-bold mb-2 ms-1"
+                                style="letter-spacing: 0.05em;">Email Address</label>
+                            <input type="email" class="form-control rounded-3 py-2" id="exportEmailRunning" name="email"
+                                placeholder="email@example.com" value="{{ user.email if user.email else '' }}">
+                        </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle text-secondary"></i>
+                    <span class="text-secondary">Cancel</span>
+                </button>
+                <button type="button" class="btn btn-premium-base btn-premium-primary" onclick="submitExport()">
+                    <i class="bi bi-check-circle-fill text-white"></i>
+                    <span class="text-white">Export</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
+    <div id="liveToast" class="toast align-items-center text-white bg-primary border-0" role="alert"
+        aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastBody">
+                Hello!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -451,6 +570,133 @@
                 input.focus();
                 input.select();
             }
+        });
+    }
+
+    function showToast(message, type = 'primary') {
+        const toastEl = document.getElementById('liveToast');
+        const toastBody = document.getElementById('toastBody');
+
+        toastBody.textContent = message;
+
+        // Remove existing color classes
+        toastEl.classList.remove('bg-primary', 'bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+
+        // Add new color class
+        let bgClass = 'bg-primary';
+        if (type === 'success') bgClass = 'bg-success';
+        if (type === 'danger') bgClass = 'bg-danger';
+        if (type === 'warning') bgClass = 'bg-warning';
+        if (type === 'info') bgClass = 'bg-info';
+
+        toastEl.classList.add(bgClass);
+
+        const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
+        toast.show();
+    }
+
+    function updateEmailVisibilityRunning() {
+        const delivery = document.querySelector('#exportStatsModal input[name="delivery"]:checked').value;
+        const container = document.getElementById('emailInputContainerRunning');
+        if (container) {
+            container.style.display = delivery === 'mail' ? 'block' : 'none';
+        }
+    }
+
+    document.querySelectorAll('#exportStatsModal input[name="delivery"]').forEach(radio => {
+        radio.addEventListener('change', updateEmailVisibilityRunning);
+    });
+
+    async function submitExport() {
+        const format = document.querySelector('#exportStatsModal input[name="format"]:checked').value;
+        const delivery = document.querySelector('#exportStatsModal input[name="delivery"]:checked').value;
+        const email = document.getElementById('exportEmailRunning')?.value || '';
+        const gameId = "{{ game.id }}";
+        const url = `/game/${gameId}/export`;
+
+        if (delivery === 'mail' && !email.trim()) {
+            showToast('Please enter an email address', 'warning');
+            return;
+        }
+
+        if (delivery === 'mail') {
+            const formData = new FormData();
+            formData.append('format', format);
+            formData.append('delivery', delivery);
+            formData.append('email', email);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(result.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('exportStatsModal')).hide();
+                } else {
+                    showToast('Error sending email: ' + (result.error || 'Unknown error'), 'danger');
+                }
+            } catch (e) {
+                showToast('Network error: ' + e.message, 'danger');
+            }
+        } else if (delivery === 'view') {
+            const formData = new FormData();
+            formData.append('format', format);
+            formData.append('delivery', delivery);
+            formData.append('email', email);
+
+            try {
+                const response = await fetch(url, { method: 'POST', body: formData });
+                if (response.ok) {
+                    const text = await response.text();
+                    document.getElementById('statsResultText').value = text;
+                    bootstrap.Modal.getInstance(document.getElementById('exportStatsModal')).hide();
+                    new bootstrap.Modal(document.getElementById('statsResultModal')).show();
+                } else {
+                    showToast('Error fetching stats', 'danger');
+                }
+            } catch (e) {
+                showToast('Network error: ' + e.message, 'danger');
+            }
+        } else {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+
+            const formatInput = document.createElement('input');
+            formatInput.type = 'hidden';
+            formatInput.name = 'format';
+            formatInput.value = format;
+            form.appendChild(formatInput);
+
+            const deliveryInput = document.createElement('input');
+            deliveryInput.type = 'hidden';
+            deliveryInput.name = 'delivery';
+            deliveryInput.value = delivery;
+            form.appendChild(deliveryInput);
+
+            const emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'email';
+            emailInput.value = email;
+            form.appendChild(emailInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+
+            bootstrap.Modal.getInstance(document.getElementById('exportStatsModal')).hide();
+        }
+    }
+
+    function copyStatsToClipboard() {
+        const copyText = document.getElementById("statsResultText");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            showToast("Copied to clipboard!", 'success');
+            bootstrap.Modal.getInstance(document.getElementById('statsResultModal')).hide();
         });
     }
 

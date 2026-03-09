@@ -40,31 +40,25 @@
                 <i class="bi bi-bar-chart-fill"></i> <span class="d-none d-md-inline ms-1">Advanced Stats</span>
             </a>
 
-            {% if is_admin %}
+            {# Enable Gear menu for My Group (id 0) as you are the 'owner' of your personal group #}
+            {% if is_global_group or is_admin %}
             <div class="dropdown">
                 <button class="btn btn-lg btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
                     aria-expanded="false">
                     <i class="bi bi-gear-fill"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+                    {% if not is_global_group %}
                     <li>
                         <a class="dropdown-item" href="/team/{{ team.id }}/chip_structures">
                             <i class="bi bi-stack"></i> Manage Chip Structures
                         </a>
                     </li>
+                    {% endif %}
                     <li>
                         <button class="dropdown-item" type="button" data-bs-toggle="modal"
                             data-bs-target="#importGamesModal">
                             <i class="bi bi-file-earmark-arrow-up"></i> Import Games
-                        </button>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li>
-                        <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
-                            data-bs-target="#deleteTeamModal">
-                            <i class="bi bi-trash"></i> Remove Group
                         </button>
                     </li>
                 </ul>
@@ -116,52 +110,25 @@
                         added as guests.
                     </div>
                 </div>
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="importSubmitBtn">
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"
-                            id="importSpinner"></span>
-                        <span id="importBtnText"><i class="bi bi-check-circle-fill me-1"></i> Import Games</span>
+                <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
+                    <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle text-secondary"></i>
+                        <span class="text-secondary">Cancel</span>
+                    </button>
+                    <button type="submit" class="btn btn-premium-base btn-premium-primary flex-grow-1"
+                        id="importSubmitBtn">
+                        <span class="spinner-border spinner-border-sm d-none text-white" role="status"
+                            aria-hidden="true" id="importSpinner"></span>
+                        <span id="importBtnText">
+                            <i class="bi bi-check-circle-fill text-white"></i>
+                            <span class="text-white">Import Games</span>
+                        </span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-<!-- Modal -->
-<div class="modal fade" id="deleteTeamModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Remove Group</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <p class="fs-5">Are you sure you want to delete <strong>{{ team.name }}</strong>?</p>
-                <p class="text-danger fw-bold mb-1">Warning: This action cannot be undone.</p>
-                <p class="text-muted small">All games, history, and members associated with this group will be
-                    permanently removed.</p>
-            </div>
-            <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="/team/{{ team.id }}/delete" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash-fill me-1"></i> Yes, Delete
-                        Group</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-{% if is_admin and join_requests %}
-{%with join_requests=join_requests %}
-{% include "team/component_join_request.html" %}
-{% endwith %}
-{% endif %}
 <!-- Summary Section (Matching Player Stats Style) -->
 <div class="d-flex justify-content-between mb-3 px-2 mt-3">
     <div class="text-center" style="flex: 1;">
@@ -274,10 +241,6 @@
             <a href="/" class="btn btn-premium-base btn-premium-secondary">
                 <i class="bi bi-house text-secondary"></i>
                 <span class="text-secondary">Home</span>
-            </a>
-            <a href="/game/view_past" class="btn btn-premium-base btn-premium-secondary">
-                <i class="bi bi-clock-history text-secondary"></i>
-                <span class="text-secondary">Past games</span>
             </a>
             <a href="/team/0/player/{{ user.id }}" class="btn btn-premium-base btn-premium-secondary">
                 <i class="bi bi-person-badge text-secondary"></i>

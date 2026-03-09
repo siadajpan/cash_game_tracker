@@ -71,21 +71,11 @@ Join a game
 
             <!-- Create Game Section -->
             <div class="col-12 col-md-5 d-flex justify-content-md-start">
-                {% if user.is_active %}
                 <a href="/game/create"
                     class="btn btn-primary btn-xl w-100 py-4 fs-4 border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-center"
                     style="background: linear-gradient(135deg, #0d6efd, #0a58ca);">
                     <i class="bi bi-plus-circle me-2"></i> Create a game
                 </a>
-                {% else %}
-                <div class="w-100" tabindex="0" data-bs-toggle="tooltip"
-                    title="Please verify your email to create a game">
-                    <button class="btn btn-primary btn-xl w-100 py-4 fs-4 opacity-50 border-0 rounded-3" type="button"
-                        disabled style="pointer-events: none;">
-                        Create a game
-                    </button>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -100,10 +90,6 @@ Join a game
         <a href="/" class="btn btn-premium-base btn-premium-primary">
             <i class="bi bi-house text-white"></i>
             <span class="text-white">Home</span>
-        </a>
-        <a href="/game/view_past" class="btn btn-premium-base btn-premium-secondary">
-            <i class="bi bi-clock-history"></i>
-            <span>Past games</span>
         </a>
         <a href="/team/0/player/{{ user.id }}" class="btn btn-premium-base btn-premium-secondary">
             <i class="bi bi-person-badge"></i>

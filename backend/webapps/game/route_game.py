@@ -16,7 +16,7 @@ import csv
 import io
 import os
 import tempfile
-from fastapi_mail import FastMail, MessageSchema
+import resend
 from backend.webapps.auth.email_config import conf
 from backend.core.hashing import Hasher
 from backend.apis.v1.route_login import (
@@ -69,6 +69,7 @@ from backend.apis.v1.route_login import get_active_user
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 router = APIRouter(include_in_schema=False)
+resend.api_key = settings.RESEND_API_KEY
 
 
 @router.post("/{game_id}/delete", name="delete_game")
@@ -917,6 +918,7 @@ async def export_game_stats(
     background_tasks: BackgroundTasks,
     format: str = Form("json"),
     delivery: str = Form("view"),
+    email: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
@@ -924,32 +926,24 @@ async def export_game_stats(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    # Calculate stats
-    stats = []
-    for player in game.players:
-        buy_in = get_player_game_total_buy_in_amount(player, game, db)
-        add_ons = get_player_game_addons(player, game, db)
-        cash_outs = get_player_game_cash_out(player, game, db)
-
-        money_in = buy_in + sum(
-            a.amount for a in add_ons if a.status == PlayerRequestStatus.APPROVED
-        )
-        money_out = sum(
-            c.amount for c in cash_outs if c.status == PlayerRequestStatus.APPROVED
-        )
-        balance = money_out - money_in
-
-        stats.append(
-            {
-                "nick": player.nick,
-                "money_in": money_in,
-                "money_out": money_out,
-                "balance": balance,
-            }
-        )
-
     # Format data
     if format == "csv":
+        # Simplified stats for CSV summary
+        stats = []
+        for player in game.players:
+            buy_in = get_player_game_total_buy_in_amount(player, game, db)
+            add_ons = get_player_game_addons(player, game, db)
+            cash_outs = get_player_game_cash_out(player, game, db)
+
+            money_in = buy_in + sum(
+                a.amount for a in add_ons if a.status == PlayerRequestStatus.APPROVED
+            )
+            money_out = sum(
+                c.amount for c in cash_outs if c.status == PlayerRequestStatus.APPROVED
+            )
+            balance = money_out - money_in
+            stats.append({"nick": player.nick, "money_in": money_in, "money_out": money_out, "balance": balance})
+
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(["Nick", "Money In", "Money Out", "Balance"])
@@ -960,8 +954,34 @@ async def export_game_stats(
         content = output.getvalue()
         media_type = "text/csv"
         filename = f"game_{game.date}_stats.csv"
-    else:  # json
-        content = json.dumps(stats, indent=2)
+    else:  # json - Importable format
+        p_list = []
+        for player in game.players:
+            buy_in = get_player_game_total_buy_in_amount(player, game, db)
+            add_ons = get_player_game_addons(player, game, db)
+            cash_outs = get_player_game_cash_out(player, game, db)
+
+            money_in = buy_in + sum(
+                a.amount for a in add_ons if a.status == PlayerRequestStatus.APPROVED
+            )
+            money_out = sum(
+                c.amount for c in cash_outs if c.status == PlayerRequestStatus.APPROVED
+            )
+            p_list.append({
+                "nick": player.nick,
+                "buy_in": float(money_in),
+                "cash_out": float(money_out)
+            })
+
+        export_data = {
+            "start_time": game.start_time.strftime("%Y-%m-%d %H:%M") if game.start_time else game.date.strftime("%Y-%m-%d 00:00"),
+            "finish_time": game.finish_time.strftime("%Y-%m-%d %H:%M") if game.finish_time else datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "host": game.owner.nick if game.owner else "",
+            "players": p_list
+        }
+        
+        # Wrap in a list for compatibility with the importer
+        content = json.dumps([export_data], indent=2, ensure_ascii=False)
         media_type = "application/json"
         filename = f"game_{game.date}_stats.json"
 
@@ -972,9 +992,9 @@ async def export_game_stats(
             media_type=media_type,
             headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
-    elif delivery == "mail":
-        if not user.email:
-            return JSONResponse({"error": "User email not found"}, status_code=400)
+        target_email = email or user.email
+        if not target_email:
+            return JSONResponse({"error": "No email address provided"}, status_code=400)
 
         try:
             # Create a temporary file
@@ -985,25 +1005,38 @@ async def export_game_stats(
                 tmp.write(content)
                 tmp_path = tmp.name
 
-            message = MessageSchema(
-                subject=f"Game Stats Export - {game.date}",
-                recipients=[user.email],
-                body=f"Attached are the stats for the game on {game.date}.",
-                subtype="plain",
-                attachments=[tmp_path],
-            )
+            # Read file as bytes for Resend attachment
+            with open(tmp_path, "rb") as f:
+                file_content = f.read()
 
-            fm = FastMail(conf)
-            background_tasks.add_task(fm.send_message, message)
+            def send_export_email(to_email, stats_filename, stats_content, date):
+                try:
+                    params = {
+                        "from": "Over-Bet <noreply@over-bet.com>",
+                        "to": [to_email],
+                        "subject": f"Game Stats Export - {date}",
+                        "text": f"Attached are the stats for the game on {date}.",
+                        "attachments": [
+                            {
+                                "filename": stats_filename,
+                                "content": list(stats_content)
+                            }
+                        ]
+                    }
+                    resend.Emails.send(params)
+                except Exception as e:
+                    print(f"Resend dynamic send error: {str(e)}")
 
-            # Clean up temp file after sending
-            background_tasks.add_task(os.remove, tmp_path)
+            background_tasks.add_task(send_export_email, target_email, filename, file_content, game.date)
 
-            return JSONResponse({"message": f"Email sent to {user.email}"})
+            # Clean up temp file immediately (we read it into memory)
+            os.remove(tmp_path)
+
+            return JSONResponse({"message": f"Email is being sent to {target_email}"})
         except Exception as e:
             print(f"Email error: {str(e)}")
             return JSONResponse(
-                {"error": f"Failed to send email: {str(e)}"}, status_code=500
+                {"error": f"Failed to initiate email send: {str(e)}"}, status_code=500
             )
 
     else:  # view

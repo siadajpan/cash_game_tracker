@@ -86,6 +86,8 @@ async def manage_chip_structures(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token),
 ):
+    if team_id == 0:
+        return responses.RedirectResponse("/chip_structure/manage")
     team = get_team_by_id(team_id, db)
     if not team or not is_user_privileged_for_team(current_user.id, team.id, db):
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -1986,3 +1988,33 @@ async def update_player_role(
     update_user_role(team.id, player_id, role, db)
 
     return responses.Response(status_code=200, headers={"HX-Refresh": "true"})
+@router.post("/{team_id}/player/{player_id}/reset-password", name="admin_reset_player_password")
+async def admin_reset_player_password(
+    team_id: int,
+    player_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token),
+):
+    from backend.db.models.user_game import UserGame
+    from sqlalchemy import func
+
+    # Check if they have shared at least one game (Trust-Based Authorization)
+    shared_games_count = db.query(func.count(UserGame.game_id)).filter(
+        UserGame.game_id.in_(db.query(UserGame.game_id).filter(UserGame.user_id == current_user.id).subquery()),
+        UserGame.user_id == player_id
+    ).scalar() or 0
+
+    if shared_games_count == 0 and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="You can only reset passwords for players you've played with.")
+
+    player = db.query(User).filter(User.id == player_id).first()
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    from backend.db.repository.user import update_user_password
+    update_user_password(player, "guest123", db)
+
+    return RedirectResponse(
+        url=f"/team/{team_id}/player/{player_id}?msg=Password reset to guest123",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )

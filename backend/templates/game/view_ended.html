@@ -27,7 +27,13 @@
                 <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
                     data-bs-target="#predictionsModal" hx-get="/game/{{ game.id }}/predictions"
                     hx-target="#predictionsContent">
-                    <i class="bi bi-graph-up-arrow"></i> Predictions
+                    <i class="bi bi-graph-up-arrow me-2 text-primary"></i> Predictions
+                </button>
+            </li>
+            <li>
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
+                    data-bs-target="#exportStatsModal">
+                    <i class="bi bi-file-earmark-arrow-down me-2 text-primary"></i> Export Game
                 </button>
             </li>
             {% if is_admin or is_owner %}
@@ -35,18 +41,18 @@
                 <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button"
                     hx-get="/game/{{ game.id }}/book_keeper" hx-target="#assignBookKeeperContent" data-bs-toggle="modal"
                     data-bs-target="#assignBookKeeperModal">
-                    <i class="bi bi-person-badge"></i> Assign Book Keeper
+                    <i class="bi bi-person-badge me-2 text-primary"></i> Assign Book Keeper
                 </button>
             </li>
             {% endif %}
             {% if is_admin or is_owner %}
             <li>
-                <hr class="dropdown-divider">
+                <hr class="dropdown-divider mx-3">
             </li>
             <li>
-                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6 text-danger" type="button"
+                <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6 text-danger fw-bold" type="button"
                     data-bs-toggle="modal" data-bs-target="#deleteGameModal">
-                    <i class="bi bi-trash-fill"></i> Delete Game
+                    <i class="bi bi-trash-fill me-2"></i> Delete Game
                 </button>
             </li>
             {% endif %}
@@ -74,11 +80,11 @@
             <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Back</span>
         </a>
         {% else %}
-        <a href="/game/view_past"
+        <a href="/"
             class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
             style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;">
-            <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Back</span>
+            <i class="bi bi-house mb-1 fs-4 text-secondary"></i>
+            <span class="small fw-bold text-secondary" style="font-size: 0.8rem;">Home</span>
         </a>
         {% endif %}
     </div>
@@ -95,11 +101,15 @@
             <div class="modal-body">
                 <textarea id="statsResultText" class="form-control" rows="15" readonly></textarea>
             </div>
-            <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
-                        class="bi bi-x-circle me-1"></i> Close</button>
-                <button type="button" class="btn btn-primary" onclick="copyStatsToClipboard()"><i
-                        class="bi bi-clipboard me-1"></i> Copy and Close</button>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle text-secondary"></i>
+                    <span class="text-secondary">Close</span>
+                </button>
+                <button type="button" class="btn btn-premium-base btn-premium-primary" onclick="copyStatsToClipboard()">
+                    <i class="bi bi-clipboard-fill text-white"></i>
+                    <span class="text-white">Copy and Close</span>
+                </button>
             </div>
         </div>
     </div>
@@ -139,22 +149,21 @@
                             <input type="radio" class="btn-check" name="delivery" id="deliveryMail" value="mail">
                             <label class="btn btn-outline-primary" for="deliveryMail">Send by Mail</label>
                         </div>
-                    </div>
+                        <div class="mb-3" id="emailInputContainer" style="display: none;">
+                            <label for="exportEmail" class="form-label fw-bold">Email Address:</label>
+                            <input type="email" class="form-control" id="exportEmail" name="email"
+                                placeholder="email@example.com" value="{{ user.email if user.email else '' }}">
+                        </div>
                 </form>
             </div>
-            <div class="modal-footer d-flex gap-2 w-100">
-                <button type="button"
-                    class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;" data-bs-dismiss="modal">
-                    <i class="bi bi-arrow-left mb-1 fs-4 text-secondary"></i>
-                    <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Back</span>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-arrow-left text-secondary"></i>
+                    <span class="text-secondary">Back</span>
                 </button>
-                <button type="button"
-                    class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
-                    style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);"
-                    onclick="submitExport()">
-                    <i class="bi bi-check-circle-fill mb-1 fs-4 text-white"></i>
-                    <span class="small fw-bold text-white" style="font-size: 0.9rem;">Submit</span>
+                <button type="button" class="btn btn-premium-base btn-premium-primary" onclick="submitExport()">
+                    <i class="bi bi-check-circle-fill text-white"></i>
+                    <span class="text-white">Submit</span>
                 </button>
             </div>
         </div>
@@ -343,17 +352,36 @@
         toast.show();
     }
 
+    function updateEmailVisibility() {
+        const delivery = document.querySelector('input[name="delivery"]:checked').value;
+        const container = document.getElementById('emailInputContainer');
+        if (container) {
+            container.style.display = delivery === 'mail' ? 'block' : 'none';
+        }
+    }
+
+    document.querySelectorAll('input[name="delivery"]').forEach(radio => {
+        radio.addEventListener('change', updateEmailVisibility);
+    });
+
     async function submitExport() {
         const format = document.querySelector('input[name="format"]:checked').value;
         const delivery = document.querySelector('input[name="delivery"]:checked').value;
+        const email = document.getElementById('exportEmail')?.value || '';
         const gameId = "{{ game.id }}";
         const url = `/game/${gameId}/export`;
+
+        if (delivery === 'mail' && !email.trim()) {
+            showToast('Please enter an email address', 'warning');
+            return;
+        }
 
         if (delivery === 'mail') {
             // Use Fetch for async feedback
             const formData = new FormData();
             formData.append('format', format);
             formData.append('delivery', delivery);
+            formData.append('email', email);
 
             try {
                 const response = await fetch(url, {
@@ -377,6 +405,7 @@
             const formData = new FormData();
             formData.append('format', format);
             formData.append('delivery', delivery);
+            formData.append('email', email);
 
             try {
                 const response = await fetch(url, { method: 'POST', body: formData });
@@ -408,6 +437,12 @@
             deliveryInput.name = 'delivery';
             deliveryInput.value = delivery;
             form.appendChild(deliveryInput);
+
+            const emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'email';
+            emailInput.value = email;
+            form.appendChild(emailInput);
 
             document.body.appendChild(form);
             form.submit();
