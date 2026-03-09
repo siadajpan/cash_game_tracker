@@ -58,8 +58,8 @@
                 </form>
                 {% endif %}
 
-                <a href="/team/{{ team.id }}/chip_structures/{{ cs.id }}/edit" class="btn btn-outline-primary btn-sm"
-                    title="Edit">
+                <a href="/team/{{ team.id }}/chip_structures/{{ cs.id }}/edit?return_url={{ request.url | urlencode }}"
+                    class="btn btn-outline-primary btn-sm" title="Edit">
                     <i class="bi bi-pencil"></i>
                 </a>
 
@@ -133,7 +133,7 @@
             </a>
             {% endif %}
 
-            <a href="/team/{{ team.id }}/chip_structures/create"
+            <a href="/team/{{ team.id }}/chip_structures/create?return_url={{ request.url | urlencode }}"
                 class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
                 style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
                 <i class="bi bi-plus-circle-fill mb-1 fs-4 text-white"></i>

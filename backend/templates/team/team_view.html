@@ -50,7 +50,8 @@
                 <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
                     {% if not is_global_group %}
                     <li>
-                        <a class="dropdown-item" href="/team/{{ team.id }}/chip_structures">
+                        <a class="dropdown-item"
+                            href="/team/{{ team.id }}/chip_structures?return_url={{ request.url | urlencode }}">
                             <i class="bi bi-stack"></i> Manage Chip Structures
                         </a>
                     </li>
