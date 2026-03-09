@@ -5,7 +5,7 @@
         class="d-flex w-100 align-items-center justify-content-between m-0">
 
         <!-- Left: Type -->
-        <div class="d-flex align-items-center" style="min-width: 90px;">
+        <div class="d-flex align-items-center flex-shrink-0" style="width: 160px;">
             <span class="fw-bold fs-6">
                 {% if event.type == 'buy_in' %}Buy in
                 {% elif event.type == 'add_on' %}Add on
@@ -20,7 +20,7 @@
         </div>
 
         <!-- Right: Time Input and Actions -->
-        <div class="text-end d-flex align-items-center justify-content-end" style="min-width: 160px;">
+        <div class="text-end d-flex align-items-center justify-content-end flex-shrink-0" style="width: 160px;">
             <input type="hidden" name="time" value="{{ event.time[:16] }}">
             <span class="text-muted fw-semibold me-3" style="font-size: 0.9rem;">
                 {{ event.time[11:16] if event.time|length >= 16 else event.time }}
