@@ -79,20 +79,16 @@
                         <p class="mb-0">Are you sure you want to delete <strong>{{ cs.name }}</strong>?</p>
                         <p class="text-muted small mt-2">This action cannot be undone.</p>
                     </div>
-                    <div class="modal-footer border-0 d-flex gap-2 pb-4">
-                        <button type="button"
-                            class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0"
-                            style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background-color: #f8f9fa;"
+                    <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
+                        <button type="button" class="btn btn-premium-base btn-premium-secondary"
                             data-bs-dismiss="modal">
-                            <i class="bi bi-x-circle mb-1 fs-4 text-secondary"></i>
-                            <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Cancel</span>
+                            <i class="bi bi-x-circle text-secondary"></i>
+                            <span class="text-secondary">Cancel</span>
                         </button>
                         <form action="/chip_structure/{{ cs.id }}/delete" method="POST" class="flex-grow-1">
-                            <button type="submit"
-                                class="btn btn-danger d-flex flex-column align-items-center justify-content-center w-100 border-0 shadow"
-                                style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #dc3545, #bb2d3b);">
-                                <i class="bi bi-trash mb-1 fs-4 text-white"></i>
-                                <span class="small fw-bold text-white" style="font-size: 0.9rem;">Delete</span>
+                            <button type="submit" class="btn btn-premium-base btn-premium-danger w-100">
+                                <i class="bi bi-trash-fill text-white"></i>
+                                <span class="text-white">Delete</span>
                             </button>
                         </form>
                     </div>

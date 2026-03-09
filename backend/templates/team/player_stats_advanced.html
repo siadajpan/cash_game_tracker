@@ -5,53 +5,7 @@
 {% block page_heading %}{% endblock %}
 
 {% block content %}
-<style>
-    /* Full height App Mode */
-    html,
-    body {
-        height: 100vh !important;
-        margin: 0;
-        padding: 0;
-        overflow: hidden !important;
-    }
 
-    body {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    /* Base.html container adjustment */
-    .container {
-        flex: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        overflow: hidden !important;
-        max-width: 800px !important;
-        padding-top: 0 !important;
-    }
-
-    #adv-stats-scroll-container {
-        flex: 1 !important;
-        overflow-y: scroll !important;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 120px;
-        /* Space for fixed bottom nav */
-    }
-
-    #adv-stats-scroll-container::-webkit-scrollbar {
-        width: 10px;
-    }
-
-    #adv-stats-scroll-container::-webkit-scrollbar-track {
-        background: #f8f9fa;
-    }
-
-    #adv-stats-scroll-container::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 5px;
-        border: 2px solid #f8f9fa;
-    }
-</style>
 <div class="bg-white pt-2 mb-2 flex-shrink-0">
     <div class="d-flex justify-content-between align-items-center px-2">
         <div class="page-title py-2 m-0">
@@ -88,7 +42,7 @@
     </div>
 </div>
 <!-- Overview Content -->
-<div id="adv-stats-scroll-container" class="overflow-x-hidden px-1">
+<div id="adv-stats-scroll-container" class="overflow-y-auto px-1" style="min-height: 0; overflow-x: hidden;">
     <div class="row g-3">
         <!-- Games & Attendance -->
         <div class="col-md-6 col-12">
@@ -376,6 +330,24 @@
                 }
             });
         }
+
+        function adjustStatsViewHeight() {
+            const container = document.getElementById('adv-stats-scroll-container');
+            if (!container) return;
+
+            // Calculate available height: Window height - container top position - bottom nav height
+            const rect = container.getBoundingClientRect();
+            const bottomNavHeight = 120;
+            const availableHeight = window.innerHeight - rect.top - bottomNavHeight;
+
+            // Ensure a reasonable minimum height
+            container.style.maxHeight = `${Math.max(300, availableHeight)}px`;
+        }
+
+        window.addEventListener('resize', adjustStatsViewHeight);
+        window.addEventListener('load', adjustStatsViewHeight);
+
+        adjustStatsViewHeight();
     });
 </script>
 {% endblock %}

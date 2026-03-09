@@ -66,23 +66,19 @@
                             "guest123".</span>
                     </div>
                 </div>
-                <div class="modal-footer border-0 p-4 pt-0 d-flex gap-2 w-100">
-                    <button type="button"
-                        class="btn btn-light shadow-sm d-flex flex-column align-items-center justify-content-center flex-grow-1 border"
-                        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px;"
-                        data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle mb-1 fs-4 text-secondary"></i>
-                        <span class="small fw-bold text-secondary" style="font-size: 0.9rem;">Cancel</span>
+                <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
+                    <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle text-secondary"></i>
+                        <span class="text-secondary">Cancel</span>
                     </button>
-                    <button type="submit"
-                        class="btn btn-primary d-flex flex-column align-items-center justify-content-center flex-grow-1 border-0 shadow"
-                        id="importSubmitBtn"
-                        style="padding-top: 0.6rem; padding-bottom: 0.6rem; border-radius: 12px; background: linear-gradient(135deg, #0d6efd, #0a58ca);">
-                        <i class="bi bi-file-earmark-arrow-up-fill mb-1 fs-4 text-white"></i>
-                        <span class="small fw-bold text-white text-center" id="importBtnText"
-                            style="font-size: 0.9rem;">Import Games</span>
-                        <div class="spinner-border spinner-border-sm d-none mt-1" role="status" aria-hidden="true"
-                            id="importSpinner"></div>
+                    <button type="submit" class="btn btn-premium-base btn-premium-primary flex-grow-1"
+                        id="importSubmitBtn">
+                        <span id="importBtnContent">
+                            <i class="bi bi-file-earmark-arrow-up-fill text-white"></i>
+                            <span class="text-white fw-bold" id="importBtnText">Import Games</span>
+                        </span>
+                        <div class="spinner-border spinner-border-sm d-none text-white ms-1" role="status"
+                            aria-hidden="true" id="importSpinner"></div>
                     </button>
                 </div>
             </form>

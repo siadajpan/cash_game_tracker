@@ -5,6 +5,12 @@
 {% block page_heading %}{% endblock %}
 
 {% block content %}
+{% if request.query_params.get('msg') %}
+<div class="alert alert-success alert-dismissible fade show mx-2 mt-2 border-0 shadow-sm rounded-4" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> {{ request.query_params.get('msg') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
 <div class="sticky-top bg-white pt-2 mb-2" style="z-index: 1020; top: 56px;">
     <div class="d-flex justify-content-between align-items-center px-2">
         <div class="page-title py-2 m-0">
@@ -42,65 +48,69 @@
                 <i class="bi bi-bar-chart-fill"></i> <span class="d-none d-md-inline ms-1">Advanced Stats</span>
             </a>
 
-            {% if is_admin and player.id != current_user.id %}
+            {# Management: Password reset for others, Chip structures for self #}
             <div class="dropdown">
                 <button class="btn btn-lg btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
                     aria-expanded="false">
                     <i class="bi bi-gear-fill"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
-                    {% if player_role == 'MEMBER' %}
+                    {% if player.id == current_user.id %}
                     <li>
-                        <form action="/team/{{ team.id }}/player/{{ player.id }}/role" method="post">
-                            <input type="hidden" name="role" value="ADMIN">
-                            <button class="dropdown-item" type="submit">
-                                <i class="bi bi-shield-check"></i> Promote to Admin
-                            </button>
-                        </form>
+                        <a class="dropdown-item"
+                            href="{% if team.id == 0 %}/chip_structure/manage{% else %}/team/{{ team.id }}/chip_structures{% endif %}">
+                            <i class="bi bi-stack"></i> Manage Chip Structures
+                        </a>
                     </li>
                     {% else %}
                     <li>
-                        <form action="/team/{{ team.id }}/player/{{ player.id }}/role" method="post">
-                            <input type="hidden" name="role" value="MEMBER">
-                            <button class="dropdown-item" type="submit">
-                                <i class="bi bi-shield-slash"></i> Demote to Member
-                            </button>
-                        </form>
-                    </li>
-                    {% endif %}
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li>
-                        <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal"
-                            data-bs-target="#removePlayerModal">
-                            <i class="bi bi-person-x"></i> Remove from group
+                        <button class="dropdown-item text-warning" type="button" data-bs-toggle="modal"
+                            data-bs-target="#resetPasswordModal">
+                            <i class="bi bi-key"></i> Reset Password
                         </button>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
-            {% endif %}
         </div>
     </div>
 </div>
 
-{% if is_admin and player.id != current_user.id %}
-<!-- Modal -->
-<div class="modal fade" id="removePlayerModal" tabindex="-1" aria-hidden="true">
+{% if player.id != current_user.id %}
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Remove Player</h5>
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Reset Password</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body text-center">
-                <p>Are you sure you want to remove <strong>{{ player.nick }}</strong> from the group?</p>
-                <p class="text-muted small">This action cannot be undone.</p>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-key-fill text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <p class="fs-5 mb-1">Reset password for <strong>{{ player.nick }}</strong>?</p>
+                <p class="text-muted small mb-0">Login ID: <span class="fw-bold text-dark">{{ player.nick_id }}</span>
+                </p>
+                <p class="text-muted small mb-4">The password will be set to: <code
+                        class="bg-light px-2 py-1 rounded">guest123</code></p>
+
+                <div class="alert alert-warning border-0 small text-start mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> The player will need this new password to log
+                    in. Please share it with them securely.
+                </div>
             </div>
-            <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="/team/{{ team.id }}/player/{{ player.id }}/remove" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-danger">Yes, Remove</button>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
+                <button type="button" class="btn btn-premium-base btn-premium-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle text-secondary"></i>
+                    <span class="text-secondary">Cancel</span>
+                </button>
+                <form action="/team/{{ team.id }}/player/{{ player.id }}/reset-password" method="post"
+                    class="flex-grow-1">
+                    <button type="submit" class="btn btn-premium-base btn-premium-primary w-100">
+                        <i class="bi bi-key-fill text-white"></i>
+                        <span class="text-white">Reset Password</span>
+                    </button>
                 </form>
             </div>
         </div>
@@ -234,10 +244,6 @@
             <i class="bi bi-house text-secondary"></i>
             <span class="text-secondary">Home</span>
         </a>
-        <a href="/game/view_past" class="btn btn-premium-base btn-premium-secondary">
-            <i class="bi bi-clock-history text-secondary"></i>
-            <span class="text-secondary">Past games</span>
-        </a>
 
         {% set is_my_stats = (player.id == current_user.id and is_global_group) %}
         {% set my_stats_btn_class = "btn-premium-primary" if is_my_stats else "btn-premium-secondary" %}
@@ -259,11 +265,10 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Initialize Tooltips
-        // Initialize Tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
 
         const chartData = {{ chart_points | tojson
     }};
