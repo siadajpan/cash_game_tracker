@@ -798,7 +798,7 @@ async def _get_player_stats_context(
     # Optimization: Fetch all transactions for this player in these games
     p_buyins = db.query(BuyIn).filter(BuyIn.user_id == player_id, BuyIn.game_id.in_(team_game_ids)).all()
     p_addons = db.query(AddOn).filter(AddOn.user_id == player_id, AddOn.game_id.in_(team_game_ids), AddOn.status == PlayerRequestStatus.APPROVED).all()
-    p_cashouts = db.query(CashOut).filter(CashOut.user_id == player_id, CashOut.game_id.in_(team_game_ids)).all()
+    p_cashouts = db.query(CashOut).filter(CashOut.user_id == player_id, CashOut.game_id.in_(team_game_ids), CashOut.status == PlayerRequestStatus.APPROVED).all()
 
     game_stats = defaultdict(lambda: {"buyin": 0.0, "addon": 0.0, "cashout": 0.0})
     played_game_ids = set()
