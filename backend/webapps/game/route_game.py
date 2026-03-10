@@ -1165,9 +1165,9 @@ async def add_player_remotely(
         if game.default_buy_in > 0:
             add_user_buy_in(target_user, game, game.default_buy_in, db)
 
-        # Trigger table refresh via HTMX redirect or just return success
+        # Trigger table refresh and list refresh via HTMX
         response = responses.Response()
-        response.headers["HX-Refresh"] = "true"
+        response.headers["HX-Trigger"] = "refreshGameTable, refreshEditPlayersList"
         return response
 
     except IntegrityError:
@@ -1242,7 +1242,7 @@ async def remove_player_remotely(
     db.commit()
 
     response = responses.Response()
-    response.headers["HX-Refresh"] = "true"
+    response.headers["HX-Trigger"] = "refreshGameTable, refreshEditPlayersList"
     return response
 
 
