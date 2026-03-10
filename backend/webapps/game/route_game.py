@@ -91,7 +91,7 @@ async def delete_game(
     delete_game_by_id(game_id, db)
 
     return RedirectResponse(
-        url="/game/view_past?msg=Game deleted successfully",
+        url=f"/team/{game.team_id or 0}/player/{user.id}?msg=Game deleted successfully",
         status_code=status.HTTP_302_FOUND,
     )
 
@@ -1087,19 +1087,36 @@ async def get_add_player_list(
         raise HTTPException(status_code=403, detail="Only admins, game owner, or book keeper can manage players")
 
     # Get all approved members of the team
-    team_members = (
-        db.query(User)
-        .join(UserTeam)
-        .filter(
-            UserTeam.team_id == game.team_id,
-            UserTeam.status == PlayerRequestStatus.APPROVED,
+    team_members = []
+    if game.team_id and game.team_id != 0:
+        team_members = (
+            db.query(User)
+            .join(UserTeam)
+            .filter(
+                UserTeam.team_id == game.team_id,
+                UserTeam.status == PlayerRequestStatus.APPROVED,
+            )
+            .all()
         )
+
+    # Get all players the user has played with
+    user_game_ids = db.query(UserGame.game_id).filter(UserGame.user_id == user.id).subquery()
+    played_with = (
+        db.query(User)
+        .join(UserGame)
+        .filter(UserGame.game_id.in_(user_game_ids))
         .all()
     )
 
-    # Filter out players already in the game
+    # Combine and deduplicate
+    all_potential_players = set(team_members) | set(played_with)
+
+    # Filter out current players and the user themselves
     game_player_ids = [p.id for p in game.players]
-    available_players = [p for p in team_members if p.id not in game_player_ids]
+    available_players = [
+        u for u in all_potential_players 
+        if u.id not in game_player_ids and u.id != user.id
+    ]
     available_players.sort(key=lambda p: p.nick.lower() if p.nick else "")
 
     return templates.TemplateResponse(
@@ -1249,19 +1266,36 @@ async def get_edit_players(
     players.sort(key=lambda p: p.nick.lower() if p.nick else "")
 
     # Get all approved members of the team
-    team_members = (
-        db.query(User)
-        .join(UserTeam)
-        .filter(
-            UserTeam.team_id == game.team_id,
-            UserTeam.status == PlayerRequestStatus.APPROVED,
+    team_members = []
+    if game.team_id and game.team_id != 0:
+        team_members = (
+            db.query(User)
+            .join(UserTeam)
+            .filter(
+                UserTeam.team_id == game.team_id,
+                UserTeam.status == PlayerRequestStatus.APPROVED,
+            )
+            .all()
         )
+
+    # Get all players the user has played with
+    user_game_ids = db.query(UserGame.game_id).filter(UserGame.user_id == user.id).subquery()
+    played_with = (
+        db.query(User)
+        .join(UserGame)
+        .filter(UserGame.game_id.in_(user_game_ids))
         .all()
     )
 
-    # Filter out players already in the game
+    # Combine and deduplicate
+    all_potential_players = set(team_members) | set(played_with)
+
+    # Filter out current players and the user themselves
     game_player_ids = [p.id for p in game.players]
-    available_players = [p for p in team_members if p.id not in game_player_ids]
+    available_players = [
+        u for u in all_potential_players 
+        if u.id not in game_player_ids and u.id != user.id
+    ]
     available_players.sort(key=lambda p: p.nick.lower() if p.nick else "")
 
     return templates.TemplateResponse(
