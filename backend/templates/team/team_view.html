@@ -35,36 +35,42 @@
                     {% endif %}
                 </ul>
             </div>
-            <a href="/team/{{ team.id }}/stats?year={{ selected_year }}"
-                class="btn btn-lg btn-outline-primary shadow-sm" title="Advanced Group Stats">
-                <i class="bi bi-bar-chart-fill"></i> <span class="d-none d-md-inline ms-1">Advanced Stats</span>
-            </a>
-
-            {# Enable Gear menu for My Group (id 0) as you are the 'owner' of your personal group #}
-            {% if is_global_group or is_admin %}
+            {# Gear menu for management and advanced stats #}
             <div class="dropdown">
                 <button class="btn btn-lg btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown"
                     aria-expanded="false">
                     <i class="bi bi-gear-fill"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end" style="z-index: 2000;">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 p-2"
+                    style="z-index: 2000; min-width: 220px;">
+                    <li>
+                        <a class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6"
+                            href="/team/{{ team.id }}/stats?year={{ selected_year }}">
+                            <i class="bi bi-bar-chart-fill me-2 text-primary"></i> Advanced Stats
+                        </a>
+                    </li>
+
+                    {% if is_global_group or is_admin %}
+                    <li>
+                        <hr class="dropdown-divider mx-3">
+                    </li>
                     {% if not is_global_group %}
                     <li>
-                        <a class="dropdown-item"
+                        <a class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6"
                             href="/team/{{ team.id }}/chip_structures?return_url={{ request.url | urlencode }}">
-                            <i class="bi bi-stack"></i> Manage Chip Structures
+                            <i class="bi bi-stack me-2 text-primary"></i> Manage Chip Structures
                         </a>
                     </li>
                     {% endif %}
                     <li>
-                        <button class="dropdown-item" type="button" data-bs-toggle="modal"
+                        <button class="dropdown-item py-2 px-4 rounded-3 mb-1 fs-6" type="button" data-bs-toggle="modal"
                             data-bs-target="#importGamesModal">
-                            <i class="bi bi-file-earmark-arrow-up"></i> Import Games
+                            <i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i> Import Games
                         </button>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
-            {% endif %}
         </div>
     </div>
 </div>
@@ -79,11 +85,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="importGamesForm" action="/team/{{ team.id }}/import" method="post" enctype="multipart/form-data">
-                <div class="modal-body">
-                    <p class="mb-3" style="font-size: 0.8rem;">Upload a JSON file containing your game history. The
+                <div class="modal-body p-4">
+                    <p class="mb-3 fs-6">Upload a JSON file containing your game history. The
                         data should be formatted as follows:</p>
                     <div class="bg-light p-3 rounded mb-3 border overflow-auto" style="max-height: 150px;">
-                        <pre class="mb-0" style="font-size: 0.75rem;">
+                        <pre class="mb-0" style="font-size: 0.85rem;">
 [
   {
     "start_time": "YYYY-MM-DD HH:MM",
@@ -101,14 +107,8 @@
 </pre>
                     </div>
                     <div class="mb-3">
-                        <label for="importFile" class="form-label" style="font-size: 0.8rem;">Select JSON
-                            File</label>
-                        <input class="form-control form-control-sm" type="file" id="importFile" name="file"
-                            accept=".json" required>
-                    </div>
-                    <div class="alert alert-info py-2" style="font-size: 0.65rem;">
-                        <i class="bi bi-info-circle me-1"></i> Existing games will be skipped. New players will be
-                        added as guests.
+                        <label for="importFile" class="form-label fs-6 fw-bold">Select JSON File</label>
+                        <input class="form-control" type="file" id="importFile" name="file" accept=".json" required>
                     </div>
                 </div>
                 <div class="modal-footer border-0 p-4 pt-0 d-flex gap-3">
@@ -120,10 +120,10 @@
                         id="importSubmitBtn">
                         <span class="spinner-border spinner-border-sm d-none text-white" role="status"
                             aria-hidden="true" id="importSpinner"></span>
-                        <span id="importBtnText">
+                        <div id="importBtnContent" class="d-flex flex-column align-items-center">
                             <i class="bi bi-check-circle-fill text-white"></i>
-                            <span class="text-white">Import Games</span>
-                        </span>
+                            <span class="text-white" id="importBtnText">Import Games</span>
+                        </div>
                     </button>
                 </div>
             </form>
@@ -288,12 +288,14 @@
         importForm.addEventListener('submit', function () {
             const btn = document.getElementById('importSubmitBtn');
             const spinner = document.getElementById('importSpinner');
+            const content = document.getElementById('importBtnContent');
             const text = document.getElementById('importBtnText');
 
-            if (btn && spinner && text) {
+            if (btn && spinner && content && text) {
                 btn.disabled = true;
                 spinner.classList.remove('d-none');
-                text.textContent = ' Importing...';
+                content.classList.add('d-none');
+                // We keep the structure stable by hiding the content instead of replacing text
             }
         });
     }
