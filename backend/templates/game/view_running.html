@@ -551,27 +551,7 @@
 
     adjustGameViewHeight();
 
-    const addonModal = document.getElementById('addonModal');
-    if (addonModal) {
-        addonModal.addEventListener('shown.bs.modal', function () {
-            const input = document.getElementById('addonAmountInputRunning');
-            if (input) {
-                input.focus();
-                input.select();
-            }
-        });
-    }
 
-    const cashoutModal = document.getElementById('cashoutModal');
-    if (cashoutModal) {
-        cashoutModal.addEventListener('shown.bs.modal', function () {
-            const input = document.getElementById('cashoutAmountInputRunning');
-            if (input) {
-                input.focus();
-                input.select();
-            }
-        });
-    }
 
     function showToast(message, type = 'primary') {
         const toastEl = document.getElementById('liveToast');

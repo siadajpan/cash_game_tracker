@@ -146,28 +146,7 @@
 </div>
 
 <script>
-    // Focus inputs on modal open
-    const addonModal = document.getElementById('addonModal');
-    if (addonModal) {
-        addonModal.addEventListener('shown.bs.modal', function () {
-            const input = document.getElementById('historyAddonAmountInput');
-            if (input) {
-                input.focus();
-                input.select();
-            }
-        });
-    }
 
-    const cashoutModal = document.getElementById('cashoutModal');
-    if (cashoutModal) {
-        cashoutModal.addEventListener('shown.bs.modal', function () {
-            const input = document.getElementById('historyCashoutAmountInput');
-            if (input) {
-                input.focus();
-                input.select();
-            }
-        });
-    }
 
     // Handle Delete Modal
     document.addEventListener('DOMContentLoaded', function () {

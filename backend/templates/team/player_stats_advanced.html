@@ -1,6 +1,7 @@
 {% extends "shared/base.html" %}
 {% block title %}
-<title>{{ player.nick }} Advanced Stats - {{ team.name }}</title>
+<title>{% if player.id == current_user.id %}My Advanced Stats{% else %}{{ player.nick }} Advanced Stats{% endif %} - {{
+    team.name }}</title>
 {% endblock %}
 {% block page_heading %}{% endblock %}
 
@@ -9,11 +10,10 @@
 <div class="bg-white pt-2 mb-2 flex-shrink-0">
     <div class="d-flex justify-content-between align-items-center px-2">
         <div class="page-title py-2 m-0">
-            {{ player.nick }}
-            {% if is_global_group %}
-            <span class="text-muted">Stats</span>
+            {% if player.id == current_user.id %}
+            My Stats
             {% else %}
-            <span class="text-muted">in {{ team.name }}</span>
+            {{ player.nick }} Stats
             {% endif %}
         </div>
 
